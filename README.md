@@ -1,8 +1,5 @@
 # MaisonVintage Shop
 
-
-# MaisonVintage Shop
-
 Projet de **boutique e-commerce** développé en **PHP/Symfony** pour une brocante professionnelle.  
 Ce projet est réalisé dans le cadre de mon stage de 2 mois à l’ENI École Informatique (22 septembre 2025 → 14 novembre 2025).
 
