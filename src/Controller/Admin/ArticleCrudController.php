@@ -11,6 +11,8 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\TextareaField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\MoneyField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ImageField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
 
 class ArticleCrudController extends AbstractCrudController
 {
@@ -52,5 +54,28 @@ class ArticleCrudController extends AbstractCrudController
 
         yield DateTimeField::new('updatedAt', 'Mis à jour le')
             ->onlyOnIndex();
+
+        yield IntegerField::new('quantity', 'Quantité')
+            ->setFormTypeOption('attr', ['min' => 0]);
+
+        yield NumberField::new('weightKg', 'Poids (kg)')
+            ->setNumDecimals(2)
+            ->setFormTypeOption('attr', ['step' => '0.01'])
+            ->hideOnIndex();
+
+        yield NumberField::new('lengthCm', 'Longueur (cm)')
+            ->setNumDecimals(2)
+            ->setFormTypeOption('attr', ['step' => '0.1'])
+            ->hideOnIndex();
+
+        yield NumberField::new('widthCm', 'Largeur (cm)')
+            ->setNumDecimals(2)
+            ->setFormTypeOption('attr', ['step' => '0.1'])
+            ->hideOnIndex();
+
+        yield NumberField::new('heightCm', 'Hauteur (cm)')
+            ->setNumDecimals(2)
+            ->setFormTypeOption('attr', ['step' => '0.1'])
+            ->hideOnIndex();
     }
 }

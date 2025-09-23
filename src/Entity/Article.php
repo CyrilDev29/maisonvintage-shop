@@ -32,6 +32,21 @@ class Article
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $image = null;
 
+    #[ORM\Column]
+    private ?int $quantity = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 6, scale: 2, nullable: true)]
+    private ?string $weightKg = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 6, scale: 2, nullable: true)]
+    private ?string $lengthCm = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 6, scale: 2, nullable: true)]
+    private ?string $widthCm = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 6, scale: 2, nullable: true)]
+    private ?string $heightCm = null;
+
     #[ORM\PreUpdate]
     public function onPreUpdate(): void
     {
@@ -123,6 +138,66 @@ class Article
     public function __toString(): string
     {
         return (string) $this->getTitre();
+    }
+
+    public function getQuantity(): ?int
+    {
+        return $this->quantity;
+    }
+
+    public function setQuantity(int $quantity): static
+    {
+        $this->quantity = $quantity;
+
+        return $this;
+    }
+
+    public function getWeightKg(): ?string
+    {
+        return $this->weightKg;
+    }
+
+    public function setWeightKg(?string $weightKg): static
+    {
+        $this->weightKg = $weightKg;
+
+        return $this;
+    }
+
+    public function getLengthCm(): ?string
+    {
+        return $this->lengthCm;
+    }
+
+    public function setLengthCm(?string $lengthCm): static
+    {
+        $this->lengthCm = $lengthCm;
+
+        return $this;
+    }
+
+    public function getWidthCm(): ?string
+    {
+        return $this->widthCm;
+    }
+
+    public function setWidthCm(?string $widthCm): static
+    {
+        $this->widthCm = $widthCm;
+
+        return $this;
+    }
+
+    public function getHeightCm(): ?string
+    {
+        return $this->heightCm;
+    }
+
+    public function setHeightCm(?string $heightCm): static
+    {
+        $this->heightCm = $heightCm;
+
+        return $this;
     }
 
 
