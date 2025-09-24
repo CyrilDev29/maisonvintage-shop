@@ -13,6 +13,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ImageField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 
 class ArticleCrudController extends AbstractCrudController
 {
@@ -49,11 +50,7 @@ class ArticleCrudController extends AbstractCrudController
             ->setRequired(false)
             ->setUploadedFileNamePattern('[slug]-[timestamp].[extension]');
 
-        yield DateTimeField::new('createdAt', 'Créé le')
-            ->onlyOnIndex();
-
-        yield DateTimeField::new('updatedAt', 'Mis à jour le')
-            ->onlyOnIndex();
+        yield AssociationField::new('categorie', 'Catégorie');
 
         yield IntegerField::new('quantity', 'Quantité')
             ->setFormTypeOption('attr', ['min' => 0]);
@@ -77,5 +74,8 @@ class ArticleCrudController extends AbstractCrudController
             ->setNumDecimals(2)
             ->setFormTypeOption('attr', ['step' => '0.1'])
             ->hideOnIndex();
+
+        yield DateTimeField::new('createdAt', 'Créé le')->onlyOnIndex();
+        yield DateTimeField::new('updatedAt', 'Mis à jour le')->onlyOnIndex();
     }
 }
