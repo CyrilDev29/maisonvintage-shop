@@ -2,16 +2,19 @@
 
 namespace App\Entity;
 
-use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
-use Symfony\Component\Validator\Constraints as Assert;
 use App\Repository\CategorieRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\String\Slugger\AsciiSlugger;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: CategorieRepository::class)]
+#[ORM\HasLifecycleCallbacks]
 #[UniqueEntity(fields: ['nom'], message: 'Ce nom de catégorie existe déjà.')]
+#[UniqueEntity(fields: ['slug'], message: 'Ce slug de catégorie existe déjà.')]
 class Categorie
 {
     #[ORM\Id]
@@ -27,15 +30,30 @@ class Categorie
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
-    /**
-     * @var Collection<int, Article>
-     */
+    #[ORM\Column(length: 255, unique: true)]
+    private ?string $slug = null;
+
+    /** @var Collection<int, Article> */
     #[ORM\OneToMany(targetEntity: Article::class, mappedBy: 'categorie')]
     private Collection $articles;
 
     public function __construct()
     {
         $this->articles = new ArrayCollection();
+    }
+
+    #[ORM\PrePersist]
+    #[ORM\PreUpdate]
+    public function computeSlug(): void
+    {
+        if ($this->nom) {
+            $this->slug = (string) (new AsciiSlugger())->slug($this->nom)->lower();
+        }
+    }
+
+    public function __toString(): string
+    {
+        return $this->nom ?? '';
     }
 
     public function getId(): ?int
@@ -65,9 +83,18 @@ class Categorie
         return $this;
     }
 
-    /**
-     * @return Collection<int, Article>
-     */
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(?string $slug): static
+    {
+        $this->slug = $slug;
+        return $this;
+    }
+
+    /** @return Collection<int, Article> */
     public function getArticles(): Collection
     {
         return $this->articles;
@@ -90,10 +117,5 @@ class Categorie
             }
         }
         return $this;
-    }
-
-    public function __toString(): string
-    {
-        return $this->nom ?? '';
     }
 }
