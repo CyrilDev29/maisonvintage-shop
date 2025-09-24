@@ -1,0 +1,33 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ categorie.nom }} – Maison Vintage{% endblock %}
+
+{% block body %}
+    <h1 class="mb-3">{{ categorie.nom }}</h1>
+    {% if categorie.description %}
+        <p class="text-muted">{{ categorie.description }}</p>
+    {% endif %}
+
+    {% if articles is empty %}
+        <div class="alert alert-info">Aucun article dans cette catégorie.</div>
+    {% else %}
+        <div class="row g-3">
+            {% for a in articles %}
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <div class="card h-100">
+                        {% if a.image %}
+                            <img src="{{ asset('uploads/articles/' ~ a.image) }}" class="card-img-top" alt="{{ a.titre }}">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ a.titre }}</h5>
+                            {% if a.prix is defined %}
+                                <p class="card-text fw-bold">{{ a.prix }} €</p>
+                            {% endif %}
+                            <a href="#" class="btn btn-outline-dark btn-sm disabled">Voir la fiche</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}
