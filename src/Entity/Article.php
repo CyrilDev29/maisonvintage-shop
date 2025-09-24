@@ -47,6 +47,10 @@ class Article
     #[ORM\Column(type: Types::DECIMAL, precision: 6, scale: 2, nullable: true)]
     private ?string $heightCm = null;
 
+    #[ORM\ManyToOne(inversedBy: 'articles')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Categorie $categorie = null;
+
     #[ORM\PreUpdate]
     public function onPreUpdate(): void
     {
@@ -196,6 +200,18 @@ class Article
     public function setHeightCm(?string $heightCm): static
     {
         $this->heightCm = $heightCm;
+
+        return $this;
+    }
+
+    public function getCategorie(): ?Categorie
+    {
+        return $this->categorie;
+    }
+
+    public function setCategorie(?Categorie $categorie): static
+    {
+        $this->categorie = $categorie;
 
         return $this;
     }
