@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Validator\Constraints as Assert;
 use App\Repository\CategorieRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -9,6 +11,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: CategorieRepository::class)]
+#[UniqueEntity(fields: ['nom'], message: 'Ce nom de catégorie existe déjà.')]
 class Categorie
 {
     #[ORM\Id]
@@ -16,7 +19,9 @@ class Categorie
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, unique: true)]
+    #[Assert\NotBlank(message: 'Le nom est obligatoire.')]
+    #[Assert\Length(max: 255, maxMessage: '255 caractères maximum.')]
     private ?string $nom = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
@@ -46,7 +51,6 @@ class Categorie
     public function setNom(string $nom): static
     {
         $this->nom = $nom;
-
         return $this;
     }
 
@@ -58,7 +62,6 @@ class Categorie
     public function setDescription(?string $description): static
     {
         $this->description = $description;
-
         return $this;
     }
 
@@ -76,19 +79,16 @@ class Categorie
             $this->articles->add($article);
             $article->setCategorie($this);
         }
-
         return $this;
     }
 
     public function removeArticle(Article $article): static
     {
         if ($this->articles->removeElement($article)) {
-            // set the owning side to null (unless already changed)
             if ($article->getCategorie() === $this) {
                 $article->setCategorie(null);
             }
         }
-
         return $this;
     }
 
@@ -96,5 +96,4 @@ class Categorie
     {
         return $this->nom ?? '';
     }
-
 }
