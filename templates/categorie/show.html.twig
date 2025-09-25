@@ -1,33 +1,78 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ categorie.nom }} – Maison Vintage{% endblock %}
+{% block title %}{{ categorie.nom }} — Maisonvintage{% endblock %}
 
 {% block body %}
-    <h1 class="mb-3">{{ categorie.nom }}</h1>
-    {% if categorie.description %}
-        <p class="text-muted">{{ categorie.description }}</p>
-    {% endif %}
+    <section class="container" style="max-width:1100px;margin:2rem auto;padding:0 1rem;">
+        <header class="d-flex justify-content-between align-items-end gap-3 mb-3">
+            <div>
+                <h1 class="m-0">{{ categorie.nom }}</h1>
+                <p class="m-0 mv-muted">
+                    {{ total }} article{{ total > 1 ? 's' : '' }} au total
+                </p>
+            </div>
+        </header>
 
-    {% if articles is empty %}
-        <div class="alert alert-info">Aucun article dans cette catégorie.</div>
-    {% else %}
-        <div class="row g-3">
-            {% for a in articles %}
-                <div class="col-12 col-sm-6 col-lg-4">
-                    <div class="card h-100">
-                        {% if a.image %}
-                            <img src="{{ asset('uploads/articles/' ~ a.image) }}" class="card-img-top" alt="{{ a.titre }}">
-                        {% endif %}
-                        <div class="card-body">
-                            <h5 class="card-title">{{ a.titre }}</h5>
-                            {% if a.prix is defined %}
-                                <p class="card-text fw-bold">{{ a.prix }} €</p>
-                            {% endif %}
-                            <a href="#" class="btn btn-outline-dark btn-sm disabled">Voir la fiche</a>
+        {% if articles is empty %}
+            <p>Aucun article trouvé dans cette catégorie.</p>
+        {% else %}
+            {# Grille 4 colonnes responsive #}
+            <ul class="product-grid">
+                {% for a in articles %}
+                    <li class="product-card">
+                        <div class="product-media">
+                            <a href="{{ path('article_show', {slug: a.slug}) }}" style="display:block;width:100%;height:100%;">
+                                {% if a.image %}
+                                    <img src="{{ asset('uploads/articles/' ~ a.image) }}"
+                                         alt="{{ a.titre }}"
+                                         style="width:100%;height:100%;object-fit:cover;">
+                                {% endif %}
+                            </a>
                         </div>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
+                        <div class="product-body">
+                            <h2 class="product-title">
+                                <a href="{{ path('article_show', {slug: a.slug}) }}" class="text-reset">
+                                    {{ a.titre }}
+                                </a>
+                            </h2>
+                            {% if a.prix is not null %}
+                                <div class="product-price">
+                                    {{ a.prix|number_format(2, ',', ' ') }} €
+                                </div>
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+
+            {% if pages > 1 %}
+                <nav class="mv-pagination" aria-label="Pagination">
+                    {# Précédent #}
+                    {% set prev = page - 1 %}
+                    {% if prev >= 1 %}
+                        <a class="mv-page" href="{{ path('categorie_show', {slug: categorie.slug}) }}?page={{ prev }}">« Précédent</a>
+                    {% else %}
+                        <span class="mv-page--disabled">« Précédent</span>
+                    {% endif %}
+
+                    {# Pages #}
+                    {% for p in 1..pages %}
+                        {% if p == page %}
+                            <span class="mv-page--current">{{ p }}</span>
+                        {% else %}
+                            <a class="mv-page" href="{{ path('categorie_show', {slug: categorie.slug}) }}?page={{ p }}">{{ p }}</a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {# Suivant #}
+                    {% set next = page + 1 %}
+                    {% if next <= pages %}
+                        <a class="mv-page" href="{{ path('categorie_show', {slug: categorie.slug}) }}?page={{ next }}">Suivant »</a>
+                    {% else %}
+                        <span class="mv-page--disabled">Suivant »</span>
+                    {% endif %}
+                </nav>
+            {% endif %}
+        {% endif %}
+    </section>
 {% endblock %}

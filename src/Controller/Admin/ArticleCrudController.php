@@ -36,6 +36,9 @@ class ArticleCrudController extends AbstractCrudController
 
         yield TextField::new('titre', 'Titre');
 
+        // NEW: slug affiché en index (auto-généré, non modifiable dans le formulaire)
+        yield TextField::new('slug', 'Slug')->onlyOnIndex();
+
         yield TextareaField::new('description', 'Description')
             ->hideOnIndex();
 

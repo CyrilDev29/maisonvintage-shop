@@ -7,6 +7,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ArticleRepository::class)]
+#[ORM\HasLifecycleCallbacks]
 class Article
 {
     #[ORM\Id]
@@ -51,10 +52,31 @@ class Article
     #[ORM\JoinColumn(nullable: false)]
     private ?Categorie $categorie = null;
 
+    #[ORM\Column(length: 180, nullable: true)]
+    private ?string $slug = null;
+
+    public function __construct()
+    {
+        $this->createdAt = new \DateTimeImmutable();
+    }
+
+    #[ORM\PrePersist]
+    public function onPrePersist(): void
+    {
+        if ($this->createdAt === null) {
+            $this->createdAt = new \DateTimeImmutable();
+        }
+    }
+
     #[ORM\PreUpdate]
     public function onPreUpdate(): void
     {
         $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function __toString(): string
+    {
+        return (string) $this->getTitre();
     }
 
     public function getId(): ?int
@@ -70,7 +92,6 @@ class Article
     public function setTitre(string $titre): static
     {
         $this->titre = $titre;
-
         return $this;
     }
 
@@ -82,7 +103,6 @@ class Article
     public function setDescription(string $description): static
     {
         $this->description = $description;
-
         return $this;
     }
 
@@ -94,7 +114,6 @@ class Article
     public function setPrix(string $prix): static
     {
         $this->prix = $prix;
-
         return $this;
     }
 
@@ -106,7 +125,6 @@ class Article
     public function setCreatedAt(\DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
-
         return $this;
     }
 
@@ -118,7 +136,6 @@ class Article
     public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
     {
         $this->updatedAt = $updatedAt;
-
         return $this;
     }
 
@@ -130,18 +147,7 @@ class Article
     public function setImage(?string $image): static
     {
         $this->image = $image;
-
         return $this;
-    }
-
-    public function __construct()
-    {
-        $this->createdAt = new \DateTimeImmutable();
-    }
-
-    public function __toString(): string
-    {
-        return (string) $this->getTitre();
     }
 
     public function getQuantity(): ?int
@@ -152,7 +158,6 @@ class Article
     public function setQuantity(int $quantity): static
     {
         $this->quantity = $quantity;
-
         return $this;
     }
 
@@ -164,7 +169,6 @@ class Article
     public function setWeightKg(?string $weightKg): static
     {
         $this->weightKg = $weightKg;
-
         return $this;
     }
 
@@ -176,7 +180,6 @@ class Article
     public function setLengthCm(?string $lengthCm): static
     {
         $this->lengthCm = $lengthCm;
-
         return $this;
     }
 
@@ -188,7 +191,6 @@ class Article
     public function setWidthCm(?string $widthCm): static
     {
         $this->widthCm = $widthCm;
-
         return $this;
     }
 
@@ -200,7 +202,6 @@ class Article
     public function setHeightCm(?string $heightCm): static
     {
         $this->heightCm = $heightCm;
-
         return $this;
     }
 
@@ -212,10 +213,18 @@ class Article
     public function setCategorie(?Categorie $categorie): static
     {
         $this->categorie = $categorie;
-
         return $this;
     }
 
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
 
+    public function setSlug(?string $slug): static
+    {
+        $this->slug = $slug;
 
+        return $this;
+    }
 }

@@ -1,0 +1,40 @@
+{% extends 'base.html.twig' %}
+{% block title %}Checkout — Maisonvintage{% endblock %}
+
+{% block body %}
+    <section class="container" style="max-width:1100px;margin:2rem auto;padding:0 1rem;">
+        <h1>Récapitulatif</h1>
+
+        <p class="text-muted">Connecté en tant que <strong>{{ app.user.userIdentifier }}</strong></p>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Article</th>
+                <th class="text-end">Prix</th>
+                <th class="text-center">Qté</th>
+                <th class="text-end">Sous-total</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for line in items %}
+                <tr>
+                    <td><a href="{{ path('article_show', {id: line.article.id}) }}">{{ line.article.titre }}</a></td>
+                    <td class="text-end">{{ line.price|number_format(2, ',', ' ') }} €</td>
+                    <td class="text-center">{{ line.qty }}</td>
+                    <td class="text-end">{{ line.subtotal|number_format(2, ',', ' ') }} €</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot>
+            <tr>
+                <th colspan="3" class="text-end">Total</th>
+                <th class="text-end">{{ total|number_format(2, ',', ' ') }} €</th>
+            </tr>
+            </tfoot>
+        </table>
+
+        {# On mettra ici le formulaire d’adresse + bouton de confirmation dans une prochaine étape #}
+        <a href="{{ path('cart_show') }}" class="btn btn-outline-secondary">← Retour au panier</a>
+    </section>
+{% endblock %}
