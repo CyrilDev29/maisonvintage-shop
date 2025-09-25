@@ -5,6 +5,7 @@ namespace App\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use App\Repository\ArticleRepository;
 
 class PagesController extends AbstractController
 {
@@ -20,9 +21,13 @@ class PagesController extends AbstractController
     }
 
     #[Route('/victime-de-son-succes', name: 'victime_succes')]
-    public function victimeSucces(): Response
+    public function victimeSucces(ArticleRepository $articleRepository): Response
     {
-        return $this->render('pages/victime_succes.html.twig');
+        $articlesVendus = $articleRepository->findBy(['quantity' => 0]);
+
+        return $this->render('pages/victime_succes.html.twig', [
+            'articles' => $articlesVendus
+        ]);
     }
 
     #[Route('/contact', name: 'contact')]
