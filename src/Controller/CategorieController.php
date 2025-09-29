@@ -11,7 +11,7 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class CategorieController extends AbstractController
 {
-    #[Route('/categorie/{slug}', name: 'categorie_show')]
+    #[Route('/categorie/{slug}', name: 'categorie_show', methods: ['GET'])]
     public function show(
         string $slug,
         Request $request,
@@ -24,13 +24,13 @@ class CategorieController extends AbstractController
             throw $this->createNotFoundException('Catégorie introuvable');
         }
 
-        // Pagination simple
         $page   = max(1, (int) $request->query->get('page', 1));
         $limit  = 12;
         $offset = ($page - 1) * $limit;
 
         $items = $articleRepository->createQueryBuilder('a')
             ->andWhere('a.categorie = :cat')
+            ->andWhere('a.quantity > 0')
             ->setParameter('cat', $categorie)
             ->orderBy('a.id', 'DESC')
             ->setFirstResult($offset)
@@ -41,11 +41,12 @@ class CategorieController extends AbstractController
         $total = (int) $articleRepository->createQueryBuilder('a')
             ->select('COUNT(a.id)')
             ->andWhere('a.categorie = :cat')
+            ->andWhere('a.quantity > 0')
             ->setParameter('cat', $categorie)
             ->getQuery()
             ->getSingleScalarResult();
 
-        $pages = (int) ceil($total / $limit);
+        $pages = (int) max(1, ceil($total / $limit));
 
         return $this->render('categorie/show.html.twig', [
             'categorie' => $categorie,
