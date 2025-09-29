@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Nouveau message de contact</title>
+</head>
+<body>
+<h2>Nouveau message depuis le formulaire de contact</h2>
+
+<p><strong>Nom :</strong> {{ name }}</p>
+<p><strong>Email :</strong> {{ email }}</p>
+<p><strong>Sujet :</strong> {{ subject }}</p>
+
+<h3>Message :</h3>
+<p>{{ message|nl2br }}</p>
+</body>
+</html>

@@ -224,7 +224,17 @@ class Article
     public function setSlug(?string $slug): static
     {
         $this->slug = $slug;
-
         return $this;
+    }
+
+    /** Helpers métier */
+    public function isDisponible(): bool
+    {
+        return ($this->quantity ?? 0) > 0;
+    }
+
+    public function isVendu(): bool
+    {
+        return ($this->quantity ?? 0) === 0;
     }
 }
