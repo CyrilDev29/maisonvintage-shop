@@ -26,9 +26,19 @@
                 </thead>
                 <tbody>
                 {% for line in items %}
+                    {# On récupère l’URL générée par Vich, sinon on tombe sur un placeholder #}
+                    {% set src = vich_uploader_asset(line.article, 'imageFile') ?? asset('images/placeholder.png') %}
+
                     <tr>
                         <td style="padding:.5rem;">
-                            <a href="{{ path('article_show', {slug: line.article.slug}) }}">{{ line.article.titre }}</a>
+                            <div style="display:flex;gap:.75rem;align-items:center;">
+                                <a href="{{ path('article_show', {slug: line.article.slug}) }}" style="display:inline-block;">
+                                    <img src="{{ src }}"
+                                         alt="{{ line.article.titre }}"
+                                         style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid #e5e5e5;background:#fff;">
+                                </a>
+                                <a href="{{ path('article_show', {slug: line.article.slug}) }}">{{ line.article.titre }}</a>
+                            </div>
                         </td>
                         <td style="padding:.5rem;text-align:right;">
                             {{ line.price|number_format(2, ',', ' ') }} €
