@@ -20,7 +20,10 @@
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-        <a class="navbar-brand" href="{{ path('home') }}">Maison Vintage</a>
+        <a class="navbar-brand d-flex align-items-center" href="{{ path('home') }}">
+            <img src="{{ asset('images/logo.png') }}" alt="Maison Vintage" style="height:100px; margin-right:8px;">
+            <span class="fw-bold">Maison Vintage</span>
+        </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Basculer la navigation">
             <span class="navbar-toggler-icon"></span>
         </button>

@@ -12,14 +12,45 @@
             <span>{{ article.titre }}</span>
         </nav>
 
+        {# --- Détermine la source de l'image principale (Vich -> 1ère galerie -> placeholder) --- #}
+        {% set mainSrc = vich_uploader_asset(article, 'imageFile')
+            ?? (article.images|length > 0 ? vich_uploader_asset(article.images|first, 'file') : asset('images/placeholder.png')) %}
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
             <div>
-                {% if article.image %}
-                    <img src="{{ asset('uploads/articles/' ~ article.image) }}"
+                <div id="product-main-wrap" style="width:100%;border:1px solid #eee;border-radius:8px;background:#fff;overflow:hidden;">
+                    <img id="product-main"
+                         src="{{ mainSrc }}"
                          alt="{{ article.titre }}"
-                         style="width:100%;height:auto;border:1px solid #eee;border-radius:8px;">
-                {% else %}
-                    <div style="width:100%;aspect-ratio:4/3;background:#f7f7f7;border:1px solid #eee;border-radius:8px;"></div>
+                         style="width:100%;height:auto;display:block;max-height:520px;object-fit:contain;"
+                         loading="eager">
+                </div>
+
+                {# --- Miniatures (image principale + images de galerie) --- #}
+                {% set thumbs = [] %}
+                {% if vich_uploader_asset(article, 'imageFile') %}
+                    {% set thumbs = thumbs|merge([ vich_uploader_asset(article, 'imageFile') ]) %}
+                {% endif %}
+                {% for img in article.images %}
+                    {% set thumbs = thumbs|merge([ vich_uploader_asset(img, 'file') ]) %}
+                {% endfor %}
+
+                {% if thumbs|length > 0 %}
+                    <div class="thumbs" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
+                        {% for src in thumbs %}
+                            {% if src %}
+                                <button class="thumb-btn"
+                                        type="button"
+                                        data-src="{{ src }}"
+                                        style="border:1px solid #e5e5e5;border-radius:6px;background:#fff;padding:0;cursor:pointer;">
+                                    <img src="{{ src }}"
+                                         alt="Aperçu {{ loop.index }}"
+                                         style="width:86px;height:86px;object-fit:cover;display:block;border-radius:6px;"
+                                         loading="lazy">
+                                </button>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
                 {% endif %}
             </div>
 
@@ -38,6 +69,22 @@
                     </div>
                 {% endif %}
 
+                {# --- Dimensions et poids --- #}
+                <div style="margin:1rem 0;color:#555;line-height:1.5;">
+                    {% if article.weightKg %}
+                        <div>Poids : {{ (article.weightKg + 0)|number_format(3, ',', ' ') }} kg</div>
+                    {% endif %}
+                    {% if article.lengthCm %}
+                        <div>Longueur : {{ (article.lengthCm + 0)|number_format(1, ',', ' ') }} cm</div>
+                    {% endif %}
+                    {% if article.widthCm %}
+                        <div>Largeur : {{ (article.widthCm + 0)|number_format(1, ',', ' ') }} cm</div>
+                    {% endif %}
+                    {% if article.heightCm %}
+                        <div>Hauteur : {{ (article.heightCm + 0)|number_format(1, ',', ' ') }} cm</div>
+                    {% endif %}
+                </div>
+
                 {% if article.description %}
                     <div style="margin:1rem 0 1.5rem 0;line-height:1.6;">
                         {{ article.description|nl2br }}
@@ -52,7 +99,6 @@
                             <input id="qty" name="qty" type="number" value="1" min="1" max="{{ article.quantity }}"
                                    style="width:90px;padding:.4rem;border:1px solid #ccc;border-radius:6px;margin-right:.5rem;">
                         {% else %}
-                            {# 1 seule pièce : on force qty=1 et on n’affiche pas l’input #}
                             <input type="hidden" name="qty" value="1">
                         {% endif %}
 
@@ -67,7 +113,6 @@
                     </div>
                 {% endif %}
 
-
                 <a href="{{ path('categorie_show', {slug: article.categorie.slug}) }}"
                    style="display:inline-block;padding:.6rem 1rem;border:1px solid #222;border-radius:8px;text-decoration:none;">
                     ← Retour à {{ article.categorie.nom }}
@@ -75,4 +120,25 @@
             </div>
         </div>
     </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const mainImg = document.getElementById('product-main');
+            document.querySelectorAll('.thumb-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const src = this.getAttribute('data-src');
+                    if (!src || !mainImg) return;
+
+                    //  transition visuelle en cas de chagement
+                    mainImg.style.opacity = '0.2';
+                    const img = new Image();
+                    img.onload = function () {
+                        mainImg.src = src;
+                        mainImg.style.opacity = '1';
+                    };
+                    img.src = src;
+                });
+            });
+        });
+    </script>
 {% endblock %}

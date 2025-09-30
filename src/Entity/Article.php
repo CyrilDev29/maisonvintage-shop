@@ -3,11 +3,17 @@
 namespace App\Entity;
 
 use App\Repository\ArticleRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\Validator\Constraints as Assert;
+use Vich\UploaderBundle\Mapping\Annotation as Vich;
 
 #[ORM\Entity(repositoryClass: ArticleRepository::class)]
 #[ORM\HasLifecycleCallbacks]
+#[Vich\Uploadable]
 class Article
 {
     #[ORM\Id]
@@ -30,8 +36,27 @@ class Article
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    /**
+     * Nom du fichier de l’image principale
+     */
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $image = null;
+
+    /**
+     * Fichier uploadé pour l’image principale
+     * - Limité à 8 Mo
+     * - Formats acceptés : JPEG/PNG/WebP/GIF + HEIC/HEIF (iPhone)
+     */
+    #[Vich\UploadableField(mapping: 'article_image', fileNameProperty: 'image')]
+    #[Assert\File(
+        maxSize: '8M',
+        mimeTypes: [
+            'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+            'image/heic', 'image/heif'
+        ],
+        mimeTypesMessage: 'Format d’image non pris en charge.'
+    )]
+    private ?File $imageFile = null;
 
     #[ORM\Column]
     private ?int $quantity = null;
@@ -55,9 +80,19 @@ class Article
     #[ORM\Column(length: 180, nullable: true)]
     private ?string $slug = null;
 
+    /**
+     * Images secondaires (galerie, max 10)
+     * @var Collection<int, ArticleImage>
+     */
+    #[ORM\OneToMany(mappedBy: 'article', targetEntity: ArticleImage::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['position' => 'ASC', 'id' => 'ASC'])]
+    #[Assert\Count(max: 10, maxMessage: 'Vous pouvez ajouter jusqu’à {{ limit }} images.')]
+    private Collection $images;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
+        $this->images = new ArrayCollection();
     }
 
     #[ORM\PrePersist]
@@ -150,6 +185,20 @@ class Article
         return $this;
     }
 
+    public function setImageFile(?File $imageFile): self
+    {
+        $this->imageFile = $imageFile;
+        if ($imageFile !== null) {
+            $this->updatedAt = new \DateTimeImmutable();
+        }
+        return $this;
+    }
+
+    public function getImageFile(): ?File
+    {
+        return $this->imageFile;
+    }
+
     public function getQuantity(): ?int
     {
         return $this->quantity;
@@ -236,5 +285,32 @@ class Article
     public function isVendu(): bool
     {
         return ($this->quantity ?? 0) === 0;
+    }
+
+    /** ---- Gestion de la galerie ---- */
+
+    /** @return Collection<int, ArticleImage> */
+    public function getImages(): Collection
+    {
+        return $this->images;
+    }
+
+    public function addImage(ArticleImage $image): self
+    {
+        if (!$this->images->contains($image)) {
+            $this->images->add($image);
+            $image->setArticle($this);
+        }
+        return $this;
+    }
+
+    public function removeImage(ArticleImage $image): self
+    {
+        if ($this->images->removeElement($image)) {
+            if ($image->getArticle() === $this) {
+                $image->setArticle(null);
+            }
+        }
+        return $this;
     }
 }

@@ -3,17 +3,20 @@
 namespace App\Controller\Admin;
 
 use App\Entity\Article;
-use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
+use App\Form\ArticleImageType;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
-use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\TextareaField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\MoneyField;
+use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
+use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\CollectionField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ImageField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\MoneyField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\TextareaField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
+use Vich\UploaderBundle\Form\Type\VichImageType;
 
 class ArticleCrudController extends AbstractCrudController
 {
@@ -36,7 +39,7 @@ class ArticleCrudController extends AbstractCrudController
 
         yield TextField::new('titre', 'Titre');
 
-        // NEW: slug affiché en index (auto-généré, non modifiable dans le formulaire)
+        // Slug visible uniquement en index (remets-le sur le form si tu veux l’éditer)
         yield TextField::new('slug', 'Slug')->onlyOnIndex();
 
         yield TextareaField::new('description', 'Description')
@@ -46,12 +49,6 @@ class ArticleCrudController extends AbstractCrudController
             ->setCurrency('EUR')
             ->setNumDecimals(2)
             ->setStoredAsCents(false);
-
-        yield ImageField::new('image', 'Image')
-            ->setBasePath('uploads/articles')
-            ->setUploadDir('public/uploads/articles')
-            ->setRequired(false)
-            ->setUploadedFileNamePattern('[slug]-[timestamp].[extension]');
 
         yield AssociationField::new('categorie', 'Catégorie');
 
@@ -77,6 +74,24 @@ class ArticleCrudController extends AbstractCrudController
             ->setNumDecimals(2)
             ->setFormTypeOption('attr', ['step' => '0.1'])
             ->hideOnIndex();
+
+        /**
+         * ----- Images -----
+         * Image principale via Vich (upload en formulaire) + aperçu en index.
+         */
+        yield TextField::new('imageFile', 'Image principale')
+            ->setFormType(VichImageType::class)
+            ->onlyOnForms();
+
+        yield ImageField::new('image', 'Aperçu')
+            ->setBasePath('/uploads/articles')
+            ->onlyOnIndex();
+
+
+        yield CollectionField::new('images', 'Galerie (max 10)')
+            ->setEntryType(ArticleImageType::class)
+            ->setFormTypeOption('by_reference', false)
+            ->onlyOnForms();
 
         yield DateTimeField::new('createdAt', 'Créé le')->onlyOnIndex();
         yield DateTimeField::new('updatedAt', 'Mis à jour le')->onlyOnIndex();
