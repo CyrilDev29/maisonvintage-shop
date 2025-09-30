@@ -33,7 +33,7 @@ class PagesController extends AbstractController
         $articlesVendus = $articleRepository->findVendus();
 
         return $this->render('pages/victime_succes.html.twig', [
-            'articles' => $articlesVendus
+            'articles' => $articlesVendus,
         ]);
     }
 
@@ -45,8 +45,8 @@ class PagesController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            if ($form->get('website')->getData()) {
-                $this->addFlash('info', 'Formulaire ignoré.');
+            // Honeypot: si rempli, on ignore silencieusement
+            if ($form->has('website') && $form->get('website')->getData()) {
                 return $this->redirectToRoute('contact');
             }
 
@@ -60,13 +60,14 @@ class PagesController extends AbstractController
                 ->replyTo($data->getEmail() ?: $from)
                 ->htmlTemplate('emails/contact.html.twig')
                 ->context([
-                    'name'    => $data->getName(),
-                    'email'   => $data->getEmail(),
-                    'subject' => $data->getSubject(),
-                    'message' => $data->getMessage(),
+                    'name'       => $data->getName(),
+                    'from_email' => $data->getEmail(),
+                    'subject'    => $data->getSubject(),
+                    'message'    => $data->getMessage(),
                 ]);
 
             $mailer->send($email);
+
             $this->addFlash('success', 'Merci, votre message a bien été envoyé.');
             return $this->redirectToRoute('contact');
         }
