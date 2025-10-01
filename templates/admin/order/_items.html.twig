@@ -1,0 +1,33 @@
+<table class="table">
+    <thead>
+    <tr>
+        <th>Image</th>
+        <th>Produit</th>
+        <th>Prix unitaire</th>
+        <th>Quantité</th>
+        <th>Sous-total</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for item in field.value %}
+        {% set img = item.productImage %}
+        {% set is_abs = img is not empty and (img starts with 'http://' or img starts with 'https://' or img starts with '/') %}
+        <tr>
+            <td>
+                {% if img %}
+                    <img
+                        src="{{ is_abs ? img : asset(img) }}"
+                        alt="{{ item.productName }}"
+                        style="width:60px;height:60px;object-fit:cover;border-radius:4px;">
+                {% else %}
+                    <span class="text-muted">Pas d'image</span>
+                {% endif %}
+            </td>
+            <td>{{ item.productName }}</td>
+            <td>{{ item.unitPrice|number_format(2, ',', ' ') }} €</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.getLineTotal()|number_format(2, ',', ' ') }} €</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>

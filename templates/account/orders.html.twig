@@ -1,0 +1,60 @@
+{# templates/account/orders.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes commandes{% endblock %}
+
+{% block body %}
+    <div class="container my-4">
+        <h1 class="h4 mb-3">Mes commandes</h1>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="alert alert-{{ label }}" role="alert">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        {% if orders is empty %}
+            <div class="alert alert-info">
+                Vous n'avez pas encore de commande.
+            </div>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead class="table-dark">
+                    <tr>
+                        <th scope="col">Référence</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Statut</th>
+                        <th scope="col" class="text-end">Total</th>
+                        <th scope="col"></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for o in orders %}
+                        {% set statusVal = o.status.value %}
+                        {% set badgeClass =
+                            statusVal == 'En cours' ? 'bg-warning text-dark' :
+                            (statusVal == 'En préparation' ? 'bg-info text-dark' :
+                            (statusVal == 'Expédiée' ? 'bg-primary' :
+                            (statusVal == 'Annulée' ? 'bg-danger' :
+                            (statusVal == 'Livrée' ? 'bg-success' : 'bg-secondary'))))
+                        %}
+                        <tr>
+                            <td>{{ o.reference }}</td>
+                            <td>{{ o.createdAt|date('d/m/Y H:i') }}</td>
+                            <td><span class="badge {{ badgeClass }}">{{ statusVal }}</span></td>
+                            <td class="text-end">{{ o.total|number_format(2, ',', ' ') }} €</td>
+                            <td class="text-end">
+                                <a class="btn btn-sm btn-outline-primary"
+                                   href="{{ path('app_account_order_show', {id: o.id}) }}">
+                                    Détails
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
