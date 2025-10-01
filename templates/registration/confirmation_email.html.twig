@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Confirmez votre e-mail{% endblock %}
+
+{% block body %}
+    <section style="max-width:650px;margin:2rem auto;padding:1rem;">
+        <h1>Bienvenue {{ user.email }}</h1>
+        <p>Merci pour votre inscription sur MaisonVintage.</p>
+
+        <p>Pour activer votre compte, cliquez sur le bouton ci-dessous :</p>
+
+        <p style="margin:1rem 0;">
+            <a href="{{ signedUrl }}" style="display:inline-block;padding:.75rem 1.25rem;border-radius:.5rem;background:#111;color:#fff;text-decoration:none;">
+                Confirmer mon e-mail
+            </a>
+        </p>
+
+        {% if expiresAtMessageKey is defined %}
+            <p style="color:#666;font-size:.9rem;">
+                Ce lien {{ expiresAtMessageKey|trans(expiresAtMessageData, 'VerifyEmailBundle') }}.
+            </p>
+        {% endif %}
+
+        <p>À très vite,</p>
+        <p>L’équipe MaisonVintage</p>
+    </section>
+{% endblock %}

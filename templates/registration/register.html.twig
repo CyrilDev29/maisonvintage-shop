@@ -1,0 +1,211 @@
+{% extends 'base.html.twig' %}
+{% form_theme registrationForm 'bootstrap_5_layout.html.twig' %}
+
+{% block title %}Créer un compte{% endblock %}
+
+{% block body %}
+    <div class="container my-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-xl-7">
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+
+                        {# Flashes #}
+                        {% for label, messages in app.flashes %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ label }} mb-3" role="alert">{{ message }}</div>
+                            {% endfor %}
+                        {% endfor %}
+
+                        <h1 class="h4 mb-4">Créer un compte</h1>
+
+                        {{ form_start(registrationForm, { attr: { novalidate: 'novalidate', id: 'registrationForm' } }) }}
+                        {{ form_errors(registrationForm) }}
+
+                        <div class="row">
+                            <div class="col-md-6">{{ form_row(registrationForm.prenom) }}</div>
+                            <div class="col-md-6">{{ form_row(registrationForm.nom) }}</div>
+                        </div>
+
+                        {{ form_row(registrationForm.email) }}
+                        {{ form_row(registrationForm.telephone) }}
+                        {{ form_row(registrationForm.rue) }}
+
+                        <div class="row">
+                            <div class="col-md-4">{{ form_row(registrationForm.codePostal) }}</div>
+                            <div class="col-md-4">{{ form_row(registrationForm.ville) }}</div>
+                            <div class="col-md-4">{{ form_row(registrationForm.pays) }}</div>
+                        </div>
+
+                        {# Mot de passe 1 + œil (bouton cible via data-target pour éviter les IDs en dur) #}
+                        <div class="mb-3">
+                            {{ form_label(registrationForm.plainPassword.first) }}
+                            <div class="input-group">
+                                {{ form_widget(registrationForm.plainPassword.first, {
+                                    attr: { autocomplete: 'new-password' }
+                                }) }}
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-secondary"
+                                    id="togglePwd1"
+                                    aria-label="Afficher/masquer le mot de passe"
+                                    data-target="{{ registrationForm.plainPassword.first.vars.id }}"
+                                >👁</button>
+                            </div>
+                            {{ form_help(registrationForm.plainPassword.first) }}
+                            {{ form_errors(registrationForm.plainPassword.first) }}
+                        </div>
+
+                        {# Indicateur de force #}
+                        <div class="mb-3">
+                            <label class="form-label mb-1">Force du mot de passe</label>
+                            <div class="progress" role="progressbar" aria-label="Force du mot de passe" style="height: 8px;">
+                                <div id="pwdStrengthBar" class="progress-bar" style="width: 0%"></div>
+                            </div>
+                            <div id="pwdStrengthText" class="form-text mt-1"></div>
+                            <ul id="pwdCriteria" class="small text-muted mb-0 mt-1">
+                                <li id="cLen">Au moins 8 caractères</li>
+                                <li id="cUp">Au moins 1 majuscule</li>
+                                <li id="cSpec">Au moins 1 caractère spécial</li>
+                            </ul>
+                        </div>
+
+                        {# Mot de passe 2 + œil #}
+                        <div class="mb-3">
+                            {{ form_label(registrationForm.plainPassword.second) }}
+                            <div class="input-group">
+                                {{ form_widget(registrationForm.plainPassword.second, {
+                                    attr: { autocomplete: 'new-password' }
+                                }) }}
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-secondary"
+                                    id="togglePwd2"
+                                    aria-label="Afficher/masquer le mot de passe"
+                                    data-target="{{ registrationForm.plainPassword.second.vars.id }}"
+                                >👁</button>
+                            </div>
+                            {{ form_errors(registrationForm.plainPassword.second) }}
+                            <div id="pwdMatchMsg" class="form-text"></div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button class="btn btn-primary btn-lg" id="submitBtn" type="submit" disabled>Créer le compte</button>
+                        </div>
+                        {{ form_end(registrationForm) }}
+
+                        <p class="mt-3 mb-0">Déjà inscrit ? <a href="{{ path('app_login') }}">Se connecter</a></p>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# zxcvbn pour calculer la force du mot de passe (facultatif, on a un fallback si indispo) #}
+    <script src="https://cdn.jsdelivr.net/npm/zxcvbn/dist/zxcvbn.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Récupère les IDs réels générés par Symfony
+            const idPwd1 = '{{ registrationForm.plainPassword.first.vars.id }}';
+            const idPwd2 = '{{ registrationForm.plainPassword.second.vars.id }}';
+
+            const pwd1 = document.getElementById(idPwd1);
+            const pwd2 = document.getElementById(idPwd2);
+
+            const bar  = document.getElementById('pwdStrengthBar');
+            const txt  = document.getElementById('pwdStrengthText');
+            const cLen = document.getElementById('cLen');
+            const cUp  = document.getElementById('cUp');
+            const cSp  = document.getElementById('cSpec');
+            const matchMsg = document.getElementById('pwdMatchMsg');
+            const submitBtn = document.getElementById('submitBtn');
+
+            // Gestion des boutons "œil" via data-target (zéro ID en dur)
+            function bindToggle(btnId) {
+                const btn = document.getElementById(btnId);
+                if (!btn) return;
+                const targetId = btn.dataset.target;
+                const input = document.getElementById(targetId);
+                if (!input) return;
+
+                btn.addEventListener('click', function () {
+                    input.type = (input.type === 'password') ? 'text' : 'password';
+                });
+            }
+            bindToggle('togglePwd1');
+            bindToggle('togglePwd2');
+
+            // Politique minimale
+            function meetsPolicy(v) {
+                const len = v.length >= 8;
+                const up  = /[A-Z]/.test(v);
+                const sp  = /[^A-Za-z0-9]/.test(v);
+
+                cLen.style.color = len ? '#198754' : '';
+                cUp.style.color  = up  ? '#198754' : '';
+                cSp.style.color  = sp  ? '#198754' : '';
+
+                return { len, up, sp, ok: len && up && sp };
+            }
+
+            function updateStrength() {
+                if (!pwd1) return;
+                const v = pwd1.value || '';
+                const policy = meetsPolicy(v);
+
+                // Score zxcvbn si dispo, sinon fallback
+                let score = 0;
+                if (typeof zxcvbn === 'function' && v) {
+                    score = zxcvbn(v).score; // 0..4
+                } else {
+                    // Petit fallback basique : 0..4 en fonction des critères
+                    score = policy.ok ? Math.min(4, Math.floor(v.length / 4)) : 0;
+                }
+
+                const widths = ['10%', '25%', '50%', '75%', '100%'];
+                const width = widths[score] || '0%';
+                bar.style.width = v ? width : '0%';
+
+                bar.classList.remove('bg-danger','bg-warning','bg-success');
+                if (!v || score <= 1) bar.classList.add('bg-danger');
+                else if (score <= 3) bar.classList.add('bg-warning');
+                else bar.classList.add('bg-success');
+
+                let label = '';
+                if (!v) label = 'Saisissez un mot de passe.';
+                else if (!policy.ok) label = 'Les critères minimaux ne sont pas remplis.';
+                else label = ['Très faible','Faible','Moyen','Bon','Excellent'][score] || 'Moyen';
+                txt.textContent = label;
+
+                validate();
+            }
+
+            function validate() {
+                if (!pwd1 || !pwd2 || !submitBtn) return;
+
+                const v1 = pwd1.value || '';
+                const v2 = pwd2.value || '';
+                const policy = meetsPolicy(v1);
+                const match = v1.length > 0 && v1 === v2;
+
+                // feedback visuel
+                pwd2.classList.toggle('is-invalid', v2.length > 0 && !match);
+                pwd2.classList.toggle('is-valid', match);
+                if (matchMsg) {
+                    matchMsg.textContent = match ? '' : (v2.length ? 'Les deux mots de passe ne correspondent pas.' : '');
+                    matchMsg.className = 'form-text ' + (match ? '' : 'text-danger');
+                }
+
+                // active le bouton seulement si policy OK + match OK
+                submitBtn.disabled = !(policy.ok && match);
+            }
+
+            if (pwd1) pwd1.addEventListener('input', updateStrength);
+            if (pwd2) pwd2.addEventListener('input', validate);
+
+            updateStrength();
+            validate();
+        });
+    </script>
+{% endblock %}

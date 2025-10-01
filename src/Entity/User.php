@@ -4,11 +4,15 @@ namespace App\Entity;
 
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
+#[UniqueEntity(fields: ['email'], message: 'Cet e-mail est déjà utilisé.')]
+#[UniqueEntity(fields: ['telephone'], message: 'Ce numéro de téléphone est déjà utilisé.')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -17,92 +21,80 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?int $id = null;
 
     #[ORM\Column(length: 180)]
+    #[Assert\NotBlank(message: 'L’email est obligatoire.')]
+    #[Assert\Email(message: 'Email invalide.')]
     private ?string $email = null;
 
     /**
-     * @var list<string> The user roles
+     * @var list<string>
      */
     #[ORM\Column]
     private array $roles = [];
 
     /**
-     * @var string The hashed password
+     * @var string|null The hashed password
      */
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?string $password = null;
 
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
+    #[ORM\Column(length: 100)]
+    #[Assert\NotBlank(message: 'Le prénom est obligatoire.')]
+    private ?string $prenom = null;
 
-    public function getEmail(): ?string
-    {
-        return $this->email;
-    }
+    #[ORM\Column(length: 100)]
+    #[Assert\NotBlank(message: 'Le nom est obligatoire.')]
+    private ?string $nom = null;
 
-    public function setEmail(string $email): static
-    {
-        $this->email = $email;
+    #[ORM\Column(length: 20, unique: true)]
+    #[Assert\NotBlank(message: 'Le téléphone est obligatoire.')]
+    #[Assert\Length(min: 6, max: 20, minMessage: 'Téléphone trop court.')]
+    private ?string $telephone = null;
 
-        return $this;
-    }
+    #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'La rue est obligatoire.')]
+    private ?string $rue = null;
 
-    /**
-     * A visual identifier that represents this user.
-     *
-     * @see UserInterface
-     */
-    public function getUserIdentifier(): string
-    {
-        return (string) $this->email;
-    }
+    #[ORM\Column(length: 10)]
+    #[Assert\NotBlank(message: 'Le code postal est obligatoire.')]
+    private ?string $codePostal = null;
 
-    /**
-     * @see UserInterface
-     */
+    #[ORM\Column(length: 100)]
+    #[Assert\NotBlank(message: 'La ville est obligatoire.')]
+    private ?string $ville = null;
+
+    #[ORM\Column(length: 100)]
+    #[Assert\NotBlank(message: 'Le pays est obligatoire.')]
+    private ?string $pays = null;
+
+    #[ORM\Column(type: 'boolean')]
+    private bool $isVerified = false;
+
+    public function getId(): ?int { return $this->id; }
+
+    public function getEmail(): ?string { return $this->email; }
+    public function setEmail(string $email): static { $this->email = $email; return $this; }
+
+    public function getUserIdentifier(): string { return (string) $this->email; }
+
     public function getRoles(): array
     {
         $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
         $roles[] = 'ROLE_USER';
-
         return array_unique($roles);
     }
 
     /**
      * @param list<string> $roles
      */
-    public function setRoles(array $roles): static
-    {
-        $this->roles = $roles;
+    public function setRoles(array $roles): static { $this->roles = $roles; return $this; }
 
-        return $this;
-    }
+    public function getPassword(): ?string { return $this->password; }
+    public function setPassword(string $password): static { $this->password = $password; return $this; }
 
-    /**
-     * @see PasswordAuthenticatedUserInterface
-     */
-    public function getPassword(): ?string
-    {
-        return $this->password;
-    }
-
-    public function setPassword(string $password): static
-    {
-        $this->password = $password;
-
-        return $this;
-    }
-
-    /**
-     * Ensure the session doesn't contain actual password hashes by CRC32C-hashing them, as supported since Symfony 7.3.
-     */
     public function __serialize(): array
     {
         $data = (array) $this;
-        $data["\0".self::class."\0password"] = hash('crc32c', $this->password);
-
+        $data["\0".self::class."\0password"] = $this->password ? hash('crc32c', $this->password) : null;
         return $data;
     }
 
@@ -111,4 +103,35 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         // @deprecated, to be removed when upgrading to Symfony 8
     }
+
+    public function getPrenom(): ?string { return $this->prenom; }
+    public function setPrenom(string $prenom): static { $this->prenom = $prenom; return $this; }
+
+    public function getNom(): ?string { return $this->nom; }
+    public function setNom(string $nom): static { $this->nom = $nom; return $this; }
+
+    public function getTelephone(): ?string { return $this->telephone; }
+    public function setTelephone(string $telephone): static
+    {
+        // Normalise le numéro : garde un éventuel "+" en tête, enlève le reste des caractères non numériques
+        $normalized = preg_replace('/(?!^\+)\D+/', '', trim($telephone));
+        $this->telephone = $normalized ?? $telephone;
+
+        return $this;
+    }
+
+    public function getRue(): ?string { return $this->rue; }
+    public function setRue(string $rue): static { $this->rue = $rue; return $this; }
+
+    public function getCodePostal(): ?string { return $this->codePostal; }
+    public function setCodePostal(string $codePostal): static { $this->codePostal = $codePostal; return $this; }
+
+    public function getVille(): ?string { return $this->ville; }
+    public function setVille(string $ville): static { $this->ville = $ville; return $this; }
+
+    public function getPays(): ?string { return $this->pays; }
+    public function setPays(string $pays): static { $this->pays = $pays; return $this; }
+
+    public function isVerified(): bool { return $this->isVerified; }
+    public function setIsVerified(bool $isVerified): static { $this->isVerified = $isVerified; return $this; }
 }
