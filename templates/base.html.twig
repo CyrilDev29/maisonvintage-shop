@@ -65,14 +65,15 @@
                 </li>
             </ul>
 
-            <ul class="navbar-nav">
+            {# Panier + Auth #}
+            <ul class="navbar-nav ms-auto">
                 {% set _cart = app.session.get('cart') ?? {} %}
                 {% set _count = 0 %}
                 {% for _id, _qty in _cart %}
                     {% set _count = _count + _qty %}
                 {% endfor %}
 
-                <li class="nav-item">
+                <li class="nav-item me-2">
                     <a class="nav-link" href="{{ path('cart_show') }}">
                         🛒 Panier
                         {% if _count > 0 %}
@@ -80,6 +81,28 @@
                         {% endif %}
                     </a>
                 </li>
+
+                {% if app.user %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" id="navAccount" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Mon compte
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navAccount">
+                            <li><a class="dropdown-item" href="{{ path('app_account_profile') }}">Mes infos</a></li>
+                            <li><a class="dropdown-item" href="{{ path('app_account_password') }}">Mot de passe</a></li>
+                            <li><a class="dropdown-item" href="{{ path('app_account_orders') }}">Mes commandes</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{{ path('app_logout') }}">Se déconnecter</a></li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ path('app_login') }}">Se connecter</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ path('app_register') }}">Créer un compte</a>
+                    </li>
+                {% endif %}
             </ul>
         </div>
     </div>

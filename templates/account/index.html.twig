@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+{% block title %}Mon compte{% endblock %}
+{% block body %}
+    <div class="container">
+        <h1 class="h4 mb-3">Mon compte</h1>
+        <ul class="nav nav-tabs mb-3">
+            <li class="nav-item"><a class="nav-link" href="{{ path('app_account_profile') }}">Mes infos</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ path('app_account_password') }}">Mot de passe</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ path('app_account_orders') }}">Mes commandes</a></li>
+        </ul>
+        <p>Choisissez un onglet.</p>
+    </div>
+{% endblock %}

@@ -9,7 +9,6 @@ security:
                 class: App\Entity\User
                 property: email
 
-    # Optionnel mais utile : un admin hérite des droits user
     role_hierarchy:
         ROLE_ADMIN: [ROLE_USER]
 
@@ -24,10 +23,9 @@ security:
             custom_authenticator: App\Security\LoginFormAuthenticator
             user_checker: App\Security\UserChecker
 
-            # Anti brute-force (ajuste si besoin)
             login_throttling:
-                max_attempts: 5        # 5 tentatives avant ralentissement
-                interval: '1 minute'   # fenêtre de calcul
+                max_attempts: 5
+                interval: '1 minute'
 
             logout:
                 path: app_logout
@@ -35,19 +33,19 @@ security:
 
             remember_me:
                 secret: '%kernel.secret%'
-                lifetime: 604800 # 1 semaine
+                lifetime: 604800
                 path: /
-                # always_remember_me: true
 
     access_control:
         # accès public
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/register, roles: PUBLIC_ACCESS }
         - { path: ^/verify/email, roles: PUBLIC_ACCESS }
-        - { path: ^/verify/resend, roles: PUBLIC_ACCESS }   # renvoi d’email public
+        - { path: ^/verify/resend, roles: PUBLIC_ACCESS }
 
         # accès réservé aux utilisateurs connectés
-        - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/account, roles: ROLE_USER }   # <-- Mon compte (infos, MDP, commandes)
+        - { path: ^/profile, roles: ROLE_USER }   # (si tu as encore des pages /profile)
 
         # accès réservé aux administrateurs
         - { path: ^/admin, roles: ROLE_ADMIN }

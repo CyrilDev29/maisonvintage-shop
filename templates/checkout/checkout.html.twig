@@ -1,3 +1,4 @@
+{# templates/checkout/checkout.html.twig #}
 {% extends 'base.html.twig' %}
 {% block title %}Checkout — Maisonvintage{% endblock %}
 
@@ -18,8 +19,16 @@
             </thead>
             <tbody>
             {% for line in items %}
+                {% set _slug = line.article.slug ?? null %}
                 <tr>
-                    <td><a href="{{ path('article_show', {id: line.article.id}) }}">{{ line.article.titre }}</a></td>
+                    <td>
+                        {% if _slug is not empty %}
+                            <a href="{{ path('article_show', { slug: _slug }) }}">{{ line.article.titre }}</a>
+                        {% else %}
+                            {# fallback si jamais l'article n'a pas encore de slug #}
+                            <a href="{{ path('article_show', { id: line.article.id }) }}">{{ line.article.titre }}</a>
+                        {% endif %}
+                    </td>
                     <td class="text-end">{{ line.price|number_format(2, ',', ' ') }} €</td>
                     <td class="text-center">{{ line.qty }}</td>
                     <td class="text-end">{{ line.subtotal|number_format(2, ',', ' ') }} €</td>
@@ -34,7 +43,16 @@
             </tfoot>
         </table>
 
-        {# On mettra ici le formulaire d’adresse + bouton de confirmation dans une prochaine étape #}
-        <a href="{{ path('cart_show') }}" class="btn btn-outline-secondary">← Retour au panier</a>
+        <div class="d-flex justify-content-between mt-4">
+            <a href="{{ path('cart_show') }}" class="btn btn-outline-secondary">← Retour au panier</a>
+
+            {# Formulaire de validation de commande #}
+            <form method="post" action="{{ path('checkout_confirm') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('checkout_confirm') }}">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    ✅ Valider ma commande
+                </button>
+            </form>
+        </div>
     </section>
 {% endblock %}

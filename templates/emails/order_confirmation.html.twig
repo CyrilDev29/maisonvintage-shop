@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirmation de commande</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            padding: 20px;
+        }
+        .container {
+            background: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+        }
+        h2 {
+            color: #2c3e50;
+        }
+        .total {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background-color: #f1f1f1;
+        }
+        .status {
+            background: #e9ecef;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Merci pour votre commande, {{ user.prenom }} {{ user.nom }} !</h2>
+
+    <p>Votre commande <strong>{{ order.reference }}</strong> a bien été enregistrée.</p>
+    <p class="total">Montant total : {{ order.total|number_format(2, ',', ' ') }} €</p>
+
+    <h3>Détails de votre commande :</h3>
+    <table>
+        <thead>
+        <tr>
+            <th>Produit</th>
+            <th>Qté</th>
+            <th>Prix unitaire</th>
+            <th>Sous-total</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for item in order.items %}
+            <tr>
+                <td>{{ item.productName }}</td>
+                <td class="text-center">{{ item.quantity }}</td>
+                <td>{{ item.unitPrice }} €</td>
+                <td>{{ item.getLineTotal() }} €</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <p class="status">Statut actuel : <strong>{{ order.status.value }}</strong></p>
+
+    <p style="margin-top:20px;">Vous recevrez un email à chaque mise à jour de statut (préparation, expédition, etc.).</p>
+
+    <p>À bientôt,<br>L’équipe Maison Vintage</p>
+</div>
+</body>
+</html>
