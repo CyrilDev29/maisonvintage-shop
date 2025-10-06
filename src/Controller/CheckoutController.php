@@ -6,6 +6,7 @@ use App\Entity\Order;
 use App\Entity\OrderItem;
 use App\Enum\OrderStatus;
 use App\Repository\ArticleRepository;
+use App\Service\InvoiceService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -68,9 +69,11 @@ class CheckoutController extends AbstractController
         SessionInterface $session,
         ArticleRepository $articleRepository,
         EntityManagerInterface $em,
-        MailerInterface $mailer
+        MailerInterface $mailer,
+        InvoiceService $invoiceService
     ): Response {
         $this->denyAccessUnlessGranted('ROLE_USER');
+
         $token = $request->request->get('_token');
         if (!$this->isCsrfTokenValid('checkout_confirm', $token)) {
             $this->addFlash('danger', 'Jeton CSRF invalide. Merci de réessayer.');
@@ -136,23 +139,50 @@ class CheckoutController extends AbstractController
         $order->setReference('MV-' . date('Y') . '-' . str_pad((string)random_int(1, 999999), 6, '0', STR_PAD_LEFT));
 
         $em->persist($order);
-        $em->flush();
+        $em->flush(); // nécessaire pour avoir un ID/référence bien figée
+
+        // === FACTURE : générer une seule fois (client + copie vendeur), puis envoyer ===
+        $clientPdfPath = $invoiceService->generate($order, false);
+        $sellerPdfPath = $invoiceService->generate($order, true);
 
         $from = $this->getParameter('app.contact_from') ?? 'no-reply@maisonvintage.test';
-        $email = (new TemplatedEmail())
+
+        // Mail client AVEC facture (1er mail uniquement)
+        $emailClient = (new TemplatedEmail())
             ->from($from)
             ->to($user->getEmail())
             ->subject('Confirmation de votre commande ' . $order->getReference())
             ->htmlTemplate('emails/order_confirmation.html.twig')
             ->context([
                 'order' => $order,
-                'user' => $user,
-            ]);
-        $mailer->send($email);
+                'user'  => $user,
+            ])
+            ->attachFromPath($clientPdfPath, sprintf('Facture-%s.pdf', $order->getReference()));
 
+        $mailer->send($emailClient);
+
+        // Copie vendeur → provisoirement vers MailHog (même boîte que CONTACT_FROM)
+        $sellerTo = $this->getParameter('app.seller_email') ?? $from;
+        $emailSeller = (new TemplatedEmail())
+            ->from($from)
+            ->to($sellerTo)
+            ->subject('Copie facture — ' . $order->getReference())
+            ->html('<p>Copie vendeur à archiver.</p>')
+            ->attachFromPath($sellerPdfPath, sprintf('Facture-%s-copie.pdf', $order->getReference()));
+
+        $mailer->send($emailSeller);
+
+        // Idempotence : marquer comme envoyée pour ne pas renvoyer aux prochains mails de statut
+        if (method_exists($order, 'markInvoiceSent')) {
+            $order->markInvoiceSent();
+            $em->flush();
+        }
+        // === /FACTURE ===
+
+        // Nettoyage panier et message
         $session->remove('cart');
 
-        $this->addFlash('success', 'Votre commande a bien été enregistrée ! Un email de confirmation vous a été envoyé.');
+        $this->addFlash('success', 'Votre commande a bien été enregistrée ! Un email de confirmation vous a été envoyé avec votre facture.');
         return $this->redirectToRoute('app_account_orders');
     }
 }
