@@ -3,8 +3,8 @@
 # Files in the packages/ subdirectory configure your dependencies.
 
 parameters:
-    # expéditeur par défaut pour tous les e-mails de l’application
     app.contact_from: '%env(CONTACT_FROM)%'
+    app.seller_email: '%env(CONTACT_FROM)%'   # provisoire : copie vendeur vers MailHog
 
 services:
     _defaults:
@@ -13,6 +13,11 @@ services:
 
     App\:
         resource: '../src/'
+
+    # Service de génération de factures (HTML -> PDF)
+    App\Service\InvoiceService:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
 
     # Ajout explicite du listener de slug
     App\EntityListener\ArticleSlugListener:

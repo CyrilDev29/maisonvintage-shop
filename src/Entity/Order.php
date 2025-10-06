@@ -70,12 +70,17 @@ class Order
     #[ORM\Column(length: 100)]
     private string $pays;
 
+    /** Facture déjà envoyée par email au client ? (anti double-envoi) */
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $invoiceSent = false;
+
     public function __construct()
     {
         $this->items = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTime();
         $this->status = OrderStatus::EN_COURS;
+        $this->invoiceSent = false;
     }
 
     #[ORM\PreUpdate]
@@ -143,4 +148,7 @@ class Order
     public function getCodePostal(): string { return $this->codePostal; }
     public function getVille(): string { return $this->ville; }
     public function getPays(): string { return $this->pays; }
+
+    public function isInvoiceSent(): bool { return $this->invoiceSent; }
+    public function markInvoiceSent(): void { $this->invoiceSent = true; }
 }

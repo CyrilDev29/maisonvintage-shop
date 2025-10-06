@@ -22,6 +22,14 @@
             <strong>Total :</strong> {{ order.total|number_format(2, ',', ' ') }} €
         </div>
 
+        {# --- Bouton de téléchargement de la facture --- #}
+        <div class="mb-4">
+            <a href="{{ path('account_order_invoice', { id: order.id }) }}"
+               class="btn btn-outline-primary btn-sm">
+                📄 Télécharger la facture (PDF)
+            </a>
+        </div>
+
         <h2 class="h5 mt-4">Articles</h2>
         <div class="table-responsive">
             <table class="table table-bordered align-middle">
@@ -56,6 +64,8 @@
             ✉️ {{ order.user.email }}
         </p>
 
-        <a href="{{ path('app_account_orders') }}" class="btn btn-secondary mt-3">← Retour à mes commandes</a>
+        <a href="{{ path('app_account_orders') }}" class="btn btn-secondary mt-3">
+            ← Retour à mes commandes
+        </a>
     </div>
 {% endblock %}

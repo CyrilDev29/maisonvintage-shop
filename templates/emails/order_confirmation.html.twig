@@ -45,6 +45,15 @@
             margin-top: 10px;
             display: inline-block;
         }
+        .button {
+            display: inline-block;
+            padding: 10px 16px;
+            background-color: #2c3e50;
+            color: #fff !important;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
@@ -80,7 +89,16 @@
 
     <p style="margin-top:20px;">Vous recevrez un email à chaque mise à jour de statut (préparation, expédition, etc.).</p>
 
-    <p>À bientôt,<br>L’équipe Maison Vintage</p>
+    <!-- Nouveau bloc : lien vers la facture -->
+    <p style="margin-top:25px;">
+        Vous pouvez également télécharger votre facture à tout moment depuis votre espace client :
+        <br>
+        <a href="{{ url('account_order_invoice', { id: order.id }) }}" class="button">
+            Télécharger ma facture (PDF)
+        </a>
+    </p>
+
+    <p style="margin-top:25px;">À bientôt,<br>L’équipe Maison Vintage</p>
 </div>
 </body>
 </html>
