@@ -8,9 +8,10 @@
 
         <p class="text-muted">Connecté en tant que <strong>{{ app.user.userIdentifier }}</strong></p>
 
-        <table class="table">
+        <table class="table align-middle">
             <thead>
             <tr>
+                <th style="width:100px;">Photo</th>
                 <th>Article</th>
                 <th class="text-end">Prix</th>
                 <th class="text-center">Qté</th>
@@ -20,12 +21,21 @@
             <tbody>
             {% for line in items %}
                 {% set _slug = line.article.slug ?? null %}
+                {% set mainSrc = vich_uploader_asset(line.article, 'imageFile')
+                    ?? (line.article.images|length > 0
+                    ? vich_uploader_asset(line.article.images|first, 'file')
+                    : asset('images/placeholder.png')) %}
+
                 <tr>
+                    <td>
+                        <img src="{{ mainSrc }}"
+                             alt="{{ line.article.titre }}"
+                             style="width:80px;height:80px;object-fit:cover;border-radius:6px;">
+                    </td>
                     <td>
                         {% if _slug is not empty %}
                             <a href="{{ path('article_show', { slug: _slug }) }}">{{ line.article.titre }}</a>
                         {% else %}
-                            {# fallback si jamais l'article n'a pas encore de slug #}
                             <a href="{{ path('article_show', { id: line.article.id }) }}">{{ line.article.titre }}</a>
                         {% endif %}
                     </td>
@@ -37,7 +47,7 @@
             </tbody>
             <tfoot>
             <tr>
-                <th colspan="3" class="text-end">Total</th>
+                <th colspan="4" class="text-end">Total</th>
                 <th class="text-end">{{ total|number_format(2, ',', ' ') }} €</th>
             </tr>
             </tfoot>

@@ -1,3 +1,4 @@
+{# templates/pages/victime_succes.html.twig #}
 {% extends 'base.html.twig' %}
 
 {% block title %}Victime de son succès — Maison Vintage{% endblock %}
@@ -12,18 +13,45 @@
         {% else %}
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4 mt-2">
                 {% for article in articles %}
+                    {% set mainSrc = vich_uploader_asset(article, 'imageFile')
+                        ?? (article.images|length > 0
+                        ? vich_uploader_asset(article.images|first, 'file')
+                        : asset('images/placeholder.png')) %}
+
                     <div class="col">
-                        <div class="card h-100 border-0 shadow-sm">
-                            {% if article.image %}
-                                <img src="{{ asset('uploads/' ~ article.image) }}"
+                        <article class="card h-100 border-0 shadow-sm">
+                            <a href="{{ path('article_show', { slug: article.slug }) }}"
+                               style="text-decoration:none;color:inherit;">
+                                <img src="{{ mainSrc }}"
                                      class="card-img-top"
-                                     alt="{{ article.titre }}">
-                            {% endif %}
+                                     alt="{{ article.titre }}"
+                                     style="width:100%;height:240px;object-fit:cover;">
+                            </a>
+
                             <div class="card-body">
-                                <h5 class="card-title">{{ article.titre }}</h5>
+                                <h5 class="card-title mb-2">
+                                    <a href="{{ path('article_show', { slug: article.slug }) }}"
+                                       style="text-decoration:none;color:inherit;">
+                                        {{ article.titre }}
+                                    </a>
+                                </h5>
+
+                                {# Pas de prix ni achat ici #}
                                 <p class="card-text text-muted mb-0">Vendu</p>
+
+                                {% if article.images|length > 1 %}
+                                    <div class="d-flex gap-2 mt-2 flex-wrap">
+                                        {% for img in article.images|slice(0, 4) %}
+                                            {% set thumb = vich_uploader_asset(img, 'file') %}
+                                            {% if thumb %}
+                                                <img src="{{ thumb }}" alt="Aperçu {{ loop.index }}"
+                                                     style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #eee;">
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
                             </div>
-                        </div>
+                        </article>
                     </div>
                 {% endfor %}
             </div>
