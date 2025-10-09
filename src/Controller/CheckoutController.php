@@ -6,6 +6,7 @@ use App\Entity\Order;
 use App\Entity\OrderItem;
 use App\Enum\OrderStatus;
 use App\Repository\ArticleRepository;
+use App\Repository\AddressRepository;
 use App\Service\InvoiceService;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
@@ -22,8 +23,12 @@ class CheckoutController extends AbstractController
 {
     #[Route('/checkout', name: 'checkout', methods: ['GET'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function index(SessionInterface $session, ArticleRepository $articleRepository): Response
-    {
+    public function index(
+        SessionInterface $session,
+        ArticleRepository $articleRepository,
+        Request $request,
+        AddressRepository $addressRepo
+    ): Response {
         /** @var array<int,int> $cart */
         $cart = $session->get('cart', []);
         if (!$cart) {
@@ -77,9 +82,43 @@ class CheckoutController extends AbstractController
             return $this->redirectToRoute('cart_show');
         }
 
+        // === Adresses sélectionnées (session) ===
+        $user = $this->getUser();
+
+        // Livraison (obligatoire)
+        $selectedAddress = null;
+        $shippingId = $request->getSession()->get('checkout.address_id');
+        if ($shippingId && $user) {
+            $selectedAddress = $addressRepo->findOneBy([
+                'id'   => $shippingId,
+                'user' => $user,
+            ]);
+        }
+
+        // Facturation : même que livraison (par défaut) ou différente
+        $billingSame = (bool) $request->getSession()->get('checkout.billing_same', true);
+        $selectedBilling = null;
+        if (!$billingSame && $user) {
+            $billingId = $request->getSession()->get('checkout.billing_address_id');
+            if ($billingId) {
+                $selectedBilling = $addressRepo->findOneBy([
+                    'id'   => $billingId,
+                    'user' => $user,
+                ]);
+            }
+        }
+
+        // On peut confirmer si : adresse de livraison OK
+        // et (soit facturation = même, soit adresse de facturation différente choisie)
+        $canConfirm = (bool) $selectedAddress && ($billingSame || (bool) $selectedBilling);
+
         return $this->render('checkout/checkout.html.twig', [
-            'items' => $items,
-            'total' => $total,
+            'items'            => $items,
+            'total'            => $total,
+            'selectedAddress'  => $selectedAddress,  // livraison
+            'billingSame'      => $billingSame,
+            'selectedBilling'  => $selectedBilling,  // si différente
+            'canConfirm'       => $canConfirm,
         ]);
     }
 
@@ -91,7 +130,8 @@ class CheckoutController extends AbstractController
         ArticleRepository      $articleRepository,
         EntityManagerInterface $em,
         MailerInterface        $mailer,
-        InvoiceService         $invoiceService
+        InvoiceService         $invoiceService,
+        AddressRepository      $addressRepo
     ): Response
     {
         $this->denyAccessUnlessGranted('ROLE_USER');
@@ -109,7 +149,36 @@ class CheckoutController extends AbstractController
             return $this->redirectToRoute('cart_show');
         }
 
-        $user     = $this->getUser();
+        $user = $this->getUser();
+
+        // === Sélection d'adresses depuis la session ===
+        $shippingId  = $request->getSession()->get('checkout.address_id');
+        $billingSame = (bool) $request->getSession()->get('checkout.billing_same', true);
+        $billingId   = $request->getSession()->get('checkout.billing_address_id');
+
+        $shipping = null;
+        $billing  = null;
+
+        if ($shippingId) {
+            $shipping = $addressRepo->findOneBy(['id' => $shippingId, 'user' => $user]);
+        }
+        if (!$shipping) {
+            $this->addFlash('danger', 'Veuillez choisir une adresse de livraison avant de valider la commande.');
+            return $this->redirectToRoute('checkout');
+        }
+
+        if ($billingSame) {
+            $billing = $shipping;
+        } else {
+            if ($billingId) {
+                $billing = $addressRepo->findOneBy(['id' => $billingId, 'user' => $user]);
+            }
+            if (!$billing) {
+                $this->addFlash('danger', 'Veuillez choisir une adresse de facturation.');
+                return $this->redirectToRoute('checkout');
+            }
+        }
+
         $articles = $articleRepository->findBy(['id' => array_keys($cart)]);
 
         $conn = $em->getConnection();
@@ -121,7 +190,32 @@ class CheckoutController extends AbstractController
             $order = new Order();
             $order->setUser($user);
             $order->setStatus(OrderStatus::EN_COURS);
-            $order->setSnapshotFromUser($user);
+
+            // (optionnel) snapshot existant depuis User
+            if (method_exists($order, 'setSnapshotFromUser')) {
+                $order->setSnapshotFromUser($user);
+            }
+
+            // === NEW: snapshots d'adresses sur la commande ===
+            $order->setShippingSnapshot([
+                'fullName'   => $shipping->getFullName(),
+                'line1'      => $shipping->getLine1(),
+                'line2'      => $shipping->getLine2(),
+                'postalCode' => $shipping->getPostalCode(),
+                'city'       => $shipping->getCity(),
+                'country'    => $shipping->getCountry(),
+                'phone'      => $shipping->getPhone(), // facultatif (ne pas afficher si tu ne veux pas)
+            ]);
+
+            $order->setBillingSnapshot([
+                'fullName'   => $billing->getFullName(),
+                'line1'      => $billing->getLine1(),
+                'line2'      => $billing->getLine2(),
+                'postalCode' => $billing->getPostalCode(),
+                'city'       => $billing->getCity(),
+                'country'    => $billing->getCountry(),
+                'phone'      => $billing->getPhone(),
+            ]);
 
             foreach ($articles as $article) {
                 $qty = max(0, (int)($cart[$article->getId()] ?? 0));
@@ -135,14 +229,10 @@ class CheckoutController extends AbstractController
                 // Re-vérification du stock
                 $current = (int) $article->getQuantity();
                 if ($qty > $current) {
-                    // retirer la ligne du panier
                     unset($cart[$article->getId()]);
                     $session->set('cart', $cart);
 
-                    // message clair
                     $message = sprintf('Désolé, "%s" vient d’être vendu(e). Votre panier a été mis à jour.', $article->getTitre());
-
-                    // rollback + redirection (pas de render ici)
                     $conn->rollBack();
                     return $this->redirectToRoute('cart_show', ['e' => $message]);
                 }
@@ -222,7 +312,9 @@ class CheckoutController extends AbstractController
                 $em->flush();
             }
 
+            // Nettoyage panier
             $session->remove('cart');
+
             $this->addFlash('success', 'Votre commande a bien été enregistrée ! Un email de confirmation vous a été envoyé avec votre facture.');
             return $this->redirectToRoute('app_account_orders');
 
@@ -230,7 +322,6 @@ class CheckoutController extends AbstractController
             if ($conn->isTransactionActive()) {
                 $conn->rollBack();
             }
-            // passe par la redirection avec message
             return $this->redirectToRoute('cart_show', ['e' => $e->getMessage()]);
         }
     }

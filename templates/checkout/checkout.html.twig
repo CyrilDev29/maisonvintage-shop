@@ -8,6 +8,51 @@
 
         <p class="text-muted">Connecté en tant que <strong>{{ app.user.userIdentifier }}</strong></p>
 
+        {# Adresse de livraison #}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h2 class="h6 mb-2">Adresse de livraison</h2>
+
+                {% if selectedAddress %}
+                    <div>
+                        {{ selectedAddress.fullName }}<br>
+                        {{ selectedAddress.line1 }}{% if selectedAddress.line2 %}, {{ selectedAddress.line2 }}{% endif %}<br>
+                        {{ selectedAddress.postalCode }} {{ selectedAddress.city }} — {{ selectedAddress.country }}
+                    </div>
+                    <a class="btn btn-link p-0 mt-2" href="{{ path('checkout_address') }}">modifier</a>
+                {% else %}
+                    <p class="text-muted mb-2">Aucune adresse de livraison sélectionnée.</p>
+                    <a class="btn btn-primary btn-sm" href="{{ path('checkout_address') }}">choisir une adresse</a>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Adresse de facturation #}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h2 class="h6 mb-2">Adresse de facturation</h2>
+
+                {% if billingSame and selectedAddress %}
+                    <div>
+                        {{ selectedAddress.fullName }}<br>
+                        {{ selectedAddress.line1 }}{% if selectedAddress.line2 %}, {{ selectedAddress.line2 }}{% endif %}<br>
+                        {{ selectedAddress.postalCode }} {{ selectedAddress.city }} — {{ selectedAddress.country }}
+                    </div>
+                    <a class="btn btn-link p-0 mt-2" href="{{ path('checkout_address') }}">changer</a>
+                {% elseif selectedBilling %}
+                    <div>
+                        {{ selectedBilling.fullName }}<br>
+                        {{ selectedBilling.line1 }}{% if selectedBilling.line2 %}, {{ selectedBilling.line2 }}{% endif %}<br>
+                        {{ selectedBilling.postalCode }} {{ selectedBilling.city }} — {{ selectedBilling.country }}
+                    </div>
+                    <a class="btn btn-link p-0 mt-2" href="{{ path('checkout_address') }}">changer</a>
+                {% else %}
+                    <p class="text-muted mb-2">Aucune adresse de facturation sélectionnée.</p>
+                    <a class="btn btn-primary btn-sm" href="{{ path('checkout_address') }}">choisir une adresse</a>
+                {% endif %}
+            </div>
+        </div>
+
         <table class="table align-middle">
             <thead>
             <tr>
@@ -56,13 +101,27 @@
         <div class="d-flex justify-content-between mt-4">
             <a href="{{ path('cart_show') }}" class="btn btn-outline-secondary">← Retour au panier</a>
 
-            {# Formulaire de validation de commande #}
-            <form method="post" action="{{ path('checkout_confirm') }}">
-                <input type="hidden" name="_token" value="{{ csrf_token('checkout_confirm') }}">
-                <button type="submit" class="btn btn-primary btn-lg">
-                    ✅ Valider ma commande
-                </button>
-            </form>
+            {% if canConfirm %}
+                <form method="post" action="{{ path('checkout_confirm') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('checkout_confirm') }}">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        ✅ Valider ma commande
+                    </button>
+                </form>
+            {% else %}
+                <div class="text-end">
+                    <div class="alert alert-warning py-2 px-3 mb-2">
+                        {% if not selectedAddress %}
+                            Veuillez choisir une adresse de livraison pour continuer.
+                        {% elseif not billingSame and not selectedBilling %}
+                            Veuillez choisir une adresse de facturation pour continuer.
+                        {% else %}
+                            Informations manquantes pour finaliser la commande.
+                        {% endif %}
+                    </div>
+                    <a class="btn btn-primary" href="{{ path('checkout_address') }}">Choisir une adresse</a>
+                </div>
+            {% endif %}
         </div>
     </section>
 {% endblock %}

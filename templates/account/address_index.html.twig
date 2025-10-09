@@ -1,0 +1,38 @@
+{% extends 'base.html.twig' %}
+{% block title %}Mes adresses{% endblock %}
+
+{% block body %}
+    <section class="container" style="max-width:900px;margin:2rem auto;padding:0 1rem;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1 class="h4 m-0">Mes adresses</h1>
+            <a href="{{ path('account_address_new') }}" class="btn btn-primary">Ajouter une adresse</a>
+        </div>
+
+        {% if addresses is empty %}
+            <div class="alert alert-info">Aucune adresse enregistrée pour le moment.</div>
+        {% else %}
+            <div class="vstack gap-3">
+                {% for a in addresses %}
+                    <div class="card">
+                        <div class="card-body d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>{{ a.fullName }}</strong><br>
+                                {{ a.line1 }}{% if a.line2 %}, {{ a.line2 }}{% endif %}<br>
+                                {{ a.postalCode }} {{ a.city }} — {{ a.country }}
+                                {% if a.phone %}<br><small class="text-muted">Tel : {{ a.phone }}</small>{% endif %}
+                            </div>
+                            <div class="text-end">
+                                <a href="{{ path('account_address_edit', {id: a.id}) }}" class="btn btn-sm btn-outline-secondary">Modifier</a>
+                                <form method="post" action="{{ path('account_address_delete', {id: a.id}) }}"
+                                      class="d-inline" onsubmit="return confirm('Supprimer cette adresse ?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('del_addr_'~a.id) }}">
+                                    <button class="btn btn-sm btn-outline-danger">Supprimer</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

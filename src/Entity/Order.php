@@ -48,7 +48,11 @@ class Order
     #[ORM\OneToMany(mappedBy: 'order', targetEntity: OrderItem::class, cascade: ['persist'], orphanRemoval: true)]
     private Collection $items;
 
-    /** Snapshot adresse (pour garder l’adresse même si l’utilisateur la change après) */
+    /**
+     * --- SNAPSHOT HISTORIQUE (compat) ---
+     * Ces champs reprennent l’adresse (profil) au moment de la commande.
+     * Conservés pour ne rien casser si déjà utilisés dans tes PDFs / vues.
+     */
     #[ORM\Column(length: 100)]
     private string $prenom;
 
@@ -69,6 +73,17 @@ class Order
 
     #[ORM\Column(length: 100)]
     private string $pays;
+
+    /**
+     * --- NOUVEAU : Snapshots d’adresses structurés (JSON) ---
+     * Copie exacte des adresses choisies (livraison/facturation) lors du checkout.
+     * Clés usuelles: fullName, line1, line2, postalCode, city, country, phone (optionnel)
+     */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $shippingSnapshot = null;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $billingSnapshot = null;
 
     /** Facture déjà envoyée par email au client ? (anti double-envoi) */
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
@@ -128,19 +143,24 @@ class Order
         return $this;
     }
 
-    // snapshot adresse au moment de la commande
+    /**
+     * Snapshot “historique” depuis le profil User (compat).
+     * NOTE: aujourd’hui tu utilises plutôt shippingSnapshot / billingSnapshot
+     * au moment du confirm. On garde ceci pour ne rien casser.
+     */
     public function setSnapshotFromUser(User $u): static
     {
-        $this->prenom = (string) $u->getPrenom();
-        $this->nom = (string) $u->getNom();
-        $this->telephone = (string) $u->getTelephone();
-        $this->rue = (string) $u->getRue();
+        $this->prenom     = (string) $u->getPrenom();
+        $this->nom        = (string) $u->getNom();
+        $this->telephone  = (string) $u->getTelephone();
+        $this->rue        = (string) $u->getRue();
         $this->codePostal = (string) $u->getCodePostal();
-        $this->ville = (string) $u->getVille();
-        $this->pays = (string) $u->getPays();
+        $this->ville      = (string) $u->getVille();
+        $this->pays       = (string) $u->getPays();
         return $this;
     }
 
+    // --- Accesseurs des champs historiques ---
     public function getPrenom(): string { return $this->prenom; }
     public function getNom(): string { return $this->nom; }
     public function getTelephone(): string { return $this->telephone; }
@@ -149,6 +169,30 @@ class Order
     public function getVille(): string { return $this->ville; }
     public function getPays(): string { return $this->pays; }
 
+    // --- Snapshots JSON (nouveau modèle) ---
+    public function getShippingSnapshot(): ?array
+    {
+        return $this->shippingSnapshot;
+    }
+
+    public function setShippingSnapshot(?array $snapshot): self
+    {
+        $this->shippingSnapshot = $snapshot;
+        return $this;
+    }
+
+    public function getBillingSnapshot(): ?array
+    {
+        return $this->billingSnapshot;
+    }
+
+    public function setBillingSnapshot(?array $snapshot): self
+    {
+        $this->billingSnapshot = $snapshot;
+        return $this;
+    }
+
+    // --- Facture envoyée ---
     public function isInvoiceSent(): bool { return $this->invoiceSent; }
     public function markInvoiceSent(): void { $this->invoiceSent = true; }
 }
