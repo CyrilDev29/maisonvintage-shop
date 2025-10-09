@@ -1,0 +1,15 @@
+{# Usage:
+   {% include '_partials/address_block.html.twig' with { a: order.shippingSnapshot } %}
+   Accepte un ARRAY (snapshot) ou un objet Address.
+#}
+{% set is_array = a is iterable and a is not object %}
+{% set fullName   = is_array ? a.fullName   : a.fullName %}
+{% set line1      = is_array ? a.line1      : a.line1 %}
+{% set line2      = is_array ? a.line2      : a.line2 %}
+{% set postalCode = is_array ? a.postalCode : a.postalCode %}
+{% set city       = is_array ? a.city       : a.city %}
+{% set country    = is_array ? a.country    : a.country %}
+
+<strong>{{ fullName }}</strong><br>
+{{ line1 }}{% if line2 %}, {{ line2 }}{% endif %}<br>
+{{ postalCode }} {{ city }} — {{ country }}
