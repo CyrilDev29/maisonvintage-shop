@@ -7,6 +7,7 @@ use App\Entity\OrderItem;
 use App\Enum\OrderStatus;
 use App\Repository\ArticleRepository;
 use App\Service\InvoiceService;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,8 +17,6 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
-use Doctrine\DBAL\LockMode;
-
 
 class CheckoutController extends AbstractController
 {
@@ -27,32 +26,50 @@ class CheckoutController extends AbstractController
     {
         /** @var array<int,int> $cart */
         $cart = $session->get('cart', []);
-
         if (!$cart) {
             $this->addFlash('info', 'Votre panier est vide.');
             return $this->redirectToRoute('cart_show');
         }
 
-        $items = [];
-        $total = 0.0;
+        $items    = [];
+        $total    = 0.0;
+        $adjusted = false;
 
         $articles = $articleRepository->findBy(['id' => array_keys($cart)]);
         foreach ($articles as $article) {
-            $qty = max(0, (int)($cart[$article->getId()] ?? 0));
-            if ($qty === 0) {
+            $wanted = max(0, (int)($cart[$article->getId()] ?? 0));
+            if ($wanted === 0) {
                 continue;
             }
 
-            $price = (float)$article->getPrix();
+            $stock = max(0, (int) $article->getQuantity());
+            if ($stock === 0) {
+                unset($cart[$article->getId()]);
+                $adjusted = true;
+                continue;
+            }
+
+            $qty = min($wanted, $stock);
+            if ($qty !== $wanted) {
+                $cart[$article->getId()] = $qty;
+                $adjusted = true;
+            }
+
+            $price    = (float) $article->getPrix();
             $subtotal = $price * $qty;
-            $total += $subtotal;
+            $total   += $subtotal;
 
             $items[] = [
-                'article' => $article,
-                'qty' => $qty,
-                'price' => $price,
+                'article'  => $article,
+                'qty'      => $qty,
+                'price'    => $price,
                 'subtotal' => $subtotal,
             ];
+        }
+
+        if ($adjusted) {
+            $session->set('cart', $cart);
+            $this->addFlash('info', 'Les quantités ont été ajustées en fonction du stock disponible.');
         }
 
         if (!$items) {
@@ -92,9 +109,8 @@ class CheckoutController extends AbstractController
             return $this->redirectToRoute('cart_show');
         }
 
-        $user = $this->getUser();
+        $user     = $this->getUser();
         $articles = $articleRepository->findBy(['id' => array_keys($cart)]);
-
 
         $conn = $em->getConnection();
         $conn->beginTransaction();
@@ -113,44 +129,47 @@ class CheckoutController extends AbstractController
                     continue;
                 }
 
-                // 🔒 Verrou pessimiste sur la ligne Article
+                // Verrou pessimiste
                 $em->lock($article, LockMode::PESSIMISTIC_WRITE);
 
-                //  Re-vérification du stock en base
-                $current = (int)$article->getQuantity();
+                // Re-vérification du stock
+                $current = (int) $article->getQuantity();
                 if ($qty > $current) {
-                    throw new \RuntimeException(sprintf(
-                        'Stock insuffisant pour "%s" (demandé: %d, disponible: %d).',
-                        $article->getTitre(),
-                        $qty,
-                        $current
-                    ));
+                    // retirer la ligne du panier
+                    unset($cart[$article->getId()]);
+                    $session->set('cart', $cart);
+
+                    // message clair
+                    $message = sprintf('Désolé, "%s" vient d’être vendu(e). Votre panier a été mis à jour.', $article->getTitre());
+
+                    // rollback + redirection (pas de render ici)
+                    $conn->rollBack();
+                    return $this->redirectToRoute('cart_show', ['e' => $message]);
                 }
 
-                // ➖ Décrémenter le stock
+                // décrémentation
                 $article->setQuantity($current - $qty);
-                // ( @PreUpdate mettra updatedAt, et quantity=0 fera apparaître l’article en "Victime de son succès")
 
-                // Création de la ligne de commande (snapshot)
-                $price = (float)$article->getPrix();
+                // snapshot de ligne
+                $price    = (float) $article->getPrix();
                 $subtotal = $price * $qty;
-                $total += $subtotal;
+                $total   += $subtotal;
 
                 $item = new OrderItem();
                 $item->setProductName($article->getTitre());
                 $item->setUnitPrice(number_format($price, 2, '.', ''));
                 $item->setQuantity($qty);
 
-                // Snapshot image robuste (reprend ta logique)
+                // image snapshot
                 $img = null;
                 if (method_exists($article, 'getImageUrl') && $article->getImageUrl()) {
                     $img = $article->getImageUrl();
                 } elseif (method_exists($article, 'getImagePath') && $article->getImagePath()) {
                     $img = $article->getImagePath();
                 } elseif (method_exists($article, 'getImageName') && $article->getImageName()) {
-                    $img = 'uploads/articles/' . ltrim((string)$article->getImageName(), '/');
+                    $img = 'uploads/articles/' . ltrim((string) $article->getImageName(), '/');
                 } elseif (method_exists($article, 'getImage') && $article->getImage()) {
-                    $val = (string)$article->getImage();
+                    $val = (string) $article->getImage();
                     if (preg_match('#^https?://#i', $val) || str_starts_with($val, '/')) {
                         $img = $val;
                     } else {
@@ -163,19 +182,18 @@ class CheckoutController extends AbstractController
             }
 
             if ($order->getItems()->count() === 0) {
-                throw new \RuntimeException('Impossible de créer la commande : panier vide.');
+                $conn->rollBack();
+                return $this->redirectToRoute('cart_show', ['e' => 'Votre panier est vide.']);
             }
 
             $order->setTotal(number_format($total, 2, '.', ''));
             $order->setReference('MV-' . date('Y') . '-' . str_pad((string)random_int(1, 999999), 6, '0', STR_PAD_LEFT));
 
             $em->persist($order);
-            $em->flush(); // flush  pour figer l’ID commande + décrémentation stock
-
-
+            $em->flush();
             $conn->commit();
 
-            // === FACTURE + EMAILS (inchangé) ===
+            // === FACTURES + EMAILS ===
             $clientPdfPath = $invoiceService->generate($order, false);
             $sellerPdfPath = $invoiceService->generate($order, true);
 
@@ -203,21 +221,17 @@ class CheckoutController extends AbstractController
                 $order->markInvoiceSent();
                 $em->flush();
             }
-            // === /FACTURE ===
 
-            // Nettoyage panier
             $session->remove('cart');
-
             $this->addFlash('success', 'Votre commande a bien été enregistrée ! Un email de confirmation vous a été envoyé avec votre facture.');
             return $this->redirectToRoute('app_account_orders');
 
         } catch (\Throwable $e) {
-            // Rollback si problème de stock ou autre
             if ($conn->isTransactionActive()) {
                 $conn->rollBack();
             }
-            $this->addFlash('danger', $e->getMessage());
-            return $this->redirectToRoute('cart_show');
+            // passe par la redirection avec message
+            return $this->redirectToRoute('cart_show', ['e' => $e->getMessage()]);
         }
     }
 }
