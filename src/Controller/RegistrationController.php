@@ -19,7 +19,7 @@ class RegistrationController extends AbstractController
 {
     public function __construct(private EmailVerifier $emailVerifier) {}
 
-    #[Route('/register', name: 'app_register')]
+    #[Route('/register', name: 'app_register', methods: ['GET','POST'])]
     public function register(
         Request $request,
         EntityManagerInterface $em,
@@ -31,16 +31,16 @@ class RegistrationController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-
+            // Hash + rôles + vérification e-mail
             $hashed = $hasher->hashPassword($user, $form->get('plainPassword')->getData());
             $user->setPassword($hashed);
             $user->setRoles(['ROLE_USER']);
-            $user->setIsVerified(false); // on désactive par défaut
+            $user->setIsVerified(false);
 
             $em->persist($user);
             $em->flush();
 
-            // envoi de l’e-mail de confirmation
+            // Envoi de l’e-mail de confirmation
             $email = (new TemplatedEmail())
                 ->from(new Address($_ENV['CONTACT_FROM'] ?? 'no-reply@maisonvintage.test', 'MaisonVintage'))
                 ->to($user->getEmail())
@@ -51,12 +51,18 @@ class RegistrationController extends AbstractController
 
             $this->addFlash('success', 'Un e-mail de confirmation vous a été envoyé. Veuillez vérifier votre boîte mail.');
 
-            return $this->redirectToRoute('app_login');
+            //  Turbo-friendly redirection explicite en 303
+            return $this->redirectToRoute('app_login', [], Response::HTTP_SEE_OTHER);
         }
+
+        // Turbo-friendly  422 si soumis mais invalide, 200 sinon
+        $status = ($form->isSubmitted() && !$form->isValid())
+            ? Response::HTTP_UNPROCESSABLE_ENTITY   // 422
+            : Response::HTTP_OK;                     // 200
 
         return $this->render('registration/register.html.twig', [
             'registrationForm' => $form->createView(),
-        ]);
+        ], new Response(status: $status));
     }
 
     #[Route('/verify/email', name: 'app_verify_email')]
@@ -99,8 +105,9 @@ class RegistrationController extends AbstractController
 
         /** @var User|null $user */
         $user = $em->getRepository(User::class)->findOneBy(['email' => $emailValue]);
+
+        // Réponse générique pour ne pas divulguer l’existence d’un compte
         if (!$user) {
-            // On ne révèle pas que l'email n’existe pas → message générique
             $this->addFlash('success', 'Si un compte existe, un nouvel e-mail de vérification a été envoyé.');
             return $this->redirectToRoute('app_login');
         }
@@ -110,9 +117,9 @@ class RegistrationController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
 
-        // Renvoyer l’e-mail
-        $mail = (new \Symfony\Bridge\Twig\Mime\TemplatedEmail())
-            ->from(new \Symfony\Component\Mime\Address($_ENV['CONTACT_FROM'] ?? 'no-reply@maisonvintage.test', 'MaisonVintage'))
+        // Renvoi de l’e-mail de vérification
+        $mail = (new TemplatedEmail())
+            ->from(new Address($_ENV['CONTACT_FROM'] ?? 'no-reply@maisonvintage.test', 'MaisonVintage'))
             ->to($user->getEmail())
             ->subject('Confirmez votre adresse e-mail')
             ->htmlTemplate('registration/confirmation_email.html.twig');
@@ -122,5 +129,4 @@ class RegistrationController extends AbstractController
         $this->addFlash('success', 'Un nouvel e-mail de vérification a été envoyé. Merci de vérifier votre boîte mail.');
         return $this->redirectToRoute('app_login');
     }
-
 }

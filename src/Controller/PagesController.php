@@ -45,7 +45,7 @@ class PagesController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // Honeypot: si rempli, on ignore silencieusement
+            // Honeypot : si rempli, on ignore silencieusement
             if ($form->has('website') && $form->get('website')->getData()) {
                 return $this->redirectToRoute('contact');
             }
@@ -56,7 +56,7 @@ class PagesController extends AbstractController
             $email = (new TemplatedEmail())
                 ->from(new Address($from, 'Maison Vintage'))
                 ->to($to)
-                ->subject('Contact — '.$data->getSubject())
+                ->subject('Contact — ' . $data->getSubject())
                 ->replyTo($data->getEmail() ?: $from)
                 ->htmlTemplate('emails/contact.html.twig')
                 ->context([
@@ -75,11 +75,5 @@ class PagesController extends AbstractController
         return $this->render('pages/contact.html.twig', [
             'form' => $form->createView(),
         ]);
-    }
-
-    #[Route('/panier', name: 'cart_index')]
-    public function cart(): Response
-    {
-        return $this->render('pages/cart.html.twig');
     }
 }
