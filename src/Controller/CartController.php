@@ -48,8 +48,15 @@ class CartController extends AbstractController
         int $id,
         Request $request,
         SessionInterface $session,
-        \App\Repository\ArticleRepository $articleRepository
+        ArticleRepository $articleRepository
     ): Response {
+        // ✅ CSRF sur ajout au panier
+        $token = (string) $request->request->get('_token', '');
+        if (!$this->isCsrfTokenValid('cart_add_'.$id, $token)) {
+            $this->addFlash('danger', 'Action refusée (sécurité).');
+            return $this->redirectToRoute('cart_show');
+        }
+
         $qtyToAdd = max(1, (int) $request->request->get('qty', 1));
 
         $article = $articleRepository->find($id);
@@ -76,11 +83,14 @@ class CartController extends AbstractController
         $session->set('cart', $cart);
 
         if ($added > 0) {
-            // Exemple: "2 ajoutés (stock max: 5)"
-            $this->addFlash('success', sprintf('%d article%s ajouté%s au panier (stock max: %d).',
-                $added, $added > 1 ? 's' : '', $added > 1 ? 's' : '', $stock));
+            $this->addFlash('success', sprintf(
+                '%d article%s ajouté%s au panier (stock max: %d).',
+                $added,
+                $added > 1 ? 's' : '',
+                $added > 1 ? 's' : '',
+                $stock
+            ));
         } else {
-            // Rien ajouté car déjà au max
             $this->addFlash('info', 'Quantité maximale déjà atteinte pour cet article.');
         }
 
@@ -88,8 +98,14 @@ class CartController extends AbstractController
     }
 
     #[Route('/panier/augmenter/{id}', name: 'cart_inc', methods: ['POST'])]
-    public function inc(int $id, SessionInterface $session, ArticleRepository $articleRepository): Response
+    public function inc(int $id, Request $request, SessionInterface $session, ArticleRepository $articleRepository): Response
     {
+        $token = (string) $request->request->get('_token', '');
+        if (!$this->isCsrfTokenValid('cart_inc_'.$id, $token)) {
+            $this->addFlash('danger', 'Action refusée (sécurité).');
+            return $this->redirectToRoute('cart_show');
+        }
+
         /** @var array<int,int> $cart */
         $cart = $session->get('cart', []);
 
@@ -119,8 +135,14 @@ class CartController extends AbstractController
     }
 
     #[Route('/panier/diminuer/{id}', name: 'cart_dec', methods: ['POST'])]
-    public function dec(int $id, SessionInterface $session): Response
+    public function dec(int $id, Request $request, SessionInterface $session): Response
     {
+        $token = (string) $request->request->get('_token', '');
+        if (!$this->isCsrfTokenValid('cart_dec_'.$id, $token)) {
+            $this->addFlash('danger', 'Action refusée (sécurité).');
+            return $this->redirectToRoute('cart_show');
+        }
+
         /** @var array<int,int> $cart */
         $cart = $session->get('cart', []);
 
@@ -141,10 +163,15 @@ class CartController extends AbstractController
         return $this->redirectToRoute('cart_show');
     }
 
-
     #[Route('/panier/supprimer/{id}', name: 'cart_remove', methods: ['POST'])]
-    public function remove(int $id, SessionInterface $session): Response
+    public function remove(int $id, Request $request, SessionInterface $session): Response
     {
+        $token = (string) $request->request->get('_token', '');
+        if (!$this->isCsrfTokenValid('cart_remove_'.$id, $token)) {
+            $this->addFlash('danger', 'Action refusée (sécurité).');
+            return $this->redirectToRoute('cart_show');
+        }
+
         /** @var array<int,int> $cart */
         $cart = $session->get('cart', []);
         unset($cart[$id]);
@@ -154,8 +181,14 @@ class CartController extends AbstractController
     }
 
     #[Route('/panier/vider', name: 'cart_clear', methods: ['POST'])]
-    public function clear(SessionInterface $session): Response
+    public function clear(Request $request, SessionInterface $session): Response
     {
+        $token = (string) $request->request->get('_token', '');
+        if (!$this->isCsrfTokenValid('cart_clear', $token)) {
+            $this->addFlash('danger', 'Action refusée (sécurité).');
+            return $this->redirectToRoute('cart_show');
+        }
+
         $session->remove('cart');
         $this->addFlash('info', 'Panier vidé.');
         return $this->redirectToRoute('cart_show');

@@ -1,0 +1,52 @@
+{# templates/reset_password/email.html.twig #}
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Réinitialisation de votre mot de passe</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body style="margin:0;padding:0;background:#f6f7fb;">
+<table role="presentation" style="width:100%;border-collapse:collapse;background:#f6f7fb;">
+    <tr>
+        <td align="center" style="padding:24px;">
+            <table role="presentation" style="width:100%;max-width:560px;border-collapse:collapse;background:#ffffff;border:1px solid #e9ecef;border-radius:8px;">
+                <tr>
+                    <td style="padding:20px 24px;border-bottom:1px solid #e9ecef;">
+                        <h1 style="margin:0;font-size:18px;font-weight:700;color:#222;">Maison Vintage</h1>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:24px;">
+                        <p style="margin:0 0 12px 0;color:#333;">Bonjour,</p>
+                        <p style="margin:0 0 16px 0;color:#333;">
+                            Vous avez demandé la réinitialisation de votre mot de passe.
+                            Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe.
+                        </p>
+
+                        <p style="margin:24px 0;" align="center">
+                            <a href="{{ url('app_reset_password', { token: resetToken.token }) }}"
+                               style="display:inline-block;padding:12px 18px;background:#222;color:#fff;text-decoration:none;border-radius:6px;">
+                                Réinitialiser mon mot de passe
+                            </a>
+                        </p>
+
+                        <p style="margin:0 0 8px 0;color:#555;font-size:14px;">
+                            Ce lien est valable jusqu’au {{ resetToken.expiresAt|date('d/m/Y H:i', 'Europe/Paris') }}.
+                        </p>
+                        <p style="margin:0;color:#888;font-size:13px;">
+                            Si vous n’êtes pas à l’origine de cette demande, ignorez simplement cet e-mail.
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:16px 24px;border-top:1px solid #e9ecef;color:#999;font-size:12px;">
+                        &copy; {{ "now"|date("Y") }} Maison Vintage — Tous droits réservés
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

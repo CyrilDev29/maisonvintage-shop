@@ -1,0 +1,76 @@
+{% extends 'base.html.twig' %}
+{% block title %}Nouveau mot de passe — MaisonVintage{% endblock %}
+
+{% block body %}
+    <section class="container" style="max-width:560px;margin:2rem auto;padding:0 1rem;">
+        <h1 class="h4 mb-3">Définir un nouveau mot de passe</h1>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="alert alert-{{ label }}" role="alert">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        <form method="post" action="{{ path('app_reset_password') }}">
+            <div class="mb-3">
+                <label for="plainPassword" class="form-label">Nouveau mot de passe</label>
+                <div class="input-group">
+                    <input
+                        type="password"
+                        id="plainPassword"
+                        name="plainPassword"
+                        required
+                        autocomplete="new-password"
+                        class="form-control"
+                        minlength="8"
+                    >
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        id="togglePlainPwd"
+                        aria-label="Afficher/masquer le mot de passe"
+                        data-target="plainPassword"
+                    >👁</button>
+                </div>
+                <div class="form-text">Minimum 8 caractères.</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="confirmPassword" class="form-label">Confirmer le mot de passe</label>
+                <div class="input-group">
+                    <input
+                        type="password"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        required
+                        autocomplete="new-password"
+                        class="form-control"
+                        minlength="8"
+                    >
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        id="toggleConfirmPwd"
+                        aria-label="Afficher/masquer la confirmation"
+                        data-target="confirmPassword"
+                    >👁</button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 mt-3">Enregistrer le nouveau mot de passe</button>
+        </form>
+    </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('[id^="toggle"]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const input = document.getElementById(btn.dataset.target);
+                    if (input) {
+                        input.type = (input.type === 'password') ? 'text' : 'password';
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}
