@@ -16,6 +16,7 @@
                             {# IMPORTANT: pas de forms imbriqués ! #}
                             <form id="shipping-form" method="post" action="{{ path('checkout_address') }}">
                                 <input type="hidden" name="action" value="select_shipping">
+                                <input type="hidden" name="_token" value="{{ csrf_token('checkout_address_select_shipping') }}">
                                 <div class="vstack gap-2">
                                     {% for a in addresses %}
                                         <label class="border rounded p-2 d-flex gap-2 align-items-start">
@@ -57,6 +58,7 @@
 
                         <form method="post" action="{{ path('checkout_address') }}" class="mb-3">
                             <input type="hidden" name="action" value="billing_same_toggle">
+                            <input type="hidden" name="_token" value="{{ csrf_token('checkout_address_billing_same_toggle') }}">
                             <label class="d-flex align-items-center gap-2">
                                 <input type="checkbox" name="billing_same" value="1"
                                        {% if app.session.get('checkout.billing_same', true) %}checked{% endif %}
@@ -68,6 +70,7 @@
                         {% if not app.session.get('checkout.billing_same', true) %}
                             <form method="post" action="{{ path('checkout_address') }}">
                                 <input type="hidden" name="action" value="select_billing">
+                                <input type="hidden" name="_token" value="{{ csrf_token('checkout_address_select_billing') }}">
 
                                 <div class="vstack gap-2">
                                     {% for a in addresses %}

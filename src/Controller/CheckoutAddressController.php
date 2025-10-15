@@ -37,9 +37,14 @@ class CheckoutAddressController extends AbstractController
         $form->handleRequest($request);
 
         // === ACTIONS POST ===
-
         // a) Sélection d’une adresse de LIVRAISON
         if ($request->isMethod('POST') && $request->request->get('action') === 'select_shipping') {
+            $token = (string) $request->request->get('_token');
+            if (!$this->isCsrfTokenValid('checkout_address_select_shipping', $token)) {
+                $this->addFlash('danger', 'Sécurité: action refusée (token invalide).');
+                return $this->redirectToRoute('checkout_address');
+            }
+
             $selectedId = (int) $request->request->get('selected_address_id', 0);
             if ($selectedId > 0) {
                 $selected = $addressRepo->findOneBy(['id' => $selectedId, 'user' => $user]);
@@ -59,6 +64,12 @@ class CheckoutAddressController extends AbstractController
 
         // b) Bascule "facturation = même que livraison"
         if ($request->isMethod('POST') && $request->request->get('action') === 'billing_same_toggle') {
+            $token = (string) $request->request->get('_token');
+            if (!$this->isCsrfTokenValid('checkout_address_billing_same_toggle', $token)) {
+                $this->addFlash('danger', 'Sécurité: action refusée (token invalide).');
+                return $this->redirectToRoute('checkout_address');
+            }
+
             $same = (bool) $request->request->get('billing_same', false);
             $session->set('checkout.billing_same', $same);
             if ($same) {
@@ -69,6 +80,12 @@ class CheckoutAddressController extends AbstractController
 
         // c) Sélection d’une adresse de FACTURATION (si différente)
         if ($request->isMethod('POST') && $request->request->get('action') === 'select_billing') {
+            $token = (string) $request->request->get('_token');
+            if (!$this->isCsrfTokenValid('checkout_address_select_billing', $token)) {
+                $this->addFlash('danger', 'Sécurité: action refusée (token invalide).');
+                return $this->redirectToRoute('checkout_address');
+            }
+
             $billingId = (int) $request->request->get('billing_address_id', 0);
             if ($billingId > 0) {
                 $billing = $addressRepo->findOneBy(['id' => $billingId, 'user' => $user]);
@@ -83,7 +100,7 @@ class CheckoutAddressController extends AbstractController
             return $this->redirectToRoute('checkout_address');
         }
 
-        // d) Création d’une nouvelle adresse
+        // d) Création d’une nouvelle adresse (protégée nativement par la CSRF des Form Symfony)
         if ($form->isSubmitted() && $form->isValid()) {
             $em->persist($newAddress);
             $em->flush();

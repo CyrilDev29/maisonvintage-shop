@@ -97,6 +97,13 @@ class RegistrationController extends AbstractController
         EntityManagerInterface $em,
         EmailVerifier $emailVerifier
     ): Response {
+        // ✅ CSRF
+        $token = (string) $request->request->get('_token', '');
+        if (!$this->isCsrfTokenValid('verify_resend', $token)) {
+            $this->addFlash('danger', 'Action refusée (sécurité).');
+            return $this->redirectToRoute('app_login');
+        }
+
         $emailValue = (string) $request->request->get('email');
         if ($emailValue === '') {
             $this->addFlash('danger', 'Adresse e-mail manquante.');

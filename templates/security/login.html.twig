@@ -66,6 +66,10 @@
             <button class="btn btn-lg btn-primary" type="submit">
                 Se connecter
             </button>
+
+            <p class="mt-2 mb-0">
+                <a href="{{ path('app_forgot_password_request') }}">Mot de passe oublié&nbsp;?</a>
+            </p>
         </form>
 
         <div style="border-top:1px solid #e5e5e5;padding-top:1rem;">
@@ -80,6 +84,7 @@
                     required
                     style="flex:1;min-width:220px;"
                 >
+                <input type="hidden" name="_token" value="{{ csrf_token('verify_resend') }}">
                 <button class="btn btn-secondary" type="submit">Renvoyer l’e-mail</button>
             </form>
             <p style="margin-top:.5rem;color:#6c757d;font-size:.9rem;">
