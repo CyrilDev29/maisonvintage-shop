@@ -1,5 +1,5 @@
 import './bootstrap.js';
-import './styles/app.css';
+import './styles/app.scss';
 
 // Bootstrap gère le dropdown nativement après un rechargement complet.
 // On garde une init défensive si besoin ailleurs.

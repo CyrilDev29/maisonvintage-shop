@@ -1,0 +1,20 @@
+<form action="{{ path('search') }}" method="get" role="search" class="mv-search" style="display:flex;gap:.5rem;align-items:center;">
+    <label for="q" class="visually-hidden">Rechercher</label>
+    <input
+        id="q"
+        name="q"
+        type="search"
+        value="{{ app.request.get('q') }}"
+        placeholder="Rechercher un article"
+        aria-label="Rechercher un article"
+        class="form-control"
+        style="flex:1;min-width:220px;padding:.55rem .8rem;border:1px solid #dcdcdc;border-radius:999px;">
+    <button class="btn" type="submit" style="padding:.55rem .9rem;border-radius:999px;border:1px solid #dcdcdc;background:#fff;">
+        🔎
+        <span class="visually-hidden">Rechercher</span>
+    </button>
+</form>
+
+<style>
+    .visually-hidden{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap;}
+</style>

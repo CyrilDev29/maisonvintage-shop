@@ -23,3 +23,18 @@
 
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+# --- Node / Sass (build local) ---
+node_modules/
+.parcel-cache/
+.cache/
+.tmp/
+
+# CSS compilé depuis Sass
+public/styles/
+!public/styles/.gitkeep
+
+# IDE & autres
+.vscode/
+*.log
+.DS_Store

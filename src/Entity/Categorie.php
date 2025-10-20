@@ -31,6 +31,11 @@ class Categorie
     private ?string $description = null;
 
     #[ORM\Column(length: 255, unique: true)]
+    #[Assert\Length(max: 255, maxMessage: '255 caractères maximum.')]
+    #[Assert\Regex(
+        pattern: '/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+        message: 'Le slug ne doit contenir que des lettres minuscules, chiffres et tirets.'
+    )]
     private ?string $slug = null;
 
     /** @var Collection<int, Article> */
@@ -42,12 +47,17 @@ class Categorie
         $this->articles = new ArrayCollection();
     }
 
+    /**
+     * Ne calcule le slug automatiquement que s'il est vide.
+     * Cela évite d'écraser un slug saisi manuellement en back-office.
+     */
     #[ORM\PrePersist]
     #[ORM\PreUpdate]
-    public function computeSlug(): void
+    public function ensureSlug(): void
     {
-        if ($this->nom) {
-            $this->slug = (string) (new AsciiSlugger())->slug($this->nom)->lower();
+        if (($this->slug === null || $this->slug === '') && $this->nom) {
+            $slugger = new AsciiSlugger();
+            $this->slug = strtolower((string) $slugger->slug($this->nom));
         }
     }
 
@@ -68,7 +78,7 @@ class Categorie
 
     public function setNom(string $nom): static
     {
-        $this->nom = $nom;
+        $this->nom = trim($nom);
         return $this;
     }
 
@@ -88,9 +98,11 @@ class Categorie
         return $this->slug;
     }
 
+
     public function setSlug(?string $slug): static
     {
-        $this->slug = $slug;
+        $slug = $slug !== null ? trim($slug) : null;
+        $this->slug = $slug !== null ? strtolower($slug) : null;
         return $this;
     }
 

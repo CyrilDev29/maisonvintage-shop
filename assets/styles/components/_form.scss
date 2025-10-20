@@ -1,0 +1,27 @@
+.form-label{ font-weight:600; color:var(--mv-contrast); }
+
+.form-control, .form-select{
+    border-radius:10px;
+    border:1px solid var(--mv-border);
+    background:#fff;
+    transition:border-color var(--mv-transition), box-shadow var(--mv-transition), background var(--mv-transition);
+    box-shadow:none;
+}
+.form-control::placeholder{ color:#a4a8a7; }
+
+.form-control:focus, .form-select:focus{
+    border-color:var(--mv-primary);
+    box-shadow:0 0 0 .2rem rgba(95,107,99,.15); /* sauge douce */
+}
+
+.form-check-input:checked{
+    background-color:var(--mv-primary);
+    border-color:var(--mv-primary);
+}
+
+.is-invalid, .was-validated .form-control:invalid{
+    border-color:var(--mv-danger);
+    box-shadow:0 0 0 .2rem rgba(194,64,64,.12);
+}
+
+.form-text{ color:var(--mv-muted); }

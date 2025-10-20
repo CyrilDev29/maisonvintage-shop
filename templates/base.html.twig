@@ -10,68 +10,95 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
+    {# Polices #}
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+    {# CSS compilé (depuis Sass) #}
     <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
     {% block stylesheets %}{% endblock %}
 </head>
 <body class="bg-light d-flex flex-column min-vh-100">
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container">
+    <div class="container-fluid align-items-center px-3 px-lg-4">
+
+        {# GAUCHE : Brand #}
         <a class="navbar-brand d-flex align-items-center" href="{{ path('home') }}">
-            <img src="{{ asset('images/logo.png') }}" alt="Maison Vintage" style="height:100px; margin-right:8px;">
+            <span class="brand-logo me-2">
+                <img src="{{ asset('images/logo.png') }}" alt="Maison Vintage">
+            </span>
             <span class="fw-bold">Maison Vintage</span>
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Basculer la navigation">
+
+        {# Burger #}
+        <button class="navbar-toggler ms-auto" type="button"
+                data-bs-toggle="collapse" data-bs-target="#mainNav"
+                aria-controls="mainNav" aria-expanded="false" aria-label="Basculer la navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <div class="collapse navbar-collapse" id="mainNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ path('home') }}">Accueil</a>
-                </li>
+        {# CONTENU PLIABLE #}
+        <div class="collapse navbar-collapse w-100 mv-navline" id="mainNav">
 
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle"
-                       id="navCategories"
-                       href="#"
-                       role="button"
-                       data-bs-toggle="dropdown"
-                       aria-expanded="false">
-                        Catégories
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="navCategories">
-                        {% for cat in categories() %}
-                            <li>
-                                <a class="dropdown-item" href="{{ path('categorie_show', { slug: cat.slug }) }}">{{ cat.nom }}</a>
-                            </li>
-                        {% else %}
-                            <li><span class="dropdown-item-text text-muted">Aucune catégorie</span></li>
-                        {% endfor %}
-                    </ul>
-                </li>
+            {# MILIEU : Menu + Recherche (centrés) #}
+            <div class="mv-nav-middle">
 
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ path('victime_succes') }}">Victime de son succès</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ path('nouveau_cocon') }}">Nouveau Cocon</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ path('contact') }}">Contact</a>
-                </li>
-            </ul>
+                <ul class="navbar-nav justify-content-center">
+                    <li class="nav-item"><a class="nav-link" href="{{ path('home') }}">Accueil</a></li>
 
-            {# Panier + Auth #}
-            <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" id="navCategories" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Catégories
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navCategories">
+                            {% for cat in categories() %}
+                                <li><a class="dropdown-item" href="{{ path('categorie_show', { slug: cat.slug }) }}">{{ cat.nom }}</a></li>
+                            {% else %}
+                                <li><span class="dropdown-item-text text-muted">Aucune catégorie</span></li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+
+                    <li class="nav-item"><a class="nav-link" href="{{ path('victime_succes') }}">Victime de son succès</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ path('nouveau_cocon') }}">Nouveau Cocon</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ path('contact') }}">Contact</a></li>
+                </ul>
+
+                <form
+                    class="d-flex position-relative mx-lg-2"
+                    role="search"
+                    action="{{ path('search') }}"
+                    method="get"
+                    autocomplete="off"
+                    aria-label="Recherche d'articles"
+                    id="mv-search-form"
+                >
+                    <label for="q" class="visually-hidden">Rechercher un article</label>
+                    <div class="input-group input-group-sm w-100">
+                        <input
+                            id="q" name="q" type="search" class="form-control"
+                            placeholder="Rechercher un article (ex. chaise)…"
+                            value="{{ app.request.get('q') }}"
+                            aria-autocomplete="list" aria-controls="mv-suggest"
+                            aria-expanded="false" aria-haspopup="listbox"
+                            autocapitalize="off" autocorrect="off" spellcheck="false"
+                            autocomplete="off" inputmode="search"
+                        >
+                        <button class="btn btn-outline-light" type="submit" aria-label="Lancer la recherche">🔎</button>
+                    </div>
+
+                    <div id="mv-suggest" class="list-group position-absolute shadow"
+                         role="listbox" aria-label="Suggestions de recherche"
+                         style="top:100%;left:0;right:0;z-index:1050;display:none;max-height:260px;overflow:auto;"></div>
+                </form>
+            </div>
+
+            {# DROITE : Panier + Compte #}
+            <ul class="navbar-nav mv-nav-right">
                 {% set _cart = app.session.get('cart') ?? {} %}
                 {% set _count = 0 %}
-                {% for _id, _qty in _cart %}
-                    {% set _count = _count + _qty %}
-                {% endfor %}
+                {% for _id, _qty in _cart %}{% set _count = _count + _qty %}{% endfor %}
 
                 <li class="nav-item me-2">
                     <a class="nav-link" href="{{ path('cart_show') }}">
@@ -97,19 +124,15 @@
                         </ul>
                     </li>
                 {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ path('app_login') }}">Se connecter</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ path('app_register') }}">Créer un compte</a>
-                    </li>
+                    <li class="nav-item"><a class="nav-link" href="{{ path('app_login') }}">Se connecter</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ path('app_register') }}">Créer un compte</a></li>
                 {% endif %}
             </ul>
         </div>
     </div>
 </nav>
 
-{# === AFFICHAGE CENTRALISÉ DES MESSAGES FLASH === #}
+{# FLASHES #}
 <div class="container mt-3" style="max-width:1100px;">
     {% for type, messages in app.flashes %}
         {% for message in messages %}
@@ -136,6 +159,67 @@
 
 {% block javascripts %}
     {% block importmap %}{{ importmap('app') }}{% endblock %}
+
+    {# Autocomplete #}
+    <script>
+        (function () {
+            const form = document.getElementById('mv-search-form');
+            const input = document.getElementById('q');
+            const box = document.getElementById('mv-suggest');
+            if (!form || !input || !box) return;
+
+            let t = null, controller = null, activeIndex = -1;
+
+            function hideBox(){ box.style.display='none'; box.innerHTML=''; input.setAttribute('aria-expanded','false'); activeIndex=-1; }
+            function showBox(){ box.style.display='block'; input.setAttribute('aria-expanded','true'); }
+
+            function buildItemHtml(item, selected){
+                const cls='list-group-item list-group-item-action d-flex justify-content-between align-items-center'+(selected?' active':'');
+                const hrefTpl=`{{ path('article_show', { slug:'__SLUG__' }) }}`;
+                const href=hrefTpl.replace('__SLUG__', item.slug ?? '');
+                return `<a role="option" class="${cls}" href="${href}" aria-selected="${selected?'true':'false'}">
+                          <span>${item.titre ?? ''}</span>
+                          <small class="text-muted ms-2">${item.cat ?? ''}</small>
+                        </a>`;
+            }
+            function renderList(items){
+                if(!Array.isArray(items)||items.length===0){ hideBox(); return; }
+                box.innerHTML = items.map((it,i)=>buildItemHtml(it,i===activeIndex)).join('');
+                showBox();
+            }
+            function debounceFetch(q){
+                if(t) clearTimeout(t);
+                t=setTimeout(async ()=>{
+                    if(controller) controller.abort();
+                    controller = new AbortController();
+                    try{
+                        const url = `{{ path('search_autocomplete') }}?q=`+encodeURIComponent(q);
+                        const resp = await fetch(url, { signal: controller.signal, headers:{'Accept':'application/json'}});
+                        if(!resp.ok){ hideBox(); return; }
+                        const data = await resp.json();
+                        renderList(data);
+                    }catch(e){ hideBox(); }
+                },150);
+            }
+            input.addEventListener('input', ()=>{
+                const q=input.value.trim();
+                if(q.length<2){ hideBox(); return; }
+                debounceFetch(q);
+            });
+            input.addEventListener('keydown',(e)=>{
+                const items=box.querySelectorAll('[role="option"]');
+                if(box.style.display!=='block'||items.length===0) return;
+                if(e.key==='ArrowDown'){ e.preventDefault(); activeIndex=(activeIndex+1)%items.length; renderList([...items].map(a=>({slug:a.getAttribute('href')?.split('/').pop(), titre:a.querySelector('span')?.textContent, cat:a.querySelector('small')?.textContent}))); }
+                else if(e.key==='ArrowUp'){ e.preventDefault(); activeIndex=(activeIndex-1+items.length)%items.length; renderList([...items].map(a=>({slug:a.getAttribute('href')?.split('/').pop(), titre:a.querySelector('span')?.textContent, cat:a.querySelector('small')?.textContent}))); }
+                else if(e.key==='Enter'){ if(activeIndex>=0&&activeIndex<items.length){ e.preventDefault(); window.location.href=items[activeIndex].getAttribute('href'); } }
+                else if(e.key==='Escape'){ hideBox(); }
+            });
+            document.addEventListener('click',(e)=>{ if(!box.contains(e.target)&&e.target!==input){ hideBox(); }});
+            window.addEventListener('resize', hideBox);
+            input.addEventListener('blur',()=>setTimeout(hideBox,120));
+            form.addEventListener('submit',(e)=>{ if(input.value.trim()===''){ e.preventDefault(); hideBox(); }});
+        })();
+    </script>
 {% endblock %}
 </body>
 </html>

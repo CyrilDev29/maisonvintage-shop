@@ -1,0 +1,56 @@
+.product-grid{
+    list-style:none; margin:0; padding:0;
+    display:grid; gap:24px;
+    grid-template-columns:repeat(4,1fr);
+    @media (max-width:1200px){ grid-template-columns:repeat(3,1fr); }
+    @media (max-width:992px){  grid-template-columns:repeat(2,1fr); }
+    @media (max-width:576px){  grid-template-columns:1fr; }
+}
+
+.product-card{
+    background:var(--mv-surface);
+    border:1px solid var(--mv-border);
+    border-radius:var(--mv-radius);
+    box-shadow:var(--mv-shadow);
+    text-align:center; overflow:hidden; position:relative;
+    transition:transform var(--mv-transition), box-shadow var(--mv-transition), border-color var(--mv-transition);
+}
+.product-card:hover{
+    transform:translateY(-3px);
+    box-shadow:var(--mv-shadow-lg);
+    border-color:#e4ded5;
+}
+
+/* visuel “affiche” */
+.product-media{
+    aspect-ratio:4/5;
+    background:#f1ede6;
+    overflow:hidden;
+}
+.product-media img{
+    width:100%; height:100%; object-fit:cover;
+    transform:scale(1.0);
+    transition:transform .4s cubic-bezier(.2,.6,.2,1);
+}
+.product-card:hover .product-media img{ transform:scale(1.04); }
+
+/* contenu */
+.product-body{ padding:1rem 1rem 1.15rem; }
+.product-title{
+    font-family:var(--mv-font-serif);
+    font-size:1.06rem; line-height:1.35;
+    margin:.45rem 0 .3rem;
+    color:var(--mv-contrast);
+}
+.product-price{
+    color:#1b1c1c; font-weight:700; letter-spacing:.01em;
+}
+
+/* badge (ex: “Nouveau”) */
+.product-badge{
+    position:absolute; top:10px; left:10px;
+    background:rgba(255,255,255,.92); color:#222;
+    border:1px solid var(--mv-border);
+    padding:.28rem .6rem; border-radius:20px;
+    font-weight:600; font-size:.85rem;
+}

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Entity;
 
@@ -16,11 +17,9 @@ class ArticleImage
     #[ORM\Column]
     private ?int $id = null;
 
-    // Nom de fichier en BDD (ex: abc.jpg)
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $filename = null;
 
-    // Fichier uploadé (non stocké en BDD)
     #[Vich\UploadableField(mapping: 'article_gallery', fileNameProperty: 'filename')]
     private ?File $file = null;
 
@@ -28,12 +27,16 @@ class ArticleImage
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Article $article = null;
 
-    // Pour ordonner les miniatures (0,1,2…)
     #[ORM\Column(nullable: true)]
     private ?int $position = null;
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
+
+    public function __toString(): string
+    {
+        return (string) ($this->filename ?? '');
+    }
 
     public function getId(): ?int { return $this->id; }
 

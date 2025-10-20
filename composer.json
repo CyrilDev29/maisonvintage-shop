@@ -13,6 +13,7 @@
         "doctrine/orm": "^3.5",
         "dompdf/dompdf": "2.0",
         "easycorp/easyadmin-bundle": "^4.25",
+        "knplabs/knp-paginator-bundle": "^6.9",
         "phpdocumentor/reflection-docblock": "^5.6",
         "phpstan/phpdoc-parser": "^2.3",
         "stripe/stripe-php": "^17.6",
