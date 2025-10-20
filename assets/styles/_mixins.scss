@@ -1,0 +1,3 @@
+@mixin focus-ring-rgba($r,$g,$b,$a:.16){outline:none;box-shadow:0 0 0 .2rem rgba($r,$g,$b,$a);}
+@mixin card{background:var(--mv-surface);border:1px solid var(--mv-border);border-radius:var(--mv-radius);box-shadow:var(--mv-shadow);}
+@mixin clickable{transition:transform var(--mv-transition),box-shadow var(--mv-transition);&:hover{transform:translateY(-3px);box-shadow:var(--mv-shadow-lg);}}

@@ -1,0 +1,90 @@
+{% extends 'base.html.twig' %}
+{% block title %}Recherche{% if q %} — “{{ q }}”{% endif %}{% endblock %}
+
+{% block body %}
+    <section class="container" style="max-width:1100px;margin:2rem auto;padding:0 1rem;">
+        <h1 class="h4 mb-3">Résultats de recherche{% if q %} pour “{{ q }}”{% endif %}</h1>
+
+        <form method="get" action="{{ path('search') }}" class="row g-2 align-items-end mb-3">
+            <div class="col-12 col-md-5">
+                <label for="q" class="form-label">Mots-clés</label>
+                <input id="q" name="q" type="search" class="form-control" value="{{ q }}" placeholder="Lampe, fauteuil, table...">
+            </div>
+
+            <div class="col-6 col-md-3">
+                <label for="cat" class="form-label">Catégorie</label>
+                <select id="cat" name="cat" class="form-select">
+                    <option value="">Toutes</option>
+                    {% for c in categories %}
+                        <option value="{{ c.slug }}" {{ current.cat == c.slug ? 'selected' : '' }}>{{ c.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-6 col-md-2">
+                <label for="pmin" class="form-label">Prix min</label>
+                <input id="pmin" name="pmin" type="number" class="form-control" value="{{ current.pmin ?? '' }}" min="0" step="1">
+            </div>
+
+            <div class="col-6 col-md-2">
+                <label for="pmax" class="form-label">Prix max</label>
+                <input id="pmax" name="pmax" type="number" class="form-control" value="{{ current.pmax ?? '' }}" min="0" step="1">
+            </div>
+
+            <div class="col-12">
+                <button class="btn btn-dark">Filtrer</button>
+            </div>
+        </form>
+
+        {% if pagination|length == 0 %}
+            <p class="text-muted">Aucun résultat.</p>
+        {% else %}
+            <p class="text-muted mb-2">{{ pagination.getTotalItemCount }} résultat{{ pagination.getTotalItemCount > 1 ? 's' : '' }}.</p>
+
+            <div class="row g-3">
+                {% for article in pagination %}
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <article class="card h-100">
+                            <a href="{{ path('article_show', {slug: article.slug}) }}" class="text-decoration-none text-reset">
+                                {% set galleryFirst = article.images|length ? (article.images|first) : null %}
+                                {% set src =
+                                    article.image
+                                    ? asset('uploads/articles/' ~ article.image)
+                                    : (galleryFirst and galleryFirst.filename ? asset('uploads/articles/gallery/' ~ galleryFirst.filename) : null)
+                                %}
+
+                                {% if src %}
+                                    <img
+                                        src="{{ src }}"
+                                        alt="{{ article.titre }}"
+                                        class="card-img-top"
+                                        style="aspect-ratio:4/3;object-fit:cover;"
+                                        onerror="this.closest('.card').querySelector('.mv-ph').classList.remove('d-none'); this.remove();">
+                                {% endif %}
+
+                                <div class="card-img-top d-flex align-items-center justify-content-center bg-light border mv-ph {{ src ? 'd-none' : '' }}"
+                                     style="aspect-ratio:4/3;">
+                                    <span class="text-muted small">Aucune image</span>
+                                </div>
+
+                                <div class="card-body p-2">
+                                    <h2 class="h6 mb-1">{{ article.titre }}</h2>
+                                    {% if article.categorie %}
+                                        <div class="text-muted small">{{ article.categorie.nom }}</div>
+                                    {% endif %}
+                                    {% if article.prix is not null %}
+                                        <div class="fw-semibold mt-1">{{ article.prix|number_format(0, ',', ' ') }} €</div>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        </article>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="mt-3">
+                {{ knp_pagination_render(pagination, null, { 'route': 'search', 'params': app.request.query.all }) }}
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

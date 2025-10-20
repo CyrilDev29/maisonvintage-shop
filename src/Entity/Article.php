@@ -14,6 +14,11 @@ use Vich\UploaderBundle\Mapping\Annotation as Vich;
 #[ORM\Entity(repositoryClass: ArticleRepository::class)]
 #[ORM\HasLifecycleCallbacks]
 #[Vich\Uploadable]
+#[ORM\Table(name: 'article', indexes: [
+    new ORM\Index(name: 'idx_article_created_at', columns: ['created_at']),
+    new ORM\Index(name: 'idx_article_prix',       columns: ['prix']),
+    new ORM\Index(name: 'idx_article_categorie',  columns: ['categorie_id']),
+])]
 class Article
 {
     #[ORM\Id]
@@ -36,9 +41,7 @@ class Article
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
-    /**
-     * Nom du fichier de l’image principale
-     */
+    /** Nom du fichier de l’image principale (stocké dans /public/uploads) */
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $image = null;
 
@@ -80,6 +83,10 @@ class Article
     #[ORM\Column(length: 180, nullable: true)]
     private ?string $slug = null;
 
+    /** Mots-clés libres pour la recherche (synonymes, variantes) */
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $keywords = null;
+
     /**
      * Images secondaires (galerie, max 10)
      * @var Collection<int, ArticleImage>
@@ -95,6 +102,9 @@ class Article
         $this->images = new ArrayCollection();
     }
 
+    #--------------------------------------
+    # Lifecycle
+    #--------------------------------------
     #[ORM\PrePersist]
     public function onPrePersist(): void
     {
@@ -114,76 +124,28 @@ class Article
         return (string) $this->getTitre();
     }
 
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
+    #--------------------------------------
+    # Getters / Setters
+    #--------------------------------------
+    public function getId(): ?int { return $this->id; }
 
-    public function getTitre(): ?string
-    {
-        return $this->titre;
-    }
+    public function getTitre(): ?string { return $this->titre; }
+    public function setTitre(string $titre): static { $this->titre = $titre; return $this; }
 
-    public function setTitre(string $titre): static
-    {
-        $this->titre = $titre;
-        return $this;
-    }
+    public function getDescription(): ?string { return $this->description; }
+    public function setDescription(string $description): static { $this->description = $description; return $this; }
 
-    public function getDescription(): ?string
-    {
-        return $this->description;
-    }
+    public function getPrix(): ?string { return $this->prix; }
+    public function setPrix(string $prix): static { $this->prix = $prix; return $this; }
 
-    public function setDescription(string $description): static
-    {
-        $this->description = $description;
-        return $this;
-    }
+    public function getCreatedAt(): ?\DateTimeImmutable { return $this->createdAt; }
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static { $this->createdAt = $createdAt; return $this; }
 
-    public function getPrix(): ?string
-    {
-        return $this->prix;
-    }
+    public function getUpdatedAt(): ?\DateTimeImmutable { return $this->updatedAt; }
+    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static { $this->updatedAt = $updatedAt; return $this; }
 
-    public function setPrix(string $prix): static
-    {
-        $this->prix = $prix;
-        return $this;
-    }
-
-    public function getCreatedAt(): ?\DateTimeImmutable
-    {
-        return $this->createdAt;
-    }
-
-    public function setCreatedAt(\DateTimeImmutable $createdAt): static
-    {
-        $this->createdAt = $createdAt;
-        return $this;
-    }
-
-    public function getUpdatedAt(): ?\DateTimeImmutable
-    {
-        return $this->updatedAt;
-    }
-
-    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
-    {
-        $this->updatedAt = $updatedAt;
-        return $this;
-    }
-
-    public function getImage(): ?string
-    {
-        return $this->image;
-    }
-
-    public function setImage(?string $image): static
-    {
-        $this->image = $image;
-        return $this;
-    }
+    public function getImage(): ?string { return $this->image; }
+    public function setImage(?string $image): static { $this->image = $image; return $this; }
 
     public function setImageFile(?File $imageFile): self
     {
@@ -193,107 +155,39 @@ class Article
         }
         return $this;
     }
+    public function getImageFile(): ?File { return $this->imageFile; }
 
-    public function getImageFile(): ?File
-    {
-        return $this->imageFile;
-    }
+    public function getQuantity(): ?int { return $this->quantity; }
+    public function setQuantity(int $quantity): static { $this->quantity = $quantity; return $this; }
 
-    public function getQuantity(): ?int
-    {
-        return $this->quantity;
-    }
+    public function getWeightKg(): ?string { return $this->weightKg; }
+    public function setWeightKg(?string $weightKg): static { $this->weightKg = $weightKg; return $this; }
 
-    public function setQuantity(int $quantity): static
-    {
-        $this->quantity = $quantity;
-        return $this;
-    }
+    public function getLengthCm(): ?string { return $this->lengthCm; }
+    public function setLengthCm(?string $lengthCm): static { $this->lengthCm = $lengthCm; return $this; }
 
-    public function getWeightKg(): ?string
-    {
-        return $this->weightKg;
-    }
+    public function getWidthCm(): ?string { return $this->widthCm; }
+    public function setWidthCm(?string $widthCm): static { $this->widthCm = $widthCm; return $this; }
 
-    public function setWeightKg(?string $weightKg): static
-    {
-        $this->weightKg = $weightKg;
-        return $this;
-    }
+    public function getHeightCm(): ?string { return $this->heightCm; }
+    public function setHeightCm(?string $heightCm): static { $this->heightCm = $heightCm; return $this; }
 
-    public function getLengthCm(): ?string
-    {
-        return $this->lengthCm;
-    }
+    public function getCategorie(): ?Categorie { return $this->categorie; }
+    public function setCategorie(?Categorie $categorie): static { $this->categorie = $categorie; return $this; }
 
-    public function setLengthCm(?string $lengthCm): static
-    {
-        $this->lengthCm = $lengthCm;
-        return $this;
-    }
+    public function getSlug(): ?string { return $this->slug; }
+    public function setSlug(?string $slug): static { $this->slug = $slug; return $this; }
 
-    public function getWidthCm(): ?string
-    {
-        return $this->widthCm;
-    }
-
-    public function setWidthCm(?string $widthCm): static
-    {
-        $this->widthCm = $widthCm;
-        return $this;
-    }
-
-    public function getHeightCm(): ?string
-    {
-        return $this->heightCm;
-    }
-
-    public function setHeightCm(?string $heightCm): static
-    {
-        $this->heightCm = $heightCm;
-        return $this;
-    }
-
-    public function getCategorie(): ?Categorie
-    {
-        return $this->categorie;
-    }
-
-    public function setCategorie(?Categorie $categorie): static
-    {
-        $this->categorie = $categorie;
-        return $this;
-    }
-
-    public function getSlug(): ?string
-    {
-        return $this->slug;
-    }
-
-    public function setSlug(?string $slug): static
-    {
-        $this->slug = $slug;
-        return $this;
-    }
+    public function getKeywords(): ?string { return $this->keywords; }
+    public function setKeywords(?string $keywords): static { $this->keywords = $keywords; return $this; }
 
     /** Helpers métier */
-    public function isDisponible(): bool
-    {
-        return ($this->quantity ?? 0) > 0;
-    }
-
-    public function isVendu(): bool
-    {
-        return ($this->quantity ?? 0) === 0;
-    }
+    public function isDisponible(): bool { return ($this->quantity ?? 0) > 0; }
+    public function isVendu(): bool { return ($this->quantity ?? 0) === 0; }
 
     /** ---- Gestion de la galerie ---- */
-
     /** @return Collection<int, ArticleImage> */
-    public function getImages(): Collection
-    {
-        return $this->images;
-    }
+    public function getImages(): Collection { return $this->images; }
 
     public function addImage(ArticleImage $image): self
     {
@@ -312,5 +206,21 @@ class Article
             }
         }
         return $this;
+    }
+
+
+    # Compatibilité rétro (ne casse pas les anciens templates)
+
+
+    /** Certains templates historiques appellent encore "imagePrincipale". */
+    public function getImagePrincipale(): ?string
+    {
+        return $this->image;
+    }
+
+    /** Helper pratique en Twig : {{ article.hasImage() ? ... : ... }} */
+    public function hasImage(): bool
+    {
+        return !empty($this->image);
     }
 }

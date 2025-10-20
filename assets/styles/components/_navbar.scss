@@ -1,0 +1,137 @@
+/* ===========================
+   NAVBAR — Mobile d'abord
+   =========================== */
+
+/* Fond & padding */
+nav.navbar.bg-dark{
+    background: var(--mv-primary) !important; /* ex: #646F67 */
+    border-bottom: 1px solid rgba(255,255,255,.14);
+    padding: .65rem 0;
+}
+
+/* Logo rond */
+nav.navbar .brand-logo{
+    width: clamp(40px, 10vw, 60px);
+    border-radius: 50%;
+    overflow: hidden;
+}
+nav.navbar .brand-logo img{
+    width: 120%; height: 120%; object-fit: cover; display: block;
+}
+
+/* Liens */
+nav.navbar .navbar-brand{ font-weight:700; letter-spacing:.02em; color:#fff; }
+nav.navbar.navbar-dark .navbar-nav .nav-link{
+    color:#fafafa; opacity:.95;
+    padding: .55rem .7rem;
+    line-height: 1; white-space: nowrap;
+    transition: opacity .18s ease;
+}
+nav.navbar.navbar-dark .navbar-nav .nav-link:hover{ opacity:1; }
+
+/* Badge panier */
+nav.navbar .badge{
+    background:#fff; color:#222;
+    border:1px solid rgba(0,0,0,.08);
+}
+
+/* --------- Mobile (par défaut) --------- */
+/* La zone pliable est en bloc classique */
+nav.navbar .navbar-collapse.mv-navline{
+    display: block !important;
+    width: 100%;
+}
+
+/* Milieu : menu + recherche s'empilent */
+nav.navbar .mv-nav-middle{
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: .5rem;
+    margin-top: .5rem;
+}
+
+/* Recherche en pleine largeur */
+nav.navbar #mv-search-form{
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+nav.navbar #mv-search-form .form-control{ background:#fff; }
+nav.navbar #mv-search-form .btn{
+    border-color:#d0d0d0; background:#f6f6f6; color:#444;
+}
+nav.navbar #mv-search-form .btn:hover{ background:#ececec; }
+
+/* Droite : sous le milieu */
+nav.navbar .mv-nav-right{
+    display:flex; align-items:center; gap:.5rem;
+    margin: .5rem 0 0 0;
+}
+
+/* --------- Petites tablettes (≥576px) --------- */
+@media (min-width: 576px){
+    nav.navbar .mv-nav-middle{
+        gap: .6rem;
+    }
+    nav.navbar.navbar-dark .navbar-nav .nav-link{
+        padding: .55rem .8rem;
+    }
+}
+
+/* --------- Tablettes (≥768px) --------- */
+@media (min-width: 768px){
+    nav.navbar .mv-nav-middle{
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+    }
+    /* La recherche commence à reprendre une largeur contrôlée */
+    nav.navbar #mv-search-form{
+        width: auto;
+        min-width: clamp(200px, 40vw, 320px);
+        max-width: clamp(220px, 45vw, 360px);
+    }
+}
+
+/* --------- Desktop (≥992px) --------- */
+/* Mise en page en 3 zones : [Brand] | [Milieu] | [Droite] */
+@media (min-width: 992px){
+    /* La zone pliable passe en GRID à 2 colonnes :
+       col1 (1fr) = MILIEU (menu+recherche), col2 (auto) = DROITE */
+    nav.navbar .navbar-collapse.mv-navline{
+        display: grid !important;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        column-gap: 16px;
+    }
+
+    /* Milieu centré */
+    nav.navbar .mv-nav-middle{
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: clamp(6px, 1.2vw, 16px);
+        margin-top: 0;
+    }
+    nav.navbar .mv-nav-middle .navbar-nav{
+        display:flex; align-items:center;
+        gap: clamp(2px, .8vw, 12px);
+    }
+
+    /* Recherche à largeur fluide mais bornée */
+    nav.navbar #mv-search-form{
+        min-width: clamp(200px, 28vw, 360px);
+        max-width: clamp(200px, 28vw, 360px);
+    }
+
+    /* Droite collée au bord droit */
+    nav.navbar .mv-nav-right{
+        margin: 0 0 0 auto;
+        gap: .6rem;
+    }
+
+    /* Légère respiration globale */
+    nav.navbar.bg-dark{ padding: .75rem 0; }
+}
