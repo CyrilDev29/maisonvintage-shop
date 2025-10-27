@@ -102,10 +102,15 @@
             <a href="{{ path('cart_show') }}" class="btn btn-outline-secondary">← Retour au panier</a>
 
             {% if canConfirm %}
-                <form method="post" action="{{ path('checkout_confirm') }}">
+                {# OUVERTURE DANS UN NOUVEL ONGLET #}
+                <form method="post" action="{{ path('checkout_confirm') }}" target="_blank" rel="noopener">
                     <input type="hidden" name="_token" value="{{ csrf_token('checkout_confirm') }}">
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        ✅ Valider ma commande
+                    <button type="submit"
+                            class="btn btn-primary btn-lg"
+                            aria-label="Payer ma commande"
+                            title="Payer ma commande"
+                            formtarget="_blank">
+                        Payer ma commande
                     </button>
                 </form>
             {% else %}

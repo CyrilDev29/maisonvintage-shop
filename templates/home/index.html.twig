@@ -1,8 +1,181 @@
 {% extends 'base.html.twig' %}
-
 {% block title %}Accueil – Maison Vintage{% endblock %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        :root { --hero-zoom: .90; }
+
+        /* Un peu plus d’espace horizontal entre les colonnes */
+        .mv-home-row { --bs-gutter-x: 2.4rem; }
+
+        /* ===== HÉROS (inchangé, sans fond noir) ===== */
+        .mv-hero{
+            position:relative;
+            min-height:64vh;               /* hauteur de référence */
+            border-radius:16px;
+            overflow:hidden;
+            display:grid;
+            place-items:center;
+            box-shadow:var(--mv-shadow,0 10px 26px rgba(0,0,0,.06));
+            isolation:isolate;
+        }
+        .mv-hero img{
+            position:absolute; inset:0;
+            width:100%; height:100%;
+            object-fit:cover; object-position:center;
+            transform:scale(var(--hero-zoom));
+        }
+        .mv-hero::after{
+            content:""; position:absolute; inset:0;
+            background:linear-gradient(rgba(0,0,0,.28), rgba(0,0,0,.28));
+        }
+        .mv-hero > .mv-hero-inner{
+            position:relative; z-index:1; text-align:center;
+            padding-inline:clamp(12px,3vw,40px);
+        }
+        .mv-hero h1{
+            color:#fff; font-family:var(--mv-font-serif); font-weight:700;
+            line-height:1.12; letter-spacing:.01em; margin:0 0 .4rem;
+            font-size:clamp(2rem,1.2rem + 3vw,3.2rem);
+        }
+        .mv-hero p{ color:#f7f7f7; margin:.5rem 0 0; font-size:clamp(.95rem,.8rem + .4vw,1.1rem); opacity:.95; }
+        .mv-cta{
+            margin-top:1.1rem; display:inline-block; padding:.6rem 1rem; border-radius:12px;
+            background:rgba(255,255,255,.14); color:#fff; border:1px solid rgba(255,255,255,.28);
+            font-weight:600; backdrop-filter:blur(4px); text-decoration:none;
+        }
+        .mv-cta:hover{ background:rgba(255,255,255,.22); }
+
+        /* Décalage très léger du héros à gauche sur grands écrans */
+        @media (min-width: 1200px){
+            .mv-hero { transform: translateX(-6px); }
+        }
+
+        /* ===== NOUVEAUTÉS alignées en hauteur sur le héros ===== */
+        .mv-side{
+            display:flex; flex-direction:column; height:100%;
+        }
+        .mv-side h3{ font-family:var(--mv-font-serif); margin-bottom:.6rem; }
+
+        .mv-nouveautes{ flex:1 1 auto; display:flex; }
+        .mv-nouveautes .product-grid{
+            /* même hauteur que le conteneur (donc celle du héros grâce à align-items-stretch) */
+            height:100%;
+            width:100%;
+            display:grid;
+            grid-template-columns: repeat(3, 1fr);   /* 3 × 3 */
+            grid-template-rows: repeat(3, 1fr);      /* force 3 rangées de hauteur égale */
+            gap: 14px;
+            margin: 0; padding: 0; list-style: none;
+        }
+        @media (max-width: 991.98px){
+            .mv-nouveautes .product-grid{
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(3, 1fr);    /* 2 × 3 sur md */
+            }
+        }
+        @media (max-width: 420px){
+            .mv-nouveautes .product-grid{
+                grid-template-columns: 1fr;
+                grid-template-rows: none;              /* sur petit mobile, hauteur libre */
+            }
+        }
+
+        /* Cartes : on reprend TON style de catégorie, mais on les rend flex pour remplir la cellule */
+        .mv-nouveautes .product-card{
+            border-radius:12px;
+            box-shadow: var(--mv-shadow);
+            overflow:hidden;
+            border:1px solid var(--mv-border);
+            background: var(--mv-surface);
+            display:flex; flex-direction:column; min-height:0; /* important pour que ça tienne dans 1fr */
+        }
+        .mv-nouveautes .product-media{
+            /* La cellule de grille donne la hauteur; on fait occuper ~60% à l’image */
+            flex: 0 0 60%;
+            background:#f1ede6;
+            position:relative;
+        }
+        .mv-nouveautes .product-media a,
+        .mv-nouveautes .product-media img{
+            position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+            display:block;
+        }
+        .mv-nouveautes .product-body{
+            flex:1 1 auto;
+            padding:.55rem .6rem .7rem;
+            display:flex; flex-direction:column; justify-content:space-between;
+            min-height:0;
+        }
+        .mv-nouveautes .product-title{
+            font-size:.95rem; line-height:1.25; margin:.2rem 0 .2rem;
+        }
+        .mv-nouveautes .product-price{
+            font-size:.95rem; font-weight:700;
+        }
+    </style>
+{% endblock %}
+
 {% block body %}
-    <h1>Bienvenue ✨</h1>
-    <p>Choisis une catégorie dans la barre de navigation.</p>
+    <div class="container-xxl py-4">
+        <div class="row mv-home-row align-items-stretch">
+            <!-- Héros -->
+            <div class="col-12 col-lg-8 mb-4 mb-lg-0">
+                <section class="mv-hero">
+                    <img src="{{ asset('images/hero-accueil.jpg') }}" alt="">
+                    <div class="mv-hero-inner">
+                        <h1>
+                            <span class="d-block small" style="color:#e9e9e9;font-weight:600;letter-spacing:.18em;">MAISON VINTAGE</span>
+                            Chinez votre nouvelle pépite
+                        </h1>
+                        <p>Dans une sélection de pièces uniques au charme authentique.</p>
+                        <a href="{{ path('catalogue') }}" class="mv-cta">Découvrir le catalogue</a>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Nouveautés : 9 derniers disponibles (3×3), alignés en hauteur avec le héros -->
+            <aside class="col-12 col-lg-4 mv-side">
+                <h3>Nouveautés</h3>
+
+                {% if articles is not empty %}
+                    {% set visibles = articles|filter(a => a.quantity > 0)|slice(0, 9) %}
+                    <section class="mv-nouveautes">
+                        {% if visibles is not empty %}
+                            <ul class="product-grid">
+                                {% for a in visibles %}
+                                    <li class="product-card">
+                                        <div class="product-media">
+                                            <a href="{{ path('article_show', {slug: a.slug}) }}">
+                                                {% if a.image %}
+                                                    <img src="{{ asset('uploads/articles/' ~ a.image) }}" alt="{{ a.titre }}">
+                                                {% endif %}
+                                            </a>
+                                        </div>
+                                        <div class="product-body">
+                                            <h2 class="product-title">
+                                                <a href="{{ path('article_show', {slug: a.slug}) }}" class="text-reset">
+                                                    {{ a.titre }}
+                                                </a>
+                                            </h2>
+                                            {% if a.prix is not null %}
+                                                <div class="product-price">
+                                                    {{ a.prix|number_format(2, ',', ' ') }} €
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted">Aucun article disponible pour le moment.</p>
+                        {% endif %}
+                    </section>
+                {% else %}
+                    <p class="text-muted">Aucun article pour le moment.</p>
+                {% endif %}
+            </aside>
+        </div>
+    </div>
 {% endblock %}

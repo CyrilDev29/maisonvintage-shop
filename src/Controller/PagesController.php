@@ -16,9 +16,25 @@ use Symfony\Component\Routing\Annotation\Route;
 class PagesController extends AbstractController
 {
     #[Route('/', name: 'home')]
-    public function index(): Response
+    public function index(ArticleRepository $articleRepository): Response
     {
-        return $this->render('pages/index.html.twig');
+        // On récupère plus large (ex: 30 derniers) pour pouvoir filtrer quantity>0
+        // puis on coupera à 9 dans le template.
+        $lastArticles = $articleRepository->findBy([], ['createdAt' => 'DESC'], 30);
+
+        return $this->render('home/index.html.twig', [
+            'articles' => $lastArticles,
+        ]);
+    }
+
+    #[Route('/catalogue', name: 'catalogue')]
+    public function catalogue(ArticleRepository $articleRepository): Response
+    {
+        $articles = $articleRepository->findBy([], ['createdAt' => 'DESC']);
+
+        return $this->render('pages/catalogue.html.twig', [
+            'articles' => $articles,
+        ]);
     }
 
     #[Route('/nouveau-cocon', name: 'nouveau_cocon')]
@@ -45,7 +61,7 @@ class PagesController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // Honeypot : si rempli, on ignore silencieusement
+            // Honeypot
             if ($form->has('website') && $form->get('website')->getData()) {
                 return $this->redirectToRoute('contact');
             }

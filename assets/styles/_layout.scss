@@ -2,47 +2,62 @@
    LAYOUT — Mobile d'abord
    =========================== */
 
+/* Contexte global */
+body {
+    background: var(--mv-bg);
+    color: var(--mv-text);
+    font-family: var(--mv-font-sans);
+    line-height: 1.68;
+}
+
+/* Si Bootstrap applique .bg-light, on garde le vrai blanc immaculé */
+body.bg-light {
+    background: var(--mv-bg) !important;
+}
+
 /* Conteneurs fluides par défaut (mobile) */
 .container,
-.container-fluid{
+.container-fluid {
     width: 100%;
     margin-right: auto;
-    margin-left:  auto;
+    margin-left: auto;
     padding-right: 16px;
-    padding-left:  16px;
+    padding-left: 16px;
 }
 
 /* Échelons de largeur — progressif comme Bootstrap */
-@media (min-width: 576px){  /* sm */
+@media (min-width: 576px) {  /* sm */
     .container { max-width: 540px; }
 }
-@media (min-width: 768px){  /* md */
+@media (min-width: 768px) {  /* md */
     .container { max-width: 720px; }
 }
-@media (min-width: 992px){  /* lg */
+@media (min-width: 992px) {  /* lg */
     .container { max-width: 960px; }
 }
-@media (min-width: 1200px){ /* xl */
+@media (min-width: 1200px) { /* xl */
     .container { max-width: 1140px; }
 }
-@media (min-width: 1400px){ /* xxl */
+@media (min-width: 1400px) { /* xxl */
     .container { max-width: 1320px; }
 }
 
 /* Sections “douces” */
-.section-soft{
+.section-soft {
     background: var(--mv-soft);
     border-block: 1px solid var(--mv-border);
 }
 
 /* Séparateur horizontal */
-.divider{
+.divider {
     height: 1px;
     background: var(--mv-border);
     margin: var(--sp-5, 24px) 0;
 }
 
 /* Compactage léger sur mobile/tablette */
-@media (max-width: 991.98px){
-    h1{ font-size: clamp(1.6rem, 5vw, 2.2rem); }
+@media (max-width: 991.98px) {
+    h1 {
+        font-size: clamp(1.6rem, 5vw, 2.2rem);
+    }
 }

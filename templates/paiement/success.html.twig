@@ -1,0 +1,144 @@
+{% extends 'base.html.twig' %}
+{% block title %}Paiement réussi — Maison Vintage{% endblock %}
+
+{% block body %}
+    <section class="container" style="max-width:1100px;margin:2rem auto;padding:0 1rem;">
+
+        <div class="alert alert-success" role="alert">
+            <strong>Votre achat a été effectué avec succès.</strong>
+            {% if sessionId %}
+                <span class="text-muted ms-2">Référence Stripe : <code>{{ sessionId }}</code></span>
+            {% endif %}
+        </div>
+
+        {% if order %}
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                <h1 class="h4 mb-0">Commande {{ order.reference }}</h1>
+                <div class="text-muted">
+                    Total : <strong>{{ order.total|number_format(2, ',', ' ') }} €</strong>
+                </div>
+            </div>
+
+            {# Adresses (snapshots) #}
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h2 class="h6 mb-2">Adresse de livraison</h2>
+                            {% set s = order.shippingSnapshot %}
+                            {% if s %}
+                                <div>
+                                    {{ s.fullName ?? '' }}<br>
+                                    {{ s.line1 ?? '' }}{% if s.line2 %}, {{ s.line2 }}{% endif %}<br>
+                                    {{ s.postalCode ?? '' }} {{ s.city ?? '' }} — {{ s.country ?? '' }}
+                                </div>
+                                {% if s.phone %}<div class="mt-1 text-muted">Tél. {{ s.phone }}</div>{% endif %}
+                            {% else %}
+                                <p class="text-muted mb-0">Non renseignée.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h2 class="h6 mb-2">Adresse de facturation</h2>
+                            {% set b = order.billingSnapshot %}
+                            {% if b %}
+                                <div>
+                                    {{ b.fullName ?? '' }}<br>
+                                    {{ b.line1 ?? '' }}{% if b.line2 %}, {{ b.line2 }}{% endif %}<br>
+                                    {{ b.postalCode ?? '' }} {{ b.city ?? '' }} — {{ b.country ?? '' }}
+                                </div>
+                                {% if b.phone %}<div class="mt-1 text-muted">Tél. {{ b.phone }}</div>{% endif %}
+                            {% else %}
+                                <p class="text-muted mb-0">Non renseignée.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Lignes de commande #}
+            <div class="card mb-4">
+                <div class="card-body p-0">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th style="width:100px;">Photo</th>
+                            <th>Article</th>
+                            <th class="text-end">Prix unitaire</th>
+                            <th class="text-center">Qté</th>
+                            <th class="text-end">Sous-total</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for it in order.items %}
+                            <tr>
+                                <td>
+                                    {% if it.productImage %}
+                                        <img src="{{ it.productImage starts with 'http' ? it.productImage : asset(it.productImage) }}"
+                                             alt="{{ it.productName }}"
+                                             style="width:80px;height:80px;object-fit:cover;border-radius:6px;">
+                                    {% else %}
+                                        <img src="{{ asset('images/placeholder.png') }}" alt=""
+                                             style="width:80px;height:80px;object-fit:cover;border-radius:6px;">
+                                    {% endif %}
+                                </td>
+                                <td>{{ it.productName }}</td>
+                                <td class="text-end">{{ it.unitPrice|number_format(2, ',', ' ') }} €</td>
+                                <td class="text-center">{{ it.quantity }}</td>
+                                <td class="text-end">
+                                    {% set lineTotal = (it.unitPrice * it.quantity) %}
+                                    {{ lineTotal|number_format(2, ',', ' ') }} €
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="5" class="text-center text-muted py-4">Aucune ligne.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                        <tfoot>
+                        <tr>
+                            <th colspan="4" class="text-end">Total</th>
+                            <th class="text-end">{{ order.total|number_format(2, ',', ' ') }} €</th>
+                        </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+        {% else %}
+            <h1 class="h4">Paiement confirmé</h1>
+            <p class="text-muted">Nous n’avons pas pu retrouver le détail de la commande. Vous pourrez le consulter depuis votre historique.</p>
+        {% endif %}
+
+        <div class="d-flex gap-2">
+            <a href="{{ path('app_account_orders') }}" class="btn btn-primary">Voir mes commandes</a>
+            {% if order %}
+                <a href="{{ path('order_invoice_pdf', {id: order.id}) }}" class="btn btn-outline-primary" target="_blank" rel="noopener">
+                    Voir / télécharger la facture (PDF)
+                </a>
+            {% endif %}
+            <a href="{{ path('home') }}" class="btn btn-outline-secondary">Retour à l’accueil</a>
+        </div>
+    </section>
+
+    {# ——— Auto-vider le panier après succès (idempotent) ——— #}
+    {% if sessionId %}
+        <script>
+            (function () {
+                var url = '{{ path('cart_clear_after_success') }}?session_id={{ sessionId|e('url') }}';
+                try {
+                    fetch(url, { credentials: 'same-origin' })
+                        .then(function () {
+                            // Mise à jour optimiste du badge si présent
+                            var els = document.querySelectorAll('[data-cart-count], .js-cart-count, #cart-count, #cart_badge');
+                            els.forEach(function (el) { el.textContent = '0'; el.hidden = false; });
+                            window.dispatchEvent(new CustomEvent('cart:cleared'));
+                        })
+                        .catch(function () { /* silencieux */ });
+                } catch (e) { /* silencieux */ }
+            })();
+        </script>
+    {% endif %}
+{% endblock %}

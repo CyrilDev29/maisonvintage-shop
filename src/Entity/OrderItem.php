@@ -9,7 +9,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: OrderItemRepository::class)]
 #[ORM\Table(name: 'order_item')]
-#[ORM\Index(columns: ['order_id'])] // index FK
+#[ORM\Index(columns: ['order_id'])]
+#[ORM\Index(columns: ['product_id'])]
 class OrderItem
 {
     #[ORM\Id]
@@ -20,6 +21,13 @@ class OrderItem
     #[ORM\ManyToOne(targetEntity: Order::class, inversedBy: 'items')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Order $order = null;
+
+    /**
+     * Snapshot de l'identifiant de l'article (permet de décrémenter le stock au webhook).
+     * Nullable pour ne pas casser les anciennes commandes.
+     */
+    #[ORM\Column(name: 'product_id', type: Types::INTEGER, nullable: true)]
+    private ?int $productId = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: "Le nom du produit est obligatoire.")]
@@ -41,6 +49,9 @@ class OrderItem
 
     public function getOrder(): ?Order { return $this->order; }
     public function setOrder(?Order $order): static { $this->order = $order; return $this; }
+
+    public function getProductId(): ?int { return $this->productId; }
+    public function setProductId(?int $productId): static { $this->productId = $productId; return $this; }
 
     public function getProductName(): string { return $this->productName; }
     public function setProductName(string $name): static { $this->productName = $name; return $this; }

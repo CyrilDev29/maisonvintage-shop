@@ -9,12 +9,13 @@
             <strong>Date :</strong> {{ order.createdAt|date('d/m/Y H:i') }}<br>
             <strong>Statut :</strong>
             <span class="badge
-            {% if order.status.value == 'En cours' %} bg-warning text-dark
+            {% if order.status.value == 'En attente de paiement' %} bg-secondary
+            {% elseif order.status.value == 'En cours' %} bg-warning text-dark
             {% elseif order.status.value == 'En préparation' %} bg-info text-dark
             {% elseif order.status.value == 'Expédiée' %} bg-success
-            {% elseif order.status.value == 'Annulée' %} bg-danger
             {% elseif order.status.value == 'Livrée' %} bg-success
-            {% else %} bg-secondary
+            {% elseif order.status.value == 'Annulée' %} bg-danger
+            {% else %} bg-light text-dark
             {% endif %}
         ">
             {{ order.status.value }}
@@ -22,19 +23,22 @@
             <strong>Total :</strong> {{ order.total|number_format(2, ',', ' ') }} €
         </div>
 
-        {# --- Bouton de téléchargement de la facture --- #}
-        <div class="mb-4">
-            <a href="{{ path('account_order_invoice', { id: order.id }) }}"
-               class="btn btn-outline-primary btn-sm">
-                📄 Télécharger la facture (PDF)
-            </a>
-        </div>
+        {# --- Téléchargement facture (non affiché si commande annulée) --- #}
+        {% if order.status.value != 'Annulée' %}
+            <div class="mb-4">
+                <a href="{{ path('account_order_invoice', { id: order.id }) }}"
+                   class="btn btn-outline-primary btn-sm">
+                    📄 Télécharger la facture (PDF)
+                </a>
+            </div>
+        {% endif %}
 
         <h2 class="h5 mt-4">Articles</h2>
         <div class="table-responsive">
             <table class="table table-bordered align-middle">
                 <thead class="table-light">
                 <tr>
+                    <th style="width:90px;">Photo</th>
                     <th>Produit</th>
                     <th class="text-end">Prix unitaire</th>
                     <th class="text-center">Quantité</th>
@@ -44,10 +48,21 @@
                 <tbody>
                 {% for item in items %}
                     <tr>
+                        <td class="text-center">
+                            {% set img = item.productImage %}
+                            {% if img %}
+                                {% set url = (img matches '/^https?:\\/\\//') ? img : asset(img) %}
+                                <img src="{{ url }}" alt="{{ item.productName }}"
+                                     class="img-thumbnail"
+                                     style="width:72px;height:72px;object-fit:cover;">
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
                         <td>{{ item.productName }}</td>
                         <td class="text-end">{{ item.unitPrice|number_format(2, ',', ' ') }} €</td>
                         <td class="text-center">{{ item.quantity }}</td>
-                        <td class="text-end">{{ item.lineTotal }} €</td>
+                        <td class="text-end">{{ item.lineTotal|number_format(2, ',', ' ') }} €</td>
                     </tr>
                 {% endfor %}
                 </tbody>
@@ -63,6 +78,19 @@
             📞 {{ order.telephone }}<br>
             ✉️ {{ order.user.email }}
         </p>
+
+        {# --- Annulation (si autorisée) --- #}
+        {% if order.status.value in ['En attente de paiement', 'En cours', 'En préparation'] %}
+            <form method="post"
+                  action="{{ path('app_account_order_cancel', { id: order.id }) }}"
+                  onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cette commande ? Cette action est irréversible.');"
+                  class="mb-4">
+                <input type="hidden" name="_token" value="{{ csrf_token('cancel_order_' ~ order.id) }}">
+                <button type="submit" class="btn btn-danger btn-sm">
+                    ❌ Annuler la commande
+                </button>
+            </form>
+        {% endif %}
 
         <a href="{{ path('app_account_orders') }}" class="btn btn-secondary mt-3">
             ← Retour à mes commandes
