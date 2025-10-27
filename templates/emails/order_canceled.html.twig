@@ -1,0 +1,133 @@
+{#
+Email d’alerte : annulation de commande
+Variables attendues :
+  - order : \App\Entity\Order   (avec, si dispo: stripePaymentIntentId, stripeRefundId, canceledAt, refundedAt)
+  - user  : \App\Entity\User
+  - refundedNow : bool (optionnel, fourni par le contrôleur au moment de l’annulation)
+#}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Annulation commande {{ order.reference }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; color:#222; background:#f6f7fb; margin:0; padding:0; }
+        .container { max-width:680px; margin:0 auto; background:#ffffff; border:1px solid #e9ecef; border-radius:8px; overflow:hidden; }
+        .header { background:#111; color:#fff; padding:16px 20px; font-size:16px; font-weight:bold; }
+        .content { padding:20px; }
+        .muted { color:#666; font-size:13px; }
+        .badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:12px; background:#dc3545; color:#fff; }
+        .badge-ok { background:#198754; }
+        .badge-warn { background:#fd7e14; }
+        .btn { display:inline-block; padding:10px 14px; border-radius:6px; text-decoration:none; background:#0d6efd; color:#fff; }
+        table { width:100%; border-collapse:collapse; margin-top:12px; }
+        th, td { padding:8px; border-bottom:1px solid #eee; font-size:14px; text-align:left; }
+        th { background:#f9fafc; }
+        .text-right { text-align:right; }
+        .total-row td { font-weight:bold; }
+        .footer { padding:16px 20px; color:#666; font-size:12px; }
+        .small { font-size:12px; color:#555; }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        Annulation de commande — {{ order.reference }}
+    </div>
+
+    <div class="content">
+        <p>
+            <span class="badge">ANNULÉE</span>
+            {% if refundedNow %}
+                <span class="badge badge-ok">REMBOURSÉE</span>
+            {% elseif order.refundedAt %}
+                <span class="badge badge-ok">REMBOURSÉE</span>
+            {% else %}
+                {# badge optionnel si non remboursée immédiatement #}
+                <span class="badge badge-warn">REMBOURSEMENT À VÉRIFIER</span>
+            {% endif %}
+        </p>
+
+        <p>
+            Bonjour,<br>
+            La commande <strong>{{ order.reference }}</strong> a été <strong>annulée</strong> par le client.
+        </p>
+
+        <p class="muted">
+            Date de création : {{ order.createdAt|date('d/m/Y H:i') }}<br>
+            Client : {{ order.prenom }} {{ order.nom }} — {{ order.user.email }}<br>
+            Téléphone : {{ order.telephone }}<br>
+            Annulée le : {{ order.canceledAt ? order.canceledAt|date('d/m/Y H:i') : '—' }}
+        </p>
+
+        {# --- Bloc infos Stripe utiles au suivi --- #}
+        <div class="small" style="margin:10px 0 6px;">
+            {% if order.stripePaymentIntentId %}
+                PaymentIntent : <span class="mono">{{ order.stripePaymentIntentId }}</span><br>
+            {% endif %}
+            {% if order.stripeRefundId %}
+                Refund ID : <span class="mono">{{ order.stripeRefundId }}</span>
+                {% if order.refundedAt %} — le {{ order.refundedAt|date('d/m/Y H:i') }}{% endif %}
+                <br>
+            {% endif %}
+            {% if order.stripeSessionId %}
+                Checkout Session : <span class="mono">{{ order.stripeSessionId }}</span>
+            {% endif %}
+        </div>
+
+        <h3 style="margin:20px 0 8px;">Articles</h3>
+        <table role="presentation" aria-hidden="true">
+            <thead>
+            <tr>
+                <th>Produit</th>
+                <th class="text-right">PU (€)</th>
+                <th class="text-right">Qté</th>
+                <th class="text-right">Sous-total (€)</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for item in order.items %}
+                <tr>
+                    <td>{{ item.productName }}</td>
+                    <td class="text-right">{{ item.unitPrice|number_format(2, ',', ' ') }}</td>
+                    <td class="text-right">{{ item.quantity }}</td>
+                    <td class="text-right">
+                        {# item.lineTotal est déjà une string formatée dans l'entité ; si besoin reformat: #}
+                        {{ item.lineTotal|number_format(2, ',', ' ') }}
+                    </td>
+                </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="3" class="text-right">Total :</td>
+                <td class="text-right">{{ order.total|number_format(2, ',', ' ') }} €</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <h3 style="margin:20px 0 8px;">Adresse de livraison</h3>
+        <p class="muted" style="margin-top:0;">
+            {{ order.prenom }} {{ order.nom }}<br>
+            {{ order.rue }}<br>
+            {{ order.codePostal }} {{ order.ville }} — {{ order.pays }}
+        </p>
+
+        {# --- Lien back-office (penser à remplacer localhost en prod) --- #}
+        <p style="margin-top:25px;">
+            <a class="btn"
+               href="https://localhost:8000/admin?crudAction=detail&crudControllerFqcn=App\Controller\Admin\OrderCrudController&entityId={{ order.id }}">
+                🔍 Ouvrir la commande dans le back-office
+            </a>
+        </p>
+        <p class="small muted">
+            Pensez à adapter le domaine pour la production, ou utilisez <code>{{ '{{ absolute_url(path(\"...\")) }}' }}</code> si vous avez une route dédiée.
+        </p>
+    </div>
+
+    <div class="footer">
+        Cet e-mail a été envoyé automatiquement par Maison Vintage suite à l’annulation de la commande {{ order.reference }}.
+    </div>
+</div>
+</body>
+</html>

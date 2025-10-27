@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+{% block title %}Paiement annulé — Maison Vintage{% endblock %}
+
+{% block body %}
+    <section class="container" style="max-width:900px;margin:2rem auto;padding:0 1rem;">
+        <div class="alert alert-warning" role="alert">
+            <strong>Paiement annulé.</strong> Aucun débit n’a été effectué. Vous pouvez corriger vos informations et réessayer.
+        </div>
+
+        <h1 class="h4 mb-3">Que souhaitez-vous faire ?</h1>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ path('checkout') }}" class="btn btn-primary">Revenir au récapitulatif</a>
+            <a href="{{ path('cart_show') }}" class="btn btn-outline-secondary">Voir mon panier</a>
+            <a href="{{ path('home') }}" class="btn btn-outline-secondary">Retour à l’accueil</a>
+        </div>
+
+        <hr class="my-4">
+
+        <p class="text-muted mb-0">
+            Si vous pensez qu’il s’agit d’une erreur, vous pouvez réessayer le paiement depuis votre récapitulatif.
+        </p>
+    </section>
+{% endblock %}

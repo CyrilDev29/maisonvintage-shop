@@ -1,21 +1,39 @@
 {% extends 'base.html.twig' %}
 {% block title %}Mise à jour de votre commande{% endblock %}
-{% block body %}
-    <section style="max-width:650px;margin:2rem auto;padding:1rem;">
-        <h1>Commande {{ order.reference }}</h1>
-        <p>Bonjour {{ order.prenom }} {{ order.nom }},</p>
-        <p>Le statut de votre commande a changé&nbsp;: <strong>{{ order.status.value }}</strong>.</p>
 
-        <h2 class="h5 mt-4">Récapitulatif</h2>
-        <ul>
+{% block body %}
+    <section style="max-width:650px;margin:2rem auto;padding:1rem;font-family:Arial,sans-serif;color:#222;">
+        <h1 style="font-size:1.4rem;">Commande {{ order.reference }}</h1>
+
+        <p>Bonjour {{ order.prenom }} {{ order.nom }},</p>
+        <p>
+            Le statut de votre commande a changé :
+            <strong>{{ order.status.value }}</strong>.
+        </p>
+
+        <h2 style="margin-top:1.5rem;font-size:1.1rem;">Récapitulatif</h2>
+        <ul style="list-style:none;padding-left:0;margin-top:0.5rem;">
             {% for it in order.items %}
-                <li>{{ it.productName }} — {{ it.quantity }} × {{ it.unitPrice|number_format(2, ',', ' ') }} €</li>
+                <li style="margin-bottom:4px;">
+                    {{ it.productName }} — {{ it.quantity }} × {{ it.unitPrice|number_format(2, ',', ' ') }} €
+                </li>
             {% endfor %}
         </ul>
-        <p><strong>Total :</strong> {{ order.total|number_format(2, ',', ' ') }} €</p>
 
-        <p class="mt-4">Vous pouvez consulter votre commande ici : <a href="{{ url('app_account_order_show', { id: order.id }) }}">détail de la commande</a>.</p>
+        <p style="margin-top:0.8rem;">
+            <strong>Total :</strong> {{ order.total|number_format(2, ',', ' ') }} €
+        </p>
 
-        <p class="mt-4">Merci de votre confiance,<br>L’équipe MaisonVintage</p>
+        <p style="margin-top:1.5rem;">
+            Vous pouvez consulter votre commande ici :
+            <a href="{{ url('app_account_order_show', { id: order.id }) }}" style="color:#0d6efd;text-decoration:none;">
+                Voir le détail de la commande
+            </a>.
+        </p>
+
+        <p style="margin-top:1.5rem;">
+            Merci de votre confiance,<br>
+            <strong>L’équipe Maison Vintage</strong>
+        </p>
     </section>
 {% endblock %}

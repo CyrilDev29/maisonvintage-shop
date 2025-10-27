@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>{% block title %}Maison Vintage{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
 
     {# Désactive les visites Turbo -> rechargement complet #}
     <meta name="turbo-visit-control" content="reload">
@@ -101,11 +102,13 @@
                 {% for _id, _qty in _cart %}{% set _count = _count + _qty %}{% endfor %}
 
                 <li class="nav-item me-2">
-                    <a class="nav-link" href="{{ path('cart_show') }}">
+                    <a class="nav-link position-relative" href="{{ path('cart_show') }}">
                         🛒 Panier
-                        {% if _count > 0 %}
-                            <span class="badge bg-light text-dark ms-1">{{ _count }}</span>
-                        {% endif %}
+                        <span id="cart-count"
+                              class="badge bg-light text-dark ms-1{% if _count == 0 %} d-none{% endif %}"
+                              data-count="{{ _count|default(0) }}">
+                            {{ _count|default(0) }}
+                        </span>
                     </a>
                 </li>
 
@@ -218,6 +221,46 @@
             window.addEventListener('resize', hideBox);
             input.addEventListener('blur',()=>setTimeout(hideBox,120));
             form.addEventListener('submit',(e)=>{ if(input.value.trim()===''){ e.preventDefault(); hideBox(); }});
+        })();
+    </script>
+
+    {# Badge Panier réactif (écoute l'événement custom et le localStorage) #}
+    <script>
+        (function () {
+            const el = document.getElementById('cart-count');
+            if (!el) return;
+
+            function render(count) {
+                const n = Math.max(0, parseInt(count || 0, 10) || 0);
+                el.textContent = n;
+                el.dataset.count = String(n);
+                if (n > 0) {
+                    el.classList.remove('d-none');
+                } else {
+                    el.classList.add('d-none');
+                }
+            }
+
+            // Init depuis l'attribut data-count
+            render(el.dataset.count);
+
+            // 1) Événement custom (ex: dispatché depuis la page succès)
+            document.addEventListener('cart:updated', (e) => {
+                const next = e?.detail?.count ?? 0;
+                render(next);
+                try { localStorage.setItem('mv-cart-count', String(next)); } catch (_) {}
+            });
+
+            // 2) Synchronisation inter-onglets via localStorage
+            try {
+                const cached = localStorage.getItem('mv-cart-count');
+                if (cached !== null) { render(cached); }
+                window.addEventListener('storage', (e) => {
+                    if (e.key === 'mv-cart-count') {
+                        render(e.newValue ?? 0);
+                    }
+                });
+            } catch (_) {}
         })();
     </script>
 {% endblock %}

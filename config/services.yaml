@@ -5,6 +5,7 @@
 parameters:
     app.contact_from: '%env(CONTACT_FROM)%'
     app.seller_email: '%env(CONTACT_FROM)%'   # provisoire : copie vendeur vers MailHog
+    stripe.public_key: '%env(STRIPE_PUBLIC_KEY)%'
 
 services:
     _defaults:
@@ -27,3 +28,15 @@ services:
 
     # Vérification personnalisée de l’utilisateur (ex: isVerified)
     App\Security\UserChecker: ~
+
+    # Stripe (CB + PayPal via Payment Element/Checkout)
+    App\Service\StripePaymentService:
+        arguments:
+            $publicKey: '%env(STRIPE_PUBLIC_KEY)%'
+            $secretKey: '%env(STRIPE_SECRET_KEY)%'
+            $successUrl: '%env(PAYMENT_SUCCESS_URL)%'
+            $cancelUrl: '%env(PAYMENT_CANCEL_URL)%'
+            $currency: '%env(PAYMENT_CURRENCY)%'
+            $enablePaypal: true
+            # je le laisse vide pour l’instant; je mettrai le vrai whsec_... après création du webhook
+            $webhookSecret: '%env(STRIPE_WEBHOOK_SECRET)%'

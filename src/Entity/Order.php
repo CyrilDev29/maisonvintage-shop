@@ -89,6 +89,23 @@ class Order
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
     private bool $invoiceSent = false;
 
+    /* ---------- Champs Stripe / annulation / remboursement (ajouts) ---------- */
+
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $stripePaymentIntentId = null;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $stripeSessionId = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $canceledAt = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $refundedAt = null;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $stripeRefundId = null;
+
     public function __construct()
     {
         $this->items = new ArrayCollection();
@@ -170,29 +187,29 @@ class Order
     public function getPays(): string { return $this->pays; }
 
     // --- Snapshots JSON (nouveau modèle) ---
-    public function getShippingSnapshot(): ?array
-    {
-        return $this->shippingSnapshot;
-    }
+    public function getShippingSnapshot(): ?array { return $this->shippingSnapshot; }
+    public function setShippingSnapshot(?array $snapshot): self { $this->shippingSnapshot = $snapshot; return $this; }
 
-    public function setShippingSnapshot(?array $snapshot): self
-    {
-        $this->shippingSnapshot = $snapshot;
-        return $this;
-    }
-
-    public function getBillingSnapshot(): ?array
-    {
-        return $this->billingSnapshot;
-    }
-
-    public function setBillingSnapshot(?array $snapshot): self
-    {
-        $this->billingSnapshot = $snapshot;
-        return $this;
-    }
+    public function getBillingSnapshot(): ?array { return $this->billingSnapshot; }
+    public function setBillingSnapshot(?array $snapshot): self { $this->billingSnapshot = $snapshot; return $this; }
 
     // --- Facture envoyée ---
     public function isInvoiceSent(): bool { return $this->invoiceSent; }
     public function markInvoiceSent(): void { $this->invoiceSent = true; }
+
+    // --- Stripe / annulation / remboursement (getters/setters) ---
+    public function getStripePaymentIntentId(): ?string { return $this->stripePaymentIntentId; }
+    public function setStripePaymentIntentId(?string $id): self { $this->stripePaymentIntentId = $id; return $this; }
+
+    public function getStripeSessionId(): ?string { return $this->stripeSessionId; }
+    public function setStripeSessionId(?string $id): self { $this->stripeSessionId = $id; return $this; }
+
+    public function getCanceledAt(): ?\DateTimeImmutable { return $this->canceledAt; }
+    public function setCanceledAt(?\DateTimeImmutable $dt): self { $this->canceledAt = $dt; return $this; }
+
+    public function getRefundedAt(): ?\DateTimeImmutable { return $this->refundedAt; }
+    public function setRefundedAt(?\DateTimeImmutable $dt): self { $this->refundedAt = $dt; return $this; }
+
+    public function getStripeRefundId(): ?string { return $this->stripeRefundId; }
+    public function setStripeRefundId(?string $id): self { $this->stripeRefundId = $id; return $this; }
 }

@@ -1,3 +1,4 @@
+{# templates/emails/order_confirmation.html.twig #}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -39,6 +40,9 @@
                 <strong>{{ order.shippingSnapshot.fullName }}</strong><br>
                 {{ order.shippingSnapshot.line1 }}{% if order.shippingSnapshot.line2 %}, {{ order.shippingSnapshot.line2 }}{% endif %}<br>
                 {{ order.shippingSnapshot.postalCode }} {{ order.shippingSnapshot.city }} — {{ order.shippingSnapshot.country }}
+                {% if order.shippingSnapshot.phone %}
+                    <br><span class="muted">Tél. {{ order.shippingSnapshot.phone }}</span>
+                {% endif %}
             {% else %}
                 <span class="muted">Non renseignée</span>
             {% endif %}
@@ -50,6 +54,9 @@
                 <strong>{{ bill.fullName }}</strong><br>
                 {{ bill.line1 }}{% if bill.line2 %}, {{ bill.line2 }}{% endif %}<br>
                 {{ bill.postalCode }} {{ bill.city }} — {{ bill.country }}
+                {% if bill.phone %}
+                    <br><span class="muted">Tél. {{ bill.phone }}</span>
+                {% endif %}
             {% else %}
                 <span class="muted">Non renseignée</span>
             {% endif %}
@@ -61,22 +68,25 @@
         <thead>
         <tr>
             <th>Produit</th>
-            <th>Qté</th>
-            <th>Prix unitaire</th>
-            <th>Sous-total</th>
+            <th style="text-align:center;">Qté</th>
+            <th style="text-align:right;">Prix unitaire</th>
+            <th style="text-align:right;">Sous-total</th>
         </tr>
         </thead>
         <tbody>
         {% for item in order.items %}
-            {# Conversion robuste: virgule -> point puis +0 pour caster en nombre #}
+            {# Conversion robuste: string/decimal -> nombre #}
             {% set unit = (item.unitPrice|replace({',':'.'})) + 0 %}
-            {% set subtotal = (item.getLineTotal()|replace({',':'.'})) + 0 %}
+            {% set qty  = (item.quantity ?? 0) + 0 %}
+            {% set subtotal = unit * qty %}
             <tr>
                 <td>{{ item.productName }}</td>
-                <td style="text-align:center;">{{ item.quantity }}</td>
-                <td>{{ unit|number_format(2, ',', ' ') }} €</td>
-                <td>{{ subtotal|number_format(2, ',', ' ') }} €</td>
+                <td style="text-align:center;">{{ qty }}</td>
+                <td style="text-align:right;">{{ unit|number_format(2, ',', ' ') }} €</td>
+                <td style="text-align:right;">{{ subtotal|number_format(2, ',', ' ') }} €</td>
             </tr>
+        {% else %}
+            <tr><td colspan="4" class="muted">Aucune ligne.</td></tr>
         {% endfor %}
         </tbody>
     </table>

@@ -7,17 +7,15 @@ use App\Entity\OrderItem;
 use App\Enum\OrderStatus;
 use App\Repository\ArticleRepository;
 use App\Repository\AddressRepository;
-use App\Service\InvoiceService;
-use Doctrine\DBAL\LockMode;
+use App\Service\StripePaymentService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Mailer\MailerInterface;
-use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 
 class CheckoutController extends AbstractController
 {
@@ -82,10 +80,9 @@ class CheckoutController extends AbstractController
             return $this->redirectToRoute('cart_show');
         }
 
-        // === Adresses sélectionnées (session) ===
         $user = $this->getUser();
 
-        // Livraison (obligatoire)
+        // Adresse de livraison sélectionnée
         $selectedAddress = null;
         $shippingId = $request->getSession()->get('checkout.address_id');
         if ($shippingId && $user) {
@@ -95,7 +92,7 @@ class CheckoutController extends AbstractController
             ]);
         }
 
-        // Facturation : même que livraison (par défaut) ou différente
+        // Adresse de facturation sélectionnée (peut être la même)
         $billingSame = (bool) $request->getSession()->get('checkout.billing_same', true);
         $selectedBilling = null;
         if (!$billingSame && $user) {
@@ -108,16 +105,14 @@ class CheckoutController extends AbstractController
             }
         }
 
-        // On peut confirmer si : adresse de livraison OK
-        // et (soit facturation = même, soit adresse de facturation différente choisie)
         $canConfirm = (bool) $selectedAddress && ($billingSame || (bool) $selectedBilling);
 
         return $this->render('checkout/checkout.html.twig', [
             'items'            => $items,
             'total'            => $total,
-            'selectedAddress'  => $selectedAddress,  // livraison
+            'selectedAddress'  => $selectedAddress,
             'billingSame'      => $billingSame,
-            'selectedBilling'  => $selectedBilling,  // si différente
+            'selectedBilling'  => $selectedBilling,
             'canConfirm'       => $canConfirm,
         ]);
     }
@@ -129,11 +124,9 @@ class CheckoutController extends AbstractController
         SessionInterface       $session,
         ArticleRepository      $articleRepository,
         EntityManagerInterface $em,
-        MailerInterface        $mailer,
-        InvoiceService         $invoiceService,
-        AddressRepository      $addressRepo
-    ): Response
-    {
+        AddressRepository      $addressRepo,
+        StripePaymentService   $stripe
+    ): Response {
         $this->denyAccessUnlessGranted('ROLE_USER');
 
         $token = $request->request->get('_token');
@@ -151,7 +144,7 @@ class CheckoutController extends AbstractController
 
         $user = $this->getUser();
 
-        // === Sélection d'adresses depuis la session ===
+        // Récupération des adresses choisies
         $shippingId  = $request->getSession()->get('checkout.address_id');
         $billingSame = (bool) $request->getSession()->get('checkout.billing_same', true);
         $billingId   = $request->getSession()->get('checkout.billing_address_id');
@@ -179,7 +172,18 @@ class CheckoutController extends AbstractController
             }
         }
 
+        // Vérification du stock (sans décrément)
         $articles = $articleRepository->findBy(['id' => array_keys($cart)]);
+        foreach ($articles as $article) {
+            $qtyInCart = max(0, (int)($cart[$article->getId()] ?? 0));
+            if ($qtyInCart === 0) {
+                continue;
+            }
+            if ($qtyInCart > (int) $article->getQuantity()) {
+                $this->addFlash('danger', sprintf('Le stock de "%s" vient de changer. Merci de vérifier votre panier.', $article->getTitre()));
+                return $this->redirectToRoute('cart_show');
+            }
+        }
 
         $conn = $em->getConnection();
         $conn->beginTransaction();
@@ -187,16 +191,16 @@ class CheckoutController extends AbstractController
         try {
             $total = 0.0;
 
+            // Création de la commande (statut en attente de paiement / en cours suivant l’enum)
             $order = new Order();
             $order->setUser($user);
             $order->setStatus(OrderStatus::EN_COURS);
 
-            // (optionnel) snapshot existant depuis User
             if (method_exists($order, 'setSnapshotFromUser')) {
                 $order->setSnapshotFromUser($user);
             }
 
-            // === NEW: snapshots d'adresses sur la commande ===
+            // Snapshots d’adresses
             $order->setShippingSnapshot([
                 'fullName'   => $shipping->getFullName(),
                 'line1'      => $shipping->getLine1(),
@@ -204,9 +208,8 @@ class CheckoutController extends AbstractController
                 'postalCode' => $shipping->getPostalCode(),
                 'city'       => $shipping->getCity(),
                 'country'    => $shipping->getCountry(),
-                'phone'      => $shipping->getPhone(), // facultatif (ne pas afficher si tu ne veux pas)
+                'phone'      => $shipping->getPhone(),
             ]);
-
             $order->setBillingSnapshot([
                 'fullName'   => $billing->getFullName(),
                 'line1'      => $billing->getLine1(),
@@ -223,106 +226,98 @@ class CheckoutController extends AbstractController
                     continue;
                 }
 
-                // Verrou pessimiste
-                $em->lock($article, LockMode::PESSIMISTIC_WRITE);
-
-                // Re-vérification du stock
-                $current = (int) $article->getQuantity();
-                if ($qty > $current) {
-                    unset($cart[$article->getId()]);
-                    $session->set('cart', $cart);
-
-                    $message = sprintf('Désolé, "%s" vient d’être vendu(e). Votre panier a été mis à jour.', $article->getTitre());
-                    $conn->rollBack();
-                    return $this->redirectToRoute('cart_show', ['e' => $message]);
-                }
-
-                // décrémentation
-                $article->setQuantity($current - $qty);
-
-                // snapshot de ligne
                 $price    = (float) $article->getPrix();
                 $subtotal = $price * $qty;
                 $total   += $subtotal;
 
                 $item = new OrderItem();
+                if (method_exists($item, 'setProductId')) {
+                    $item->setProductId($article->getId());
+                }
                 $item->setProductName($article->getTitre());
                 $item->setUnitPrice(number_format($price, 2, '.', ''));
                 $item->setQuantity($qty);
 
-                // image snapshot
+                // Snapshot image
                 $img = null;
                 if (method_exists($article, 'getImageUrl') && $article->getImageUrl()) {
                     $img = $article->getImageUrl();
                 } elseif (method_exists($article, 'getImagePath') && $article->getImagePath()) {
                     $img = $article->getImagePath();
                 } elseif (method_exists($article, 'getImageName') && $article->getImageName()) {
-                    $img = 'uploads/articles/' . ltrim((string) $article->getImageName(), '/');
+                    $img = '/uploads/articles/' . ltrim((string) $article->getImageName(), '/');
                 } elseif (method_exists($article, 'getImage') && $article->getImage()) {
                     $val = (string) $article->getImage();
                     if (preg_match('#^https?://#i', $val) || str_starts_with($val, '/')) {
                         $img = $val;
                     } else {
-                        $img = 'uploads/articles/' . ltrim($val, '/');
+                        $img = '/uploads/articles/' . ltrim($val, '/');
                     }
                 }
-                $item->setProductImage($img);
+                if (method_exists($item, 'setProductImage')) {
+                    $item->setProductImage($img);
+                }
 
                 $order->addItem($item);
             }
 
             if ($order->getItems()->count() === 0) {
                 $conn->rollBack();
-                return $this->redirectToRoute('cart_show', ['e' => 'Votre panier est vide.']);
+                $this->addFlash('info', 'Votre panier est vide.');
+                return $this->redirectToRoute('cart_show');
             }
 
             $order->setTotal(number_format($total, 2, '.', ''));
-            $order->setReference('MV-' . date('Y') . '-' . str_pad((string)random_int(1, 999999), 6, '0', STR_PAD_LEFT));
+            $order->setReference('MV-' . date('Y') . '-' . str_pad((string) random_int(1, 999999), 6, '0', STR_PAD_LEFT));
 
             $em->persist($order);
             $em->flush();
             $conn->commit();
 
-            // === FACTURES + EMAILS ===
-            $clientPdfPath = $invoiceService->generate($order, false);
-            $sellerPdfPath = $invoiceService->generate($order, true);
-
-            $from = $this->getParameter('app.contact_from') ?? 'no-reply@maisonvintage.test';
-
-            $emailClient = (new TemplatedEmail())
-                ->from($from)
-                ->to($user->getEmail())
-                ->subject('Confirmation de votre commande ' . $order->getReference())
-                ->htmlTemplate('emails/order_confirmation.html.twig')
-                ->context(['order' => $order, 'user' => $user])
-                ->attachFromPath($clientPdfPath, sprintf('Facture-%s.pdf', $order->getReference()));
-            $mailer->send($emailClient);
-
-            $sellerTo = $this->getParameter('app.seller_email') ?? $from;
-            $emailSeller = (new TemplatedEmail())
-                ->from($from)
-                ->to($sellerTo)
-                ->subject('Copie facture — ' . $order->getReference())
-                ->html('<p>Copie vendeur à archiver.</p>')
-                ->attachFromPath($sellerPdfPath, sprintf('Facture-%s-copie.pdf', $order->getReference()));
-            $mailer->send($emailSeller);
-
-            if (method_exists($order, 'markInvoiceSent')) {
-                $order->markInvoiceSent();
-                $em->flush();
+            // Préparation des lignes pour Stripe (centimes)
+            $lineItems = [];
+            foreach ($order->getItems() as $it) {
+                $unitCents = (int) \round((float) $it->getUnitPrice() * 100);
+                $qty       = max(1, (int) $it->getQuantity());
+                $lineItems[] = [
+                    'name'        => $it->getProductName(),
+                    'unit_amount' => $unitCents,
+                    'quantity'    => $qty,
+                ];
             }
 
-            // Nettoyage panier
-            $session->remove('cart');
+            $email = method_exists($user, 'getEmail') ? $user->getEmail() : null;
 
-            $this->addFlash('success', 'Votre commande a bien été enregistrée ! Un email de confirmation vous a été envoyé avec votre facture.');
-            return $this->redirectToRoute('app_account_orders');
+            $sessionStripe = $stripe->createCheckoutSession(
+                $lineItems,
+                $order->getReference(),
+                $email
+            );
+
+            return $this->redirectToRoute('checkout_redirect', [
+                'sessionId'  => $sessionStripe->id,
+                'sessionUrl' => $sessionStripe->url,
+            ]);
 
         } catch (\Throwable $e) {
             if ($conn->isTransactionActive()) {
                 $conn->rollBack();
             }
-            return $this->redirectToRoute('cart_show', ['e' => $e->getMessage()]);
+            $this->addFlash('danger', 'Une erreur est survenue lors de la validation du panier : ' . $e->getMessage());
+            return $this->redirectToRoute('cart_show');
         }
+    }
+
+    #[Route('/checkout/redirect/{sessionId}', name: 'checkout_redirect', methods: ['GET'])]
+    public function redirectToStripe(string $sessionId, Request $request, ParameterBagInterface $params): Response
+    {
+        $stripePublicKey = (string) $params->get('stripe.public_key');
+        $sessionUrl = (string) $request->query->get('sessionUrl', '');
+
+        return $this->render('checkout/redirect.html.twig', [
+            'sessionId'       => $sessionId,
+            'sessionUrl'      => $sessionUrl,
+            'stripePublicKey' => $stripePublicKey,
+        ]);
     }
 }

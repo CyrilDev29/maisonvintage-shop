@@ -1,0 +1,21 @@
+{% extends 'base.html.twig' %}
+{% block title %}Paiement échoué — Maison Vintage{% endblock %}
+
+{% block body %}
+    <section class="container" style="max-width:900px;margin:2rem auto;padding:0 1rem;">
+        <div class="alert alert-danger mb-4" role="alert">
+            <strong>Le paiement a échoué.</strong><br>
+            Votre transaction n’a pas pu être confirmée.
+        </div>
+
+        <p class="text-muted mb-4">
+            Aucun montant n’a été débité. Vous pouvez réessayer le paiement à tout moment.
+        </p>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ path('checkout') }}" class="btn btn-primary">Réessayer le paiement</a>
+            <a href="{{ path('cart_show') }}" class="btn btn-outline-secondary">Voir mon panier</a>
+            <a href="{{ path('home') }}" class="btn btn-outline-secondary">Retour à l’accueil</a>
+        </div>
+    </section>
+{% endblock %}

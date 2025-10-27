@@ -1,0 +1,81 @@
+{% extends 'base.html.twig' %}
+{% block title %}Paiement en cours — Maison Vintage{% endblock %}
+
+{% block body %}
+    <section class="container text-center my-5" style="max-width:640px;">
+        <h1 class="h4 mb-3">Redirection vers le paiement sécurisé…</h1>
+
+        <div class="d-inline-flex align-items-center gap-3">
+            <div class="spinner-border text-primary" role="status" aria-hidden="true" style="width:2.5rem;height:2.5rem;"></div>
+            <p class="mb-0 text-muted">Merci de patienter quelques secondes.</p>
+        </div>
+
+        <p class="mt-4 text-muted">
+            {% if sessionUrl %}
+                Si rien ne se passe, <a id="manual-link" href="{{ sessionUrl }}">cliquez ici pour ouvrir le paiement</a>
+            {% else %}
+                Si rien ne se passe, <a id="manual-link" href="#" rel="nofollow">cliquez ici pour réessayer</a>
+            {% endif %}
+            ou <a href="{{ path('checkout') }}">retour au récapitulatif</a>.
+        </p>
+
+        {% if sessionUrl %}
+            <noscript>
+                <p class="mt-3">
+                    JavaScript est désactivé. <a href="{{ sessionUrl }}">Ouvrir la page de paiement</a>.
+                </p>
+            </noscript>
+        {% endif %}
+    </section>
+
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        (function () {
+            const sessionUrl = "{{ sessionUrl|e('js') }}";
+            const sessionId = "{{ sessionId|e('js') }}";
+            const publishableKey = "{{ stripePublicKey|e('js') }}";
+
+            // 1) Redirection directe via sessionUrl si disponible (le plus fiable)
+            if (sessionUrl) {
+                // replace() évite que la page reste dans l’historique
+                window.location.replace(sessionUrl);
+
+                // Retry de secours après 2,5 s si le navigateur bloque la redirection
+                setTimeout(function () {
+                    if (!document.hidden) {
+                        window.location.replace(sessionUrl);
+                    }
+                }, 2500);
+                return;
+            }
+
+            // 2) Sinon, on utilise Stripe.js via sessionId
+            if (!publishableKey || !sessionId) {
+                console.error('Paramètres Stripe manquants (clé publique ou sessionId).');
+                return;
+            }
+
+            const stripe = Stripe(publishableKey);
+
+            function go() {
+                stripe.redirectToCheckout({ sessionId }).then(function (result) {
+                    if (result.error) {
+                        console.error(result.error.message);
+                    }
+                });
+            }
+
+            // Lancement immédiat
+            go();
+
+            // Réessai manuel
+            const manual = document.getElementById('manual-link');
+            if (manual) manual.addEventListener('click', function (e) {
+                if (!sessionUrl) {
+                    e.preventDefault();
+                    go();
+                }
+            });
+        })();
+    </script>
+{% endblock %}

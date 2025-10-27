@@ -1,11 +1,12 @@
-<table class="table">
-    <thead>
+{# templates/admin/order/_items.html.twig #}
+<table class="table align-middle table-bordered table-sm">
+    <thead class="table-light">
     <tr>
-        <th>Image</th>
+        <th style="width:80px;">Image</th>
         <th>Produit</th>
-        <th>Prix unitaire</th>
-        <th>Quantité</th>
-        <th>Sous-total</th>
+        <th class="text-end">Prix unitaire (€)</th>
+        <th class="text-center">Quantité</th>
+        <th class="text-end">Sous-total (€)</th>
     </tr>
     </thead>
     <tbody>
@@ -13,20 +14,23 @@
         {% set img = item.productImage %}
         {% set is_abs = img is not empty and (img starts with 'http://' or img starts with 'https://' or img starts with '/') %}
         <tr>
-            <td>
+            <td class="text-center">
                 {% if img %}
-                    <img
-                        src="{{ is_abs ? img : asset(img) }}"
-                        alt="{{ item.productName }}"
-                        style="width:60px;height:60px;object-fit:cover;border-radius:4px;">
+                    <img src="{{ is_abs ? img : asset(img) }}"
+                         alt="{{ item.productName }}"
+                         style="width:60px;height:60px;object-fit:cover;border-radius:4px;">
                 {% else %}
-                    <span class="text-muted">Pas d'image</span>
+                    <span class="text-muted">—</span>
                 {% endif %}
             </td>
             <td>{{ item.productName }}</td>
-            <td>{{ item.unitPrice|number_format(2, ',', ' ') }} €</td>
-            <td>{{ item.quantity }}</td>
-            <td>{{ item.getLineTotal()|number_format(2, ',', ' ') }} €</td>
+            <td class="text-end">{{ item.unitPrice|number_format(2, ',', ' ') }}</td>
+            <td class="text-center">{{ item.quantity }}</td>
+            <td class="text-end">{{ item.lineTotal|number_format(2, ',', ' ') }}</td>
+        </tr>
+    {% else %}
+        <tr>
+            <td colspan="5" class="text-center text-muted">Aucun article dans cette commande.</td>
         </tr>
     {% endfor %}
     </tbody>
