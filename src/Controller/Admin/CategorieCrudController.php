@@ -21,7 +21,21 @@ class CategorieCrudController extends AbstractCrudController
     {
         return $crud
             ->setEntityLabelInSingular('Catégorie')
-            ->setEntityLabelInPlural('Catégories');
+            ->setEntityLabelInPlural('Catégories')
+            ->setPageTitle(Crud::PAGE_INDEX, 'Liste des catégories')
+            ->setPageTitle(Crud::PAGE_NEW, 'Ajouter une catégorie')
+            ->setPageTitle(Crud::PAGE_EDIT, 'Modifier une catégorie')
+            ->setPageTitle(Crud::PAGE_DETAIL, 'Détail de la catégorie');
+    }
+
+    public function configureActions(Actions $actions): Actions
+    {
+        $actions = $actions->add(Crud::PAGE_INDEX, Action::DETAIL);
+
+        return $actions
+            ->update(Crud::PAGE_INDEX, Action::NEW, fn(Action $a) => $a->setLabel('Ajouter'))
+            ->update(Crud::PAGE_INDEX, Action::EDIT, fn(Action $a) => $a->setLabel('Modifier'))
+            ->update(Crud::PAGE_INDEX, Action::DELETE, fn(Action $a) => $a->setLabel('Supprimer'));
     }
 
     public function configureFields(string $pageName): iterable
@@ -30,16 +44,5 @@ class CategorieCrudController extends AbstractCrudController
             TextField::new('nom', 'Nom'),
             TextareaField::new('description', 'Description')->hideOnIndex(),
         ];
-    }
-
-    public function configureActions(Actions $actions): Actions
-    {
-        $hideDeleteWhenNotEmpty = fn (Action $a) => $a->displayIf(
-            fn (Categorie $c) => $c->getArticles()->count() === 0
-        );
-
-        return $actions
-            ->update(Crud::PAGE_INDEX, Action::DELETE, $hideDeleteWhenNotEmpty)
-            ->update(Crud::PAGE_DETAIL, Action::DELETE, $hideDeleteWhenNotEmpty);
     }
 }

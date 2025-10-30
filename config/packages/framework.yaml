@@ -2,7 +2,16 @@
 framework:
     secret: '%env(APP_SECRET)%'
 
-    # Note that the session will be started ONLY if you read or write from it.
+    # Langue par défaut de l'application
+    default_locale: 'fr'
+
+    # Activation du composant de traduction
+    translator:
+        default_path: '%kernel.project_dir%/translations'
+        fallbacks:
+            - 'fr'
+
+    # La session démarre seulement si elle est lue/écrite
     session: true
 
     #esi: true

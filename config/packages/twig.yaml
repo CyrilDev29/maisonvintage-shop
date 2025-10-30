@@ -6,6 +6,12 @@ twig:
     date:
         timezone: 'Europe/Paris'
 
+    globals:
+        bank_holder: '%bank.holder%'
+        bank_bankname: '%bank.bankname%'
+        bank_iban: '%bank.iban%'
+        bank_bic: '%bank.bic%'
+
 when@test:
     twig:
         strict_variables: true

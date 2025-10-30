@@ -29,9 +29,16 @@ class Order
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
-    /** Statut stocké comme enum (string) */
-    #[ORM\Column(enumType: OrderStatus::class)]
-    private OrderStatus $status = OrderStatus::EN_COURS;
+    /**
+     * Statut stocké comme backed enum (string).
+     * IMPORTANT:
+     * - On force type=STRING + length pour des valeurs avec accents (ex.: "Échec").
+     * - Valeur par défaut au niveau PHP = EN_ATTENTE_PAIEMENT pour éviter toute
+     *   "validation" avant paiement effectif. La promotion d’état se fera via
+     *   webhook ou action back-office (jamais sur la page "success" côté client).
+     */
+    #[ORM\Column(type: Types::STRING, enumType: OrderStatus::class, length: 32)]
+    private OrderStatus $status = OrderStatus::EN_ATTENTE_PAIEMENT;
 
     /** Total TTC de la commande (EUR) */
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
@@ -111,7 +118,8 @@ class Order
         $this->items = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTime();
-        $this->status = OrderStatus::EN_COURS;
+        // Valeur par défaut sécurisée (voir commentaire de propriété $status)
+        $this->status = OrderStatus::EN_ATTENTE_PAIEMENT;
         $this->invoiceSent = false;
     }
 

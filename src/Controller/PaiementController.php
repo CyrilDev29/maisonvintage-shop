@@ -5,30 +5,36 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\Order;
+use App\Enum\OrderStatus;
 use App\Service\InvoiceService;
 use App\Service\StripePaymentService;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Address;
 use Symfony\Component\Routing\Annotation\Route;
 
+/**
+ * Contrôleur de gestion des paiements :
+ * - CB / Stripe (success / cancel)
+ * - Virement bancaire (manuel)
+ * - Téléchargement de facture
+ */
 final class PaiementController extends AbstractController
 {
     public function __construct(
         private readonly StripePaymentService $stripe,
         private readonly EntityManagerInterface $em,
         private readonly InvoiceService $invoiceService,
+        private readonly MailerInterface $mailer,
     ) {}
 
-    /**
-     * Page de succès définie dans PAYMENT_SUCCESS_URL (.env*)
-     * On retrouve la commande via la metadata "order_ref" stockée dans la session Stripe.
-     * Amélioration : on vide le panier si Stripe confirme "paid".
-     */
     #[Route('/paiement/success', name: 'paiement_success', methods: ['GET'])]
     public function success(Request $request, SessionInterface $sessionStorage): Response
     {
@@ -39,19 +45,19 @@ final class PaiementController extends AbstractController
             try {
                 $session = $this->stripe->retrieveCheckoutSession($sessionId);
 
-                // 1) vider le panier si paiement confirmé (effet immédiat sur le badge)
                 if (($session->payment_status ?? null) === 'paid') {
-                    $sessionStorage->remove('cart'); // idempotent, ne casse rien si déjà vide
+                    // Le webhook décrémente le stock et marque payé.
+                    // Ici on se contente de vider le panier côté UX.
+                    $sessionStorage->remove('cart');
                 }
 
-                // 2) retrouver la commande pour l'afficher sur la page succès (facultatif)
                 $orderRef = $session->metadata->order_ref ?? null;
                 if ($orderRef) {
                     $order = $this->em->getRepository(Order::class)
                         ->findOneBy(['reference' => $orderRef]);
                 }
             } catch (\Throwable $e) {
-                // On n’échoue pas la page : on affiche simplement le bandeau de réussite
+                // Silent fallback pour ne pas bloquer l'affichage
             }
         }
 
@@ -61,9 +67,6 @@ final class PaiementController extends AbstractController
         ]);
     }
 
-    /**
-     * Page d’annulation (inchangée, utile si l’utilisateur annule côté Stripe).
-     */
     #[Route('/paiement/cancel', name: 'paiement_cancel', methods: ['GET'])]
     public function cancel(): Response
     {
@@ -79,30 +82,88 @@ HTML;
         return new Response($html);
     }
 
-    /**
-     * Téléchargement / affichage de la facture PDF de la commande.
-     * On régénère le PDF à la volée (chemin transient) pour être sûr qu’il existe.
-     */
     #[Route('/commande/{id}/facture', name: 'order_invoice_pdf', methods: ['GET'])]
     public function invoice(Order $order): Response
     {
-        // Sécurité simple : la facture de cette commande ne peut être vue que par son propriétaire
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
         if ($order->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException();
         }
 
-        // Regénère (ou génère) la facture côté client.
         $pdfPath = $this->invoiceService->generate($order, false);
 
         $response = new BinaryFileResponse($pdfPath);
         $response->headers->set('Content-Type', 'application/pdf');
-        // "inline" pour ouvrir dans le navigateur ; mettre "attachment" si tu veux forcer le téléchargement
         $response->setContentDisposition(
             ResponseHeaderBag::DISPOSITION_INLINE,
             sprintf('Facture-%s.pdf', $order->getReference())
         );
 
         return $response;
+    }
+
+    /**
+     * Page d’instructions pour le virement :
+     * - Positionne la commande en "En attente de paiement" (idempotent)
+     * - Envoie un e-mail de confirmation avec RIB
+     * - N'empêche pas l'affichage si l'envoi échoue
+     */
+    #[Route('/paiement/virement', name: 'paiement_bank_transfer', methods: ['GET'])]
+    public function bankTransfer(Request $request, SessionInterface $session): Response
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $id  = (int) $request->query->get('id');
+        $ref = (string) $request->query->get('ref', '');
+
+        $order = $this->em->getRepository(Order::class)->find($id);
+        if (!$order || $order->getReference() !== $ref) {
+            throw $this->createNotFoundException('Commande introuvable.');
+        }
+        if ($order->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        //  1) Mettre/laisser le statut en attente de paiement
+        try {
+            if (method_exists($order, 'getStatus') && $order->getStatus() !== OrderStatus::EN_COURS) {
+                $order->setStatus(OrderStatus::EN_ATTENTE_PAIEMENT);
+                $this->em->flush();
+            }
+        } catch (\Throwable $e) {
+            // On n'interrompt pas l'affichage si le flush échoue
+        }
+
+        //  2) Anti double-envoi d'e-mail
+        $flagKey = 'bt_mail_sent_' . $order->getId();
+        if (!$session->get($flagKey, false)) {
+            try {
+                $from = (string) ($this->getParameter('app.contact_from') ?? 'no-reply@maisonvintage.test');
+
+                $email = (new TemplatedEmail())
+                    ->from(new Address($from, 'Maison Vintage'))
+                    ->to($order->getUser()->getEmail())
+                    ->subject('Confirmation de votre commande ' . $order->getReference() . ' — en attente de virement')
+                    ->htmlTemplate('emails/order_confirmation.html.twig')
+                    ->context([
+                        'order' => $order,
+                        'user'  => $order->getUser(),
+                    ]);
+
+                $this->mailer->send($email);
+                $session->set($flagKey, true);
+            } catch (\Throwable $e) {
+                // Le rendu de la page reste accessible même si le mail échoue
+            }
+        }
+
+        //  3) Affichage du RIB et du récapitulatif
+        return $this->render('paiement/bank_transfer.html.twig', [
+            'order'         => $order,
+            'bank_holder'   => (string) ($this->getParameter('bank.holder') ?? ''),
+            'bank_bankname' => (string) ($this->getParameter('bank.bankname') ?? ''),
+            'bank_iban'     => (string) ($this->getParameter('bank.iban') ?? ''),
+            'bank_bic'      => (string) ($this->getParameter('bank.bic') ?? ''),
+        ]);
     }
 }

@@ -1,9 +1,10 @@
+{# templates/emails/order_canceled.html.twig #}
 {#
 Email d’alerte : annulation de commande
-Variables attendues :
-  - order : \App\Entity\Order   (avec, si dispo: stripePaymentIntentId, stripeRefundId, canceledAt, refundedAt)
+Variables :
+  - order : \App\Entity\Order
   - user  : \App\Entity\User
-  - refundedNow : bool (optionnel, fourni par le contrôleur au moment de l’annulation)
+  - refundedNow : bool (optionnel)
 #}
 <!DOCTYPE html>
 <html lang="fr">
@@ -20,7 +21,6 @@ Variables attendues :
         .badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:12px; background:#dc3545; color:#fff; }
         .badge-ok { background:#198754; }
         .badge-warn { background:#fd7e14; }
-        .btn { display:inline-block; padding:10px 14px; border-radius:6px; text-decoration:none; background:#0d6efd; color:#fff; }
         table { width:100%; border-collapse:collapse; margin-top:12px; }
         th, td { padding:8px; border-bottom:1px solid #eee; font-size:14px; text-align:left; }
         th { background:#f9fafc; }
@@ -40,19 +40,16 @@ Variables attendues :
     <div class="content">
         <p>
             <span class="badge">ANNULÉE</span>
-            {% if refundedNow %}
-                <span class="badge badge-ok">REMBOURSÉE</span>
-            {% elseif order.refundedAt %}
+            {% if refundedNow or order.refundedAt %}
                 <span class="badge badge-ok">REMBOURSÉE</span>
             {% else %}
-                {# badge optionnel si non remboursée immédiatement #}
                 <span class="badge badge-warn">REMBOURSEMENT À VÉRIFIER</span>
             {% endif %}
         </p>
 
         <p>
             Bonjour,<br>
-            La commande <strong>{{ order.reference }}</strong> a été <strong>annulée</strong> par le client.
+            La commande <strong>{{ order.reference }}</strong> a été annulée.
         </p>
 
         <p class="muted">
@@ -62,7 +59,6 @@ Variables attendues :
             Annulée le : {{ order.canceledAt ? order.canceledAt|date('d/m/Y H:i') : '—' }}
         </p>
 
-        {# --- Bloc infos Stripe utiles au suivi --- #}
         <div class="small" style="margin:10px 0 6px;">
             {% if order.stripePaymentIntentId %}
                 PaymentIntent : <span class="mono">{{ order.stripePaymentIntentId }}</span><br>
@@ -89,19 +85,20 @@ Variables attendues :
             </thead>
             <tbody>
             {% for item in order.items %}
+                {% set unit = (item.unitPrice|replace({',':'.'})) + 0 %}
+                {% set qty  = (item.quantity ?? 0) + 0 %}
+                {% set sub  = unit * qty %}
                 <tr>
                     <td>{{ item.productName }}</td>
-                    <td class="text-right">{{ item.unitPrice|number_format(2, ',', ' ') }}</td>
-                    <td class="text-right">{{ item.quantity }}</td>
-                    <td class="text-right">
-                        {# item.lineTotal est déjà une string formatée dans l'entité ; si besoin reformat: #}
-                        {{ item.lineTotal|number_format(2, ',', ' ') }}
-                    </td>
+                    <td class="text-right">{{ unit|number_format(2, ',', ' ') }}</td>
+                    <td class="text-right">{{ qty }}</td>
+                    <td class="text-right">{{ sub|number_format(2, ',', ' ') }}</td>
                 </tr>
             {% endfor %}
+            {% set total_num = (order.total|replace({',':'.'})) + 0 %}
             <tr class="total-row">
                 <td colspan="3" class="text-right">Total :</td>
-                <td class="text-right">{{ order.total|number_format(2, ',', ' ') }} €</td>
+                <td class="text-right">{{ total_num|number_format(2, ',', ' ') }} €</td>
             </tr>
             </tbody>
         </table>
@@ -112,21 +109,10 @@ Variables attendues :
             {{ order.rue }}<br>
             {{ order.codePostal }} {{ order.ville }} — {{ order.pays }}
         </p>
-
-        {# --- Lien back-office (penser à remplacer localhost en prod) --- #}
-        <p style="margin-top:25px;">
-            <a class="btn"
-               href="https://localhost:8000/admin?crudAction=detail&crudControllerFqcn=App\Controller\Admin\OrderCrudController&entityId={{ order.id }}">
-                🔍 Ouvrir la commande dans le back-office
-            </a>
-        </p>
-        <p class="small muted">
-            Pensez à adapter le domaine pour la production, ou utilisez <code>{{ '{{ absolute_url(path(\"...\")) }}' }}</code> si vous avez une route dédiée.
-        </p>
     </div>
 
     <div class="footer">
-        Cet e-mail a été envoyé automatiquement par Maison Vintage suite à l’annulation de la commande {{ order.reference }}.
+        Notification automatique — référence {{ order.reference }}.
     </div>
 </div>
 </body>

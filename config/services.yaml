@@ -1,11 +1,16 @@
 # config/services.yaml
-# This file is the entry point to configure your own services.
-# Files in the packages/ subdirectory configure your dependencies.
+# Application services and parameters.
 
 parameters:
     app.contact_from: '%env(CONTACT_FROM)%'
-    app.seller_email: '%env(CONTACT_FROM)%'   # provisoire : copie vendeur vers MailHog
+    app.seller_email: '%env(CONTACT_FROM)%'
     stripe.public_key: '%env(STRIPE_PUBLIC_KEY)%'
+
+    # Bank transfer parameters
+    bank.holder: '%env(string:BANK_HOLDER)%'
+    bank.bankname: '%env(string:BANK_BANKNAME)%'
+    bank.iban: '%env(string:BANK_IBAN)%'
+    bank.bic: '%env(string:BANK_BIC)%'
 
 services:
     _defaults:
@@ -15,21 +20,17 @@ services:
     App\:
         resource: '../src/'
 
-    # Service de génération de factures (HTML -> PDF)
     App\Service\InvoiceService:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
-    # Ajout explicite du listener de slug
     App\EntityListener\ArticleSlugListener:
         tags:
             - { name: doctrine.orm.entity_listener, entity: App\Entity\Article, event: prePersist }
             - { name: doctrine.orm.entity_listener, entity: App\Entity\Article, event: preUpdate }
 
-    # Vérification personnalisée de l’utilisateur (ex: isVerified)
     App\Security\UserChecker: ~
 
-    # Stripe (CB + PayPal via Payment Element/Checkout)
     App\Service\StripePaymentService:
         arguments:
             $publicKey: '%env(STRIPE_PUBLIC_KEY)%'
@@ -38,5 +39,4 @@ services:
             $cancelUrl: '%env(PAYMENT_CANCEL_URL)%'
             $currency: '%env(PAYMENT_CURRENCY)%'
             $enablePaypal: true
-            # je le laisse vide pour l’instant; je mettrai le vrai whsec_... après création du webhook
             $webhookSecret: '%env(STRIPE_WEBHOOK_SECRET)%'
