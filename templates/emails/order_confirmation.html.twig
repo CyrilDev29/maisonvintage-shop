@@ -75,7 +75,6 @@
         </thead>
         <tbody>
         {% for item in order.items %}
-            {# Conversion robuste: string/decimal -> nombre #}
             {% set unit = (item.unitPrice|replace({',':'.'})) + 0 %}
             {% set qty  = (item.quantity ?? 0) + 0 %}
             {% set subtotal = unit * qty %}
@@ -93,12 +92,28 @@
 
     <p class="status">Statut actuel : <strong>{{ order.status.value }}</strong></p>
 
-    <p style="margin-top:20px;">Vous recevrez un email à chaque mise à jour de statut (préparation, expédition, etc.).</p>
+    {# Bloc virement seulement si statut EN_ATTENTE_PAIEMENT #}
+    {% if order.status is same as(constant('App\\\\Enum\\\\OrderStatus::EN_ATTENTE_PAIEMENT')) %}
+        <div style="margin-top:25px;border:1px solid #cce5ff;background:#f8fbff;padding:15px;border-radius:6px;">
+            <h3 style="margin-top:0;">Informations pour le virement</h3>
+            <p>Merci de procéder au règlement par virement bancaire en utilisant les coordonnées suivantes&nbsp;:</p>
+            <ul style="list-style:none;padding-left:0;margin:0;">
+                <li><strong>Titulaire&nbsp;:</strong> {{ bank_holder }}</li>
+                <li><strong>Banque&nbsp;:</strong> {{ bank_bankname }}</li>
+                <li><strong>IBAN&nbsp;:</strong> <code>{{ bank_iban }}</code></li>
+                <li><strong>BIC&nbsp;:</strong> <code>{{ bank_bic }}</code></li>
+            </ul>
+            <p style="margin-top:10px;">
+                Indiquez la référence <strong>{{ order.reference }}</strong> dans le libellé du virement.
+                La commande sera préparée après réception des fonds.
+            </p>
+        </div>
+    {% endif %}
 
     <p style="margin-top:25px;">
         Vous pouvez également télécharger votre facture à tout moment depuis votre espace client :
         <br>
-        <a href="{{ url('account_order_invoice', { id: order.id }) }}" class="button">
+        <a href="{{ url('order_invoice_pdf', { id: order.id }) }}" class="button">
             Télécharger ma facture (PDF)
         </a>
     </p>

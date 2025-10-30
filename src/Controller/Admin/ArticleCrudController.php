@@ -4,6 +4,8 @@ namespace App\Controller\Admin;
 
 use App\Entity\Article;
 use App\Form\ArticleImageType;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
@@ -30,20 +32,28 @@ class ArticleCrudController extends AbstractCrudController
         return $crud
             ->setEntityLabelInSingular('Article')
             ->setEntityLabelInPlural('Articles')
-            ->setDefaultSort(['createdAt' => 'DESC']);
+            ->setDefaultSort(['createdAt' => 'DESC'])
+            ->setPageTitle(Crud::PAGE_INDEX, 'Liste des articles')
+            ->setPageTitle(Crud::PAGE_NEW, 'Ajouter un article')
+            ->setPageTitle(Crud::PAGE_EDIT, 'Modifier un article')
+            ->setPageTitle(Crud::PAGE_DETAIL, 'Détail de l’article');
+    }
+
+    public function configureActions(Actions $actions): Actions
+    {
+        return $actions
+            ->add(Crud::PAGE_INDEX, Action::DETAIL)
+            ->update(Crud::PAGE_INDEX, Action::NEW, fn(Action $a) => $a->setLabel('Ajouter'))
+            ->update(Crud::PAGE_INDEX, Action::EDIT, fn(Action $a) => $a->setLabel('Modifier'))
+            ->update(Crud::PAGE_INDEX, Action::DELETE, fn(Action $a) => $a->setLabel('Supprimer'));
     }
 
     public function configureFields(string $pageName): iterable
     {
         yield IdField::new('id')->onlyOnIndex();
-
         yield TextField::new('titre', 'Titre');
-
-        // Slug visible uniquement en index (remets-le sur le form si tu veux l’éditer)
         yield TextField::new('slug', 'Slug')->onlyOnIndex();
-
-        yield TextareaField::new('description', 'Description')
-            ->hideOnIndex();
+        yield TextareaField::new('description', 'Description')->hideOnIndex();
 
         yield MoneyField::new('prix', 'Prix')
             ->setCurrency('EUR')
@@ -52,8 +62,7 @@ class ArticleCrudController extends AbstractCrudController
 
         yield AssociationField::new('categorie', 'Catégorie');
 
-        yield IntegerField::new('quantity', 'Quantité')
-            ->setFormTypeOption('attr', ['min' => 0]);
+        yield IntegerField::new('quantity', 'Quantité')->setFormTypeOption('attr', ['min' => 0]);
 
         yield NumberField::new('weightKg', 'Poids (kg)')
             ->setNumDecimals(2)
@@ -75,10 +84,6 @@ class ArticleCrudController extends AbstractCrudController
             ->setFormTypeOption('attr', ['step' => '0.1'])
             ->hideOnIndex();
 
-        /**
-         * ----- Images -----
-         * Image principale via Vich (upload en formulaire) + aperçu en index.
-         */
         yield TextField::new('imageFile', 'Image principale')
             ->setFormType(VichImageType::class)
             ->onlyOnForms();
@@ -86,7 +91,6 @@ class ArticleCrudController extends AbstractCrudController
         yield ImageField::new('image', 'Aperçu')
             ->setBasePath('/uploads/articles')
             ->onlyOnIndex();
-
 
         yield CollectionField::new('images', 'Galerie (max 10)')
             ->setEntryType(ArticleImageType::class)

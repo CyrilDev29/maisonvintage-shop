@@ -5,8 +5,8 @@ namespace App\Controller\Admin;
 use App\Entity\User;
 use App\Entity\Article;
 use App\Entity\Categorie;
-use App\Entity\Order; // <-- il manquait ça !!
-use App\Controller\Admin\UserCrudController;
+use App\Entity\Order;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController;
@@ -19,8 +19,10 @@ class DashboardController extends AbstractDashboardController
     #[Route('/admin', name: 'admin')]
     public function index(): Response
     {
-        $adminUrlGenerator = $this->container->get(AdminUrlGenerator::class);
-        $url = $adminUrlGenerator->setController(UserCrudController::class)->generateUrl();
+        // Redirection par défaut vers la liste des utilisateurs
+        $url = $this->container->get(AdminUrlGenerator::class)
+            ->setController(UserCrudController::class)
+            ->generateUrl();
 
         return $this->redirect($url);
     }
@@ -38,5 +40,12 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::linkToCrud('Articles', 'fa fa-box', Article::class);
         yield MenuItem::linkToCrud('Catégories', 'fa fa-tags', Categorie::class);
         yield MenuItem::linkToCrud('Commandes', 'fas fa-shopping-cart', Order::class);
+    }
+
+    public function configureAssets(): Assets
+    {
+
+        return Assets::new()
+            ->addCssFile('/assets/styles/admin.css');
     }
 }

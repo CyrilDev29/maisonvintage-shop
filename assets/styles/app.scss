@@ -13,8 +13,34 @@
 @import "components/_table.scss";
 @import "components/_alert.scss";
 @import "components/_pagination.scss";
+@import "components/_ea-badges";
+
+
 /* Navbar en DERNIER pour écraser le reste */
 @import "components/_navbar.scss";
 
 /* Utils */
 @import "_utilities.scss";
+
+
+/* --- ADMIN DARK  --- */
+:root {
+    color-scheme: dark;
+    --bs-body-bg: #0f0f10;
+    --bs-body-color: #f0f0f0;
+    --bs-border-color: #2b2b2b;
+    --bs-table-bg: #151516;
+    --bs-table-striped-bg: #1a1b1c;
+    --bs-table-color: #e8e8e8;
+    --bs-link-color: #9ec2ff;
+    --bs-link-hover-color: #c8ddff;
+    --bs-card-bg: #151516;
+    --bs-card-border-color: #2b2b2b;
+    --bs-dropdown-bg: #151516;
+    --bs-dropdown-link-color: #e8e8e8;
+}
+
+body {
+    background-color: #0f0f10 !important;
+    color: #f0f0f0 !important;
+}

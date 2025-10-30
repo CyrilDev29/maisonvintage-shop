@@ -1,0 +1,23 @@
+{# ===========================================================================
+   Fichier : order_status_badge.html.twig
+   Description : Affiche un badge coloré pour le statut d'une commande
+   dans EasyAdmin. Compatible avec l'enum OrderStatus.
+   =========================================================================== #}
+
+{# Récupère une chaîne exploitable quel que soit le type (Enum|string) #}
+{% set label = field.formattedValue ?? (field.value.value ?? field.value) %}
+{% set key = (label is iterable ? '' : (label|lower)) %}
+
+{# Association entre le libellé et la classe CSS correspondante #}
+{% set classes = {
+    'en attente de paiement': 'ea-badge ea-badge--pending',
+    'en préparation':         'ea-badge ea-badge--preparing',
+    'expédiée':               'ea-badge ea-badge--shipped',
+    'annulée':                'ea-badge ea-badge--canceled',
+    'livrée':                 'ea-badge ea-badge--delivered'
+} %}
+
+{# Classe par défaut si aucune correspondance n’est trouvée #}
+{% set class = classes[key] ?? 'ea-badge' %}
+
+<span class="{{ class }}">{{ label }}</span>

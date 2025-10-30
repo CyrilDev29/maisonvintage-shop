@@ -1,3 +1,4 @@
+{# templates/emails/order_status_update.html.twig #}
 {% extends 'base.html.twig' %}
 {% block title %}Mise à jour de votre commande{% endblock %}
 
@@ -6,22 +7,21 @@
         <h1 style="font-size:1.4rem;">Commande {{ order.reference }}</h1>
 
         <p>Bonjour {{ order.prenom }} {{ order.nom }},</p>
-        <p>
-            Le statut de votre commande a changé :
-            <strong>{{ order.status.value }}</strong>.
-        </p>
+        <p>Le statut de votre commande a changé : <strong>{{ order.status.value }}</strong>.</p>
 
         <h2 style="margin-top:1.5rem;font-size:1.1rem;">Récapitulatif</h2>
         <ul style="list-style:none;padding-left:0;margin-top:0.5rem;">
             {% for it in order.items %}
+                {% set unit = (it.unitPrice|replace({',':'.'})) + 0 %}
                 <li style="margin-bottom:4px;">
-                    {{ it.productName }} — {{ it.quantity }} × {{ it.unitPrice|number_format(2, ',', ' ') }} €
+                    {{ it.productName }} — {{ it.quantity }} × {{ unit|number_format(2, ',', ' ') }} €
                 </li>
             {% endfor %}
         </ul>
 
+        {% set total_num = (order.total|replace({',':'.'})) + 0 %}
         <p style="margin-top:0.8rem;">
-            <strong>Total :</strong> {{ order.total|number_format(2, ',', ' ') }} €
+            <strong>Total :</strong> {{ total_num|number_format(2, ',', ' ') }} €
         </p>
 
         <p style="margin-top:1.5rem;">

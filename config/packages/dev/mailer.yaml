@@ -1,0 +1,5 @@
+framework:
+    mailer:
+        dsn: '%env(MAILER_DSN)%'
+        # En DEV : on court-circuite Messenger pour envoyer tout de suite vers MailHog
+        message_bus: false

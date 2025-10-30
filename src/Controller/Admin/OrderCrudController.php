@@ -49,6 +49,7 @@ class OrderCrudController extends AbstractCrudController
             ->setEntityLabelInPlural('Commandes')
             ->setDefaultSort(['createdAt' => 'DESC'])
             ->setPageTitle(Crud::PAGE_INDEX, 'Liste des commandes')
+            ->setPageTitle(Crud::PAGE_NEW, 'Nouvelle commande')
             ->setPageTitle(Crud::PAGE_EDIT, 'Modifier une commande')
             ->setPageTitle(Crud::PAGE_DETAIL, 'Détails de la commande');
     }
@@ -59,25 +60,29 @@ class OrderCrudController extends AbstractCrudController
         yield TextField::new('reference', 'Référence')->onlyOnIndex();
         yield AssociationField::new('user', 'Client')->hideOnForm();
 
+        // Affichage du statut avec badge coloré
+        yield TextField::new('status', 'Statut')
+            ->setTemplatePath('admin/fields/order_status_badge.html.twig')
+            ->hideOnForm();
+
+        // Sélection de statut via enum dans le formulaire
         yield ChoiceField::new('status', 'Statut')
             ->setChoices([
-                'En cours'        => OrderStatus::EN_COURS,
-                'En préparation'  => OrderStatus::EN_PREPARATION,
-                'Expédiée'        => OrderStatus::EXPEDIEE,
-                'Annulée'         => OrderStatus::ANNULEE,
-                'Livrée'          => OrderStatus::LIVREE,
+                'En attente de paiement' => OrderStatus::EN_ATTENTE_PAIEMENT,
+                'En cours'               => OrderStatus::EN_COURS,
+                'En préparation'         => OrderStatus::EN_PREPARATION,
+                'Expédiée'               => OrderStatus::EXPEDIEE,
+                'Annulée'                => OrderStatus::ANNULEE,
+                'Livrée'                 => OrderStatus::LIVREE,
             ])
-            ->renderAsBadges([
-                OrderStatus::EN_COURS->value        => 'warning',
-                OrderStatus::EN_PREPARATION->value  => 'info',
-                OrderStatus::EXPEDIEE->value        => 'primary',
-                OrderStatus::ANNULEE->value         => 'danger',
-                OrderStatus::LIVREE->value          => 'success',
-            ]);
+            ->onlyOnForms();
 
-        yield MoneyField::new('total', 'Total')->setCurrency('EUR')->setStoredAsCents(false);
+        yield MoneyField::new('total', 'Total')
+            ->setCurrency('EUR')
+            ->setStoredAsCents(false);
+
         yield DateTimeField::new('createdAt', 'Créée le')->hideOnForm();
-        yield DateTimeField::new('updatedAt', 'Mise à jour')->hideOnForm();
+        yield DateTimeField::new('updatedAt', 'Mise à jour le')->hideOnForm();
 
         yield FormField::addPanel('Coordonnées du client')->onlyOnDetail();
         yield TextField::new('prenom', 'Prénom')->onlyOnDetail();
@@ -93,7 +98,6 @@ class OrderCrudController extends AbstractCrudController
         yield CollectionField::new('items', '')->onlyOnDetail()
             ->setTemplatePath('admin/order/_items.html.twig');
 
-        // Infos paiement (lecture seule)
         yield FormField::addPanel('Paiement / Stripe')->onlyOnDetail();
         yield TextField::new('stripePaymentIntentId', 'PaymentIntent')->onlyOnDetail();
         yield TextField::new('stripeSessionId', 'Checkout Session')->onlyOnDetail();
@@ -104,40 +108,34 @@ class OrderCrudController extends AbstractCrudController
 
     public function configureActions(Actions $actions): Actions
     {
-        // Bouton rembourser : on le câble vers une ROUTE POST dédiée + CSRF
         $refund = Action::new('stripeRefund', 'Rembourser Stripe')
             ->linkToRoute('admin_order_refund', function (Order $order) {
                 return [
                     'id'     => $order->getId(),
-                    '_token' => $this->csrf->getToken('admin_refund_'.$order->getId())->getValue(),
+                    '_token' => $this->csrf->getToken('admin_refund_' . $order->getId())->getValue(),
                 ];
             })
             ->setCssClass('btn btn-danger')
-            // forcer POST via l’attribut géré par le JS d’EasyAdmin
             ->setHtmlAttributes([
-                'data-ea-method'   => 'post',
-                'data-action-name' => 'post',
-                'data-confirm-text'=> 'Confirmer le remboursement Stripe ?',
+                'data-ea-method'    => 'post',
+                'data-action-name'  => 'post',
+                'data-confirm-text' => 'Confirmer le remboursement Stripe ?',
             ])
             ->displayIf(function (Order $order): bool {
-                if ($order->getStatus() !== OrderStatus::ANNULEE) {
-                    return false;
-                }
-                if (!$order->getStripePaymentIntentId()) {
-                    return false;
-                }
-                if ($order->getStripeRefundId()) {
-                    return false;
-                }
+                if ($order->getStatus() !== OrderStatus::ANNULEE) return false;
+                if (!$order->getStripePaymentIntentId()) return false;
+                if ($order->getStripeRefundId()) return false;
                 return true;
             });
 
+        // Traductions et cohérence des actions
         return $actions
             ->add(Crud::PAGE_INDEX, Action::DETAIL)
             ->add(Crud::PAGE_DETAIL, $refund)
+            ->update(Crud::PAGE_INDEX, Action::NEW, fn(Action $a) => $a->setLabel('Ajouter commande'))
             ->update(Crud::PAGE_INDEX, Action::EDIT, fn(Action $a) => $a->setLabel('Modifier'))
             ->update(Crud::PAGE_INDEX, Action::DELETE, fn(Action $a) => $a->setLabel('Supprimer'))
-            ->update(Crud::PAGE_INDEX, Action::DETAIL, fn(Action $a) => $a->setLabel('Voir détails'));
+            ->update(Crud::PAGE_INDEX, Action::DETAIL, fn(Action $a) => $a->setLabel('Détails'));
     }
 
     public function updateEntity(EntityManagerInterface $em, $entityInstance): void
@@ -147,8 +145,8 @@ class OrderCrudController extends AbstractCrudController
             return;
         }
 
-        $uow       = $em->getUnitOfWork();
-        $original  = $uow->getOriginalEntityData($entityInstance);
+        $uow = $em->getUnitOfWork();
+        $original = $uow->getOriginalEntityData($entityInstance);
         $oldStatus = $original['status'] ?? null;
         $newStatus = $entityInstance->getStatus();
 
@@ -170,9 +168,6 @@ class OrderCrudController extends AbstractCrudController
         }
     }
 
-    /**
-     * Déclenche un remboursement Stripe (POST + CSRF), idempotent côté Stripe si déjà remboursé.
-     */
     #[Route('/admin/order/{id}/refund', name: 'admin_order_refund', methods: ['POST'])]
     public function stripeRefund(Request $request, AdminContext $context, EntityManagerInterface $em): RedirectResponse
     {
@@ -184,7 +179,10 @@ class OrderCrudController extends AbstractCrudController
             return $this->redirect($referrer);
         }
 
-        if (!$this->isCsrfTokenValid('admin_refund_'.$entity->getId(), (string)($request->request->get('_token') ?? $request->query->get('_token')))) {
+        if (!$this->isCsrfTokenValid(
+            'admin_refund_' . $entity->getId(),
+            (string) ($request->request->get('_token') ?? $request->query->get('_token'))
+        )) {
             $this->addFlash('danger', 'Jeton CSRF invalide.');
             return $this->redirect($referrer);
         }
@@ -203,7 +201,11 @@ class OrderCrudController extends AbstractCrudController
         }
 
         try {
-            $refundId = $this->stripe->refundPaymentIntent($entity->getStripePaymentIntentId(), null, 'requested_by_customer');
+            $refundId = $this->stripe->refundPaymentIntent(
+                $entity->getStripePaymentIntentId(),
+                null,
+                'requested_by_customer'
+            );
 
             $entity->setStripeRefundId($refundId);
             $entity->setRefundedAt(new DateTimeImmutable());

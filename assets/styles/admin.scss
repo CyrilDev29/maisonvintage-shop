@@ -1,0 +1,18 @@
+/* ========================================================================
+   Fichier : admin.scss
+   Description : Feuille dédiée au back-office EasyAdmin.
+   Objectif : Appliquer les couleurs et styles spécifiques à l'administration.
+   ======================================================================== */
+
+/* Import des variables de couleur et mixins communes */
+@import "./_tokens";
+@import "./_mixins";
+
+/* Import des composants spécifiques à EasyAdmin */
+@import "components/_ea-badges";
+
+/* ========================================================================
+   Notes :
+   - Compilé par AssetMapper en public/assets/styles/admin.css.
+   - N'interfère pas avec le front (app.scss reste pour le site).
+   ======================================================================== */

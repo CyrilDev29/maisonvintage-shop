@@ -16,6 +16,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Bridge\Twig\Mime\TemplatedEmail;
+use Symfony\Component\Mime\Address;
+use Symfony\Component\Mailer\MailerInterface;
 
 class CheckoutController extends AbstractController
 {
@@ -82,7 +85,6 @@ class CheckoutController extends AbstractController
 
         $user = $this->getUser();
 
-        // Adresse de livraison sélectionnée
         $selectedAddress = null;
         $shippingId = $request->getSession()->get('checkout.address_id');
         if ($shippingId && $user) {
@@ -92,7 +94,6 @@ class CheckoutController extends AbstractController
             ]);
         }
 
-        // Adresse de facturation sélectionnée (peut être la même)
         $billingSame = (bool) $request->getSession()->get('checkout.billing_same', true);
         $selectedBilling = null;
         if (!$billingSame && $user) {
@@ -125,7 +126,8 @@ class CheckoutController extends AbstractController
         ArticleRepository      $articleRepository,
         EntityManagerInterface $em,
         AddressRepository      $addressRepo,
-        StripePaymentService   $stripe
+        StripePaymentService   $stripe,
+        MailerInterface        $mailer
     ): Response {
         $this->denyAccessUnlessGranted('ROLE_USER');
 
@@ -144,7 +146,6 @@ class CheckoutController extends AbstractController
 
         $user = $this->getUser();
 
-        // Récupération des adresses choisies
         $shippingId  = $request->getSession()->get('checkout.address_id');
         $billingSame = (bool) $request->getSession()->get('checkout.billing_same', true);
         $billingId   = $request->getSession()->get('checkout.billing_address_id');
@@ -172,7 +173,9 @@ class CheckoutController extends AbstractController
             }
         }
 
-        // Vérification du stock (sans décrément)
+        $paymentMethod = (string) ($request->request->get('payment_method') ?? 'card');
+
+        // Recontrôle du stock à J+0 (évite la surprise entre page et POST)
         $articles = $articleRepository->findBy(['id' => array_keys($cart)]);
         foreach ($articles as $article) {
             $qtyInCart = max(0, (int)($cart[$article->getId()] ?? 0));
@@ -191,16 +194,21 @@ class CheckoutController extends AbstractController
         try {
             $total = 0.0;
 
-            // Création de la commande (statut en attente de paiement / en cours suivant l’enum)
             $order = new Order();
             $order->setUser($user);
-            $order->setStatus(OrderStatus::EN_COURS);
+
+            /**
+             * IMPORTANT : statut initial systématiquement EN_ATTENTE_PAIEMENT,
+             * quelle que soit la méthode. La promotion de l’état sera faite :
+             * - par le webhook Stripe/PayPal (paiements en ligne),
+             * - ou manuellement côté virement.
+             */
+            $order->setStatus(OrderStatus::EN_ATTENTE_PAIEMENT);
 
             if (method_exists($order, 'setSnapshotFromUser')) {
                 $order->setSnapshotFromUser($user);
             }
 
-            // Snapshots d’adresses
             $order->setShippingSnapshot([
                 'fullName'   => $shipping->getFullName(),
                 'line1'      => $shipping->getLine1(),
@@ -238,7 +246,7 @@ class CheckoutController extends AbstractController
                 $item->setUnitPrice(number_format($price, 2, '.', ''));
                 $item->setQuantity($qty);
 
-                // Snapshot image
+                // Image produit (robuste aux différents getters que tu utilises)
                 $img = null;
                 if (method_exists($article, 'getImageUrl') && $article->getImageUrl()) {
                     $img = $article->getImageUrl();
@@ -272,9 +280,48 @@ class CheckoutController extends AbstractController
 
             $em->persist($order);
             $em->flush();
+
+            // Cas virement : on décrémente ici (flux manuel), on vide le panier, on envoie le mail d’instructions.
+            if ($paymentMethod === 'bank_transfer') {
+                foreach ($articles as $article) {
+                    $qty = max(0, (int)($cart[$article->getId()] ?? 0));
+                    if ($qty === 0) continue;
+                    $newQty = max(0, (int)$article->getQuantity() - $qty);
+                    $article->setQuantity($newQty);
+                    $em->persist($article);
+                }
+                $em->flush();
+                $conn->commit();
+
+                $session->remove('cart');
+
+                // Email de confirmation pour virement (sans PDF)
+                $from     = (string) ($this->getParameter('app.contact_from') ?? 'no-reply@maisonvintage.test');
+                $clientTo = method_exists($user, 'getEmail') ? (string) $user->getEmail() : null;
+
+                if ($clientTo) {
+                    $emailClient = (new TemplatedEmail())
+                        ->from(new Address($from, 'Maison Vintage'))
+                        ->to($clientTo)
+                        ->subject('Confirmation de votre commande ' . $order->getReference() . ' — en attente de virement')
+                        ->htmlTemplate('emails/order_confirmation.html.twig')
+                        ->context(['order' => $order, 'user' => $user]);
+                    try {
+                        $mailer->send($emailClient);
+                    } catch (\Throwable $e) {
+                        // non bloquant
+                    }
+                }
+
+                return $this->redirectToRoute('paiement_bank_transfer', [
+                    'ref' => $order->getReference(),
+                    'id'  => $order->getId(),
+                ]);
+            }
+
+            // Paiement Stripe : on ne touche ni stock ni statut ici. Le webhook s’en charge.
             $conn->commit();
 
-            // Préparation des lignes pour Stripe (centimes)
             $lineItems = [];
             foreach ($order->getItems() as $it) {
                 $unitCents = (int) \round((float) $it->getUnitPrice() * 100);

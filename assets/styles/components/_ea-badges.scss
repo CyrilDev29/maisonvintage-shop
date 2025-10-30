@@ -1,0 +1,56 @@
+/* ==========================================================================
+   Fichier : _ea-badges.scss
+   Description : Styles des badges d’état des commandes dans EasyAdmin.
+   Chaque badge correspond à une valeur de l’enum OrderStatus.
+   ========================================================================== */
+
+/* Style de base commun à tous les badges EasyAdmin */
+.ea-badge {
+    display: inline-block;
+    padding: .3rem .6rem;
+    border-radius: .5rem;
+    font-size: .75rem;
+    font-weight: 600;
+    line-height: 1;
+    color: #fff;
+    border: 1px solid transparent;
+}
+
+/* --------------------------------------------------------------------------
+   États de commande
+   -------------------------------------------------------------------------- */
+
+/* En attente de paiement — jaune vif mais lisible */
+.ea-badge--pending {
+    background: #f1c40f;     /* jaune soutenu */
+    border-color: #d4ac0d;
+    color: #1b1b1b;          /* texte sombre pour contraste */
+}
+
+/* En préparation — bleu plus marqué */
+.ea-badge--preparing {
+    background: #3498db;     /* bleu franc */
+    border-color: #2e86c1;
+    color: #fff;
+}
+
+/* Expédiée — turquoise lumineux */
+.ea-badge--shipped {
+    background: #17a2b8;     /* cyan foncé (type bootstrap info) */
+    border-color: #138496;
+    color: #fff;
+}
+
+/* Annulée — rouge affirmé */
+.ea-badge--canceled {
+    background: #e74c3c;     /* rouge soutenu */
+    border-color: #c0392b;
+    color: #fff;
+}
+
+/* Livrée — vert éclatant */
+.ea-badge--delivered {
+    background: #2ecc71;     /* vert soutenu */
+    border-color: #27ae60;
+    color: #fff;
+}
