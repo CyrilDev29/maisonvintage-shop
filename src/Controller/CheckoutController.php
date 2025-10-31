@@ -22,10 +22,8 @@ use Symfony\Component\Mime\Address;
 use Symfony\Component\Mailer\MailerInterface;
 
 /**
- * Tunnel de commande :
- * - Panier → snapshot adresses → création Order EN_ATTENTE_PAIEMENT
- * - Virement : décrémente le stock immédiatement, envoie mail d’instructions
- * - CB : redirection Stripe, traitement final par webhook
+ * Tunnel de commande.
+ * Ajout non cassant : enregistre paymentMethod + reservedUntil (durées paramétrables).
  */
 class CheckoutController extends AbstractController
 {
@@ -182,7 +180,8 @@ class CheckoutController extends AbstractController
             }
         }
 
-        $paymentMethod = (string) ($request->request->get('payment_method') ?? 'card');
+        // Moyen de paiement choisi depuis le formulaire
+        $paymentMethod = (string) ($request->request->get('payment_method') ?? 'card'); // 'bank_transfer' | 'card' | 'paypal'
 
         // Re-contrôle du stock juste avant création de commande.
         $articles = $articleRepository->findBy(['id' => array_keys($cart)]);
@@ -205,7 +204,21 @@ class CheckoutController extends AbstractController
 
             $order = new Order();
             $order->setUser($user);
-            $order->setStatus(OrderStatus::EN_ATTENTE_PAIEMENT); // promotion par webhook ou virement
+            $order->setStatus(OrderStatus::EN_ATTENTE_PAIEMENT);
+
+            // Enregistre le moyen de paiement et la deadline via paramètres configurables
+            if (method_exists($order, 'setPaymentMethod')) {
+                $order->setPaymentMethod($paymentMethod);
+            }
+            if (method_exists($order, 'setReservedUntil')) {
+                $bankHours  = (int) ($this->getParameter('maisonvintage.ttl.bank_transfer_hours') ?? 72);
+                $cardMin    = (int) ($this->getParameter('maisonvintage.ttl.card_minutes') ?? 30);
+                $ttlMinutes = ($paymentMethod === 'bank_transfer') ? ($bankHours * 60) : $cardMin;
+
+                $order->setReservedUntil(
+                    (new \DateTimeImmutable())->modify(sprintf('+%d minutes', max(1, $ttlMinutes)))
+                );
+            }
 
             if (method_exists($order, 'setSnapshotFromUser')) {
                 $order->setSnapshotFromUser($user);
@@ -248,7 +261,7 @@ class CheckoutController extends AbstractController
                 $item->setUnitPrice(number_format($price, 2, '.', ''));
                 $item->setQuantity($qty);
 
-                // Image produit (résiste aux différents getters).
+                // Image produit (robuste)
                 $img = null;
                 if (method_exists($article, 'getImageUrl') && $article->getImageUrl()) {
                     $img = $article->getImageUrl();
@@ -283,7 +296,7 @@ class CheckoutController extends AbstractController
             $em->persist($order);
             $em->flush();
 
-            // Cas virement : décrémentation immédiate + mail d’instructions.
+            // Cas virement : décrémentation immédiate + mail d’instructions
             if ($paymentMethod === 'bank_transfer') {
                 foreach ($articles as $article) {
                     $qty = max(0, (int)($cart[$article->getId()] ?? 0));
@@ -327,7 +340,7 @@ class CheckoutController extends AbstractController
                 ]);
             }
 
-            // CB : on laisse le webhook faire le traitement final.
+            // CB/PayPal : redirection Stripe. Traitement final via webhook.
             $conn->commit();
 
             $lineItems = [];

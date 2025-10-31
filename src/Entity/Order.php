@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Enum\OrderStatus;
@@ -31,11 +33,7 @@ class Order
 
     /**
      * Statut stocké comme backed enum (string).
-     * IMPORTANT:
-     * - On force type=STRING + length pour des valeurs avec accents (ex.: "Échec").
-     * - Valeur par défaut au niveau PHP = EN_ATTENTE_PAIEMENT pour éviter toute
-     *   "validation" avant paiement effectif. La promotion d’état se fera via
-     *   webhook ou action back-office (jamais sur la page "success" côté client).
+     * Valeur par défaut = EN_ATTENTE_PAIEMENT : la promotion se fait par webhook (CB/PayPal) ou traitement virement.
      */
     #[ORM\Column(type: Types::STRING, enumType: OrderStatus::class, length: 32)]
     private OrderStatus $status = OrderStatus::EN_ATTENTE_PAIEMENT;
@@ -57,8 +55,7 @@ class Order
 
     /**
      * --- SNAPSHOT HISTORIQUE (compat) ---
-     * Ces champs reprennent l’adresse (profil) au moment de la commande.
-     * Conservés pour ne rien casser si déjà utilisés dans tes PDFs / vues.
+     * Conservés pour compatibilité avec PDFs / vues existantes.
      */
     #[ORM\Column(length: 100)]
     private string $prenom;
@@ -82,9 +79,7 @@ class Order
     private string $pays;
 
     /**
-     * --- NOUVEAU : Snapshots d’adresses structurés (JSON) ---
-     * Copie exacte des adresses choisies (livraison/facturation) lors du checkout.
-     * Clés usuelles: fullName, line1, line2, postalCode, city, country, phone (optionnel)
+     * Snapshots d’adresses structurés (JSON) — utilisés au checkout.
      */
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $shippingSnapshot = null;
@@ -92,11 +87,11 @@ class Order
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $billingSnapshot = null;
 
-    /** Facture déjà envoyée par email au client ? (anti double-envoi) */
+    /** Facture déjà envoyée au client (anti double-envoi) */
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
     private bool $invoiceSent = false;
 
-    /* ---------- Champs Stripe / annulation / remboursement (ajouts) ---------- */
+    /* ---------- Champs Stripe / annulation / remboursement (ajouts existants) ---------- */
 
     #[ORM\Column(length: 64, nullable: true)]
     private ?string $stripePaymentIntentId = null;
@@ -113,12 +108,28 @@ class Order
     #[ORM\Column(length: 64, nullable: true)]
     private ?string $stripeRefundId = null;
 
+    /* ---------- Nouveaux champs NON cassants pour la réservation/CRON ---------- */
+
+    /**
+     * Moyen de paiement choisi par l’utilisateur au checkout.
+     * Valeurs attendues : 'bank_transfer' | 'card' | 'paypal' (ou autre si nécessaire).
+     */
+    #[ORM\Column(length: 32, nullable: true)]
+    private ?string $paymentMethod = null;
+
+    /**
+     * Date/heure limite de réservation de la commande avant libération automatique.
+     * - Virement : now + 72h
+     * - CB/PayPal : now + 30min (par défaut)
+     */
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $reservedUntil = null;
+
     public function __construct()
     {
         $this->items = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTime();
-        // Valeur par défaut sécurisée (voir commentaire de propriété $status)
         $this->status = OrderStatus::EN_ATTENTE_PAIEMENT;
         $this->invoiceSent = false;
     }
@@ -168,11 +179,7 @@ class Order
         return $this;
     }
 
-    /**
-     * Snapshot “historique” depuis le profil User (compat).
-     * NOTE: aujourd’hui tu utilises plutôt shippingSnapshot / billingSnapshot
-     * au moment du confirm. On garde ceci pour ne rien casser.
-     */
+    // Snapshot profil (compat)
     public function setSnapshotFromUser(User $u): static
     {
         $this->prenom     = (string) $u->getPrenom();
@@ -185,7 +192,7 @@ class Order
         return $this;
     }
 
-    // --- Accesseurs des champs historiques ---
+    // Accesseurs historiques
     public function getPrenom(): string { return $this->prenom; }
     public function getNom(): string { return $this->nom; }
     public function getTelephone(): string { return $this->telephone; }
@@ -194,18 +201,18 @@ class Order
     public function getVille(): string { return $this->ville; }
     public function getPays(): string { return $this->pays; }
 
-    // --- Snapshots JSON (nouveau modèle) ---
+    // Snapshots JSON
     public function getShippingSnapshot(): ?array { return $this->shippingSnapshot; }
     public function setShippingSnapshot(?array $snapshot): self { $this->shippingSnapshot = $snapshot; return $this; }
 
     public function getBillingSnapshot(): ?array { return $this->billingSnapshot; }
     public function setBillingSnapshot(?array $snapshot): self { $this->billingSnapshot = $snapshot; return $this; }
 
-    // --- Facture envoyée ---
+    // Facture envoyée
     public function isInvoiceSent(): bool { return $this->invoiceSent; }
     public function markInvoiceSent(): void { $this->invoiceSent = true; }
 
-    // --- Stripe / annulation / remboursement (getters/setters) ---
+    // Stripe / annulation / remboursement
     public function getStripePaymentIntentId(): ?string { return $this->stripePaymentIntentId; }
     public function setStripePaymentIntentId(?string $id): self { $this->stripePaymentIntentId = $id; return $this; }
 
@@ -220,4 +227,11 @@ class Order
 
     public function getStripeRefundId(): ?string { return $this->stripeRefundId; }
     public function setStripeRefundId(?string $id): self { $this->stripeRefundId = $id; return $this; }
+
+    // Nouveaux champs
+    public function getPaymentMethod(): ?string { return $this->paymentMethod; }
+    public function setPaymentMethod(?string $method): self { $this->paymentMethod = $method ? \trim($method) : null; return $this; }
+
+    public function getReservedUntil(): ?\DateTimeImmutable { return $this->reservedUntil; }
+    public function setReservedUntil(?\DateTimeImmutable $dt): self { $this->reservedUntil = $dt; return $this; }
 }
