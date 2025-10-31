@@ -20,7 +20,7 @@
 
                     <div class="col">
                         <article class="card h-100 border-0 shadow-sm">
-                            <a href="{{ path('article_show', { slug: article.slug }) }}"
+                            <a href="{{ path('article_show', { id: article.id, slug: article.slug }) }}"
                                style="text-decoration:none;color:inherit;">
                                 <img src="{{ mainSrc }}"
                                      class="card-img-top"
@@ -30,7 +30,7 @@
 
                             <div class="card-body">
                                 <h5 class="card-title mb-2">
-                                    <a href="{{ path('article_show', { slug: article.slug }) }}"
+                                    <a href="{{ path('article_show', { id: article.id, slug: article.slug }) }}"
                                        style="text-decoration:none;color:inherit;">
                                         {{ article.titre }}
                                     </a>

@@ -1,17 +1,25 @@
+{# templates/emails/contact.html.twig #}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <title>Nouveau message de contact</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <style>
+        body{font-family:Arial,sans-serif;background:#f9f9f9;color:#222;margin:0;padding:20px}
+        .container{max-width:650px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:20px}
+        .muted{color:#666}
+        .block{white-space:pre-wrap}
+    </style>
 </head>
 <body>
-<h2>Nouveau message depuis le formulaire de contact</h2>
-
-<p><strong>Nom :</strong> {{ name }}</p>
-<p><strong>Email :</strong> {{ from_email }}</p>
-<p><strong>Sujet :</strong> {{ subject }}</p>
-
-<h3>Message :</h3>
-<p>{{ message|nl2br }}</p>
+<div class="container">
+    <h2>Nouveau message depuis le formulaire de contact</h2>
+    <p><strong>Nom :</strong> {{ name }}</p>
+    <p><strong>Email :</strong> {{ from_email }}</p>
+    <p><strong>Sujet :</strong> {{ subject }}</p>
+    <h3>Message :</h3>
+    <p class="block">{{ message }}</p>
+</div>
 </body>
 </html>

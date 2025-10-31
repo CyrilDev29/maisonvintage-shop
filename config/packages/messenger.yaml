@@ -1,9 +1,12 @@
+# config/packages/messenger.yaml
 framework:
     messenger:
+        # File d'échec commune
         failure_transport: failed
 
         transports:
-            # file Doctrine pour l'async (défini via env)
+            # Transport async (Doctrine, Redis, etc.) défini via l'env
+            # Exemple env : MESSENGER_TRANSPORT_DSN=doctrine://default
             async:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
@@ -12,8 +15,12 @@ framework:
                 retry_strategy:
                     max_retries: 3
                     multiplier: 2
+
+            # File d'échec
             failed: 'doctrine://default?queue_name=failed'
-            # (ne PAS définir "sync" ici)
+
+            # ⚠ Ne pas définir de transport "sync" ici (on le réserve aux overrides dev)
+            # sync: 'sync://'
 
         default_bus: messenger.bus.default
 
@@ -21,8 +28,8 @@ framework:
             messenger.bus.default: []
 
         routing:
-            # En global/on garde l'async
+            # En prod : on garde l'envoi des mails en asynchrone
             Symfony\Component\Mailer\Messenger\SendEmailMessage: async
             Symfony\Component\Notifier\Message\ChatMessage: async
             Symfony\Component\Notifier\Message\SmsMessage: async
-            # 'App\Message\YourMessage': async
+            # App\Message\YourMessage: async

@@ -18,20 +18,25 @@
         .status { background: #e9ecef; padding: 8px; border-radius: 4px; margin-top: 10px; display: inline-block; }
         .button { display: inline-block; padding: 10px 16px; background-color: #2c3e50; color: #fff !important; text-decoration: none; border-radius: 4px; margin-top: 15px; }
         .muted { color: #666; font-size: 12px; }
+        .info { margin-top:25px;border:1px solid #cce5ff;background:#f8fbff;padding:15px;border-radius:6px; }
+        code { font-family: Consolas, Monaco, monospace; }
+        @media (max-width:600px){ .addresses{grid-template-columns:1fr;} }
     </style>
 </head>
 <body>
 <div class="container">
-    {% set customer_name =
-        (order.shippingSnapshot is defined and order.shippingSnapshot and order.shippingSnapshot.fullName is defined and order.shippingSnapshot.fullName)
-        ? order.shippingSnapshot.fullName
-        : (user.prenom ~ ' ' ~ user.nom)
-    %}
+    {# Nom client robuste : shippingSnapshot > (order.prenom/nom) > (user.prenom/nom) > email #}
+    {% set _ship = order.shippingSnapshot ?? null %}
+    {% set _customer_fallback =
+        (order.prenom|default('') ~ ' ' ~ order.nom|default(''))|trim ?: (
+        (user.prenom|default('') ~ ' ' ~ user.nom|default(''))|trim ?: (order.user.email|default('Client'))
+        ) %}
+    {% set customer_name = (_ship and _ship.fullName is defined and _ship.fullName) ? _ship.fullName : _customer_fallback %}
 
     <h2>Merci pour votre commande, {{ customer_name }} !</h2>
 
     <p>Votre commande <strong>{{ order.reference }}</strong> a bien été enregistrée.</p>
-    <p class="total">Montant total : {{ order.total|number_format(2, ',', ' ') }} €</p>
+    <p class="total">Montant total : {{ (order.total|default(0))|number_format(2, ',', ' ') }} €</p>
 
     <div class="addresses">
         <div class="addr">
@@ -75,8 +80,8 @@
         </thead>
         <tbody>
         {% for item in order.items %}
-            {% set unit = (item.unitPrice|replace({',':'.'})) + 0 %}
-            {% set qty  = (item.quantity ?? 0) + 0 %}
+            {% set unit = (item.unitPrice|default(0)|replace({',':'.'})) + 0 %}
+            {% set qty  = (item.quantity|default(0)) + 0 %}
             {% set subtotal = unit * qty %}
             <tr>
                 <td>{{ item.productName }}</td>
@@ -90,18 +95,36 @@
         </tbody>
     </table>
 
-    <p class="status">Statut actuel : <strong>{{ order.status.value }}</strong></p>
+    {# Lecture "agnostique" du statut : enum (value/name) ou string, puis normalisation #}
+    {% set _status =
+        order.status is defined and order.status
+        ? (attribute(order.status, 'value') is defined
+        ? order.status.value
+        : (attribute(order.status, 'name') is defined ? order.status.name : order.status))
+        : null
+    %}
+    {% set _norm = (_status is not null) ? (_status|upper|replace({' ': '_', '-': '_'}) ) : null %}
 
-    {# Bloc virement seulement si statut EN_ATTENTE_PAIEMENT #}
-    {% if order.status is same as(constant('App\\\\Enum\\\\OrderStatus::EN_ATTENTE_PAIEMENT')) %}
-        <div style="margin-top:25px;border:1px solid #cce5ff;background:#f8fbff;padding:15px;border-radius:6px;">
+    <p class="status">
+        Statut actuel :
+        <strong>{{ _status ?? 'Non défini' }}</strong>
+    </p>
+
+    {# --- Virement : encart RIB si EN_ATTENTE* (ex: EN_ATTENTE_DE_PAIEMENT) --- #}
+    {% set awaiting = (_norm is not null and _norm starts with 'EN_ATTENTE') %}
+    {% if awaiting %}
+        {% set _holder   = bank_holder|default('') %}
+        {% set _bankname = bank_bankname|default('') %}
+        {% set _iban     = bank_iban|default('') %}
+        {% set _bic      = bank_bic|default('') %}
+        <div class="info">
             <h3 style="margin-top:0;">Informations pour le virement</h3>
             <p>Merci de procéder au règlement par virement bancaire en utilisant les coordonnées suivantes&nbsp;:</p>
             <ul style="list-style:none;padding-left:0;margin:0;">
-                <li><strong>Titulaire&nbsp;:</strong> {{ bank_holder }}</li>
-                <li><strong>Banque&nbsp;:</strong> {{ bank_bankname }}</li>
-                <li><strong>IBAN&nbsp;:</strong> <code>{{ bank_iban }}</code></li>
-                <li><strong>BIC&nbsp;:</strong> <code>{{ bank_bic }}</code></li>
+                <li><strong>Titulaire&nbsp;:</strong> {{ _holder }}</li>
+                <li><strong>Banque&nbsp;:</strong> {{ _bankname }}</li>
+                <li><strong>IBAN&nbsp;:</strong> <code>{{ _iban }}</code></li>
+                <li><strong>BIC&nbsp;:</strong> <code>{{ _bic }}</code></li>
             </ul>
             <p style="margin-top:10px;">
                 Indiquez la référence <strong>{{ order.reference }}</strong> dans le libellé du virement.
@@ -110,13 +133,22 @@
         </div>
     {% endif %}
 
+    {# Boutons utiles #}
     <p style="margin-top:25px;">
-        Vous pouvez également télécharger votre facture à tout moment depuis votre espace client :
-        <br>
-        <a href="{{ url('order_invoice_pdf', { id: order.id }) }}" class="button">
-            Télécharger ma facture (PDF)
-        </a>
+        <a href="{{ url('app_account_order_show', { id: order.id }) }}" class="button">Voir ma commande</a>
     </p>
+
+    {# Facture disponible si paiement validé (ou flag forcé) #}
+    {% set paid_norms = ['EN_COURS', 'EN_PREPARATION', 'EXPEDIEE', 'LIVREE'] %}
+    {% set has_invoice_flag = (order.invoiceSent is defined and order.invoiceSent) %}
+    {% set is_invoice_available = (_norm in paid_norms) or has_invoice_flag %}
+    {% if is_invoice_available %}
+        <p>
+            <a href="{{ url('account_order_invoice', { id: order.id }) }}" class="button">
+                Télécharger ma facture (PDF)
+            </a>
+        </p>
+    {% endif %}
 
     <p style="margin-top:25px;">À bientôt,<br>L’équipe Maison Vintage</p>
 </div>

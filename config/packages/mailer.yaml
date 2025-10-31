@@ -1,3 +1,6 @@
+# config/packages/mailer.yaml
 framework:
     mailer:
-        dsn: '%env(MAILER_DSN)%'
+        # Utilise la valeur de MAILER_DSN (ex: smtp://127.0.0.1:1025 pour MailHog en DEV).
+        # Le "resolve:" permet de résoudre proprement les références d'env imbriquées si besoin.
+        dsn: '%env(resolve:MAILER_DSN)%'

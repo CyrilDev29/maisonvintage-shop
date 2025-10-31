@@ -7,6 +7,7 @@
     <div class="container my-4">
         <h1 class="h4 mb-3">Mes commandes</h1>
 
+        {# Flashs #}
         {% for label, messages in app.flashes %}
             {% for message in messages %}
                 <div class="alert alert-{{ label }}" role="alert">{{ message }}</div>
@@ -26,29 +27,57 @@
                         <th scope="col">Date</th>
                         <th scope="col">Statut</th>
                         <th scope="col" class="text-end">Total</th>
-                        <th scope="col"></th>
+                        <th scope="col" class="text-end">Actions</th>
                     </tr>
                     </thead>
                     <tbody>
                     {% for o in orders %}
-                        {% set statusVal = o.status.value %}
+                        {# Valeur lisible du statut (enum value/name ou string) #}
+                        {% set statusVal =
+                            o.status is defined and o.status
+                            ? (attribute(o.status, 'value') is defined
+                            ? o.status.value
+                            : (attribute(o.status, 'name') is defined ? o.status.name : o.status))
+                            : 'Indéfini'
+                        %}
+
+                        {# Normalisation pour les comparaisons : "En cours" -> "EN_COURS" #}
+                        {% set statusNorm = statusVal|upper|replace({' ': '_', '-': '_'}) %}
+
+                        {# Badge selon le statut lisible #}
                         {% set badgeClass =
-                            statusVal == 'En cours' ? 'bg-warning text-dark' :
+                            statusVal == 'En attente de paiement' ? 'bg-secondary' :
+                            (statusVal == 'En cours' ? 'bg-warning text-dark' :
                             (statusVal == 'En préparation' ? 'bg-info text-dark' :
                             (statusVal == 'Expédiée' ? 'bg-primary' :
                             (statusVal == 'Annulée' ? 'bg-danger' :
-                            (statusVal == 'Livrée' ? 'bg-success' : 'bg-secondary'))))
+                            (statusVal == 'Livrée' ? 'bg-success' : 'bg-light text-dark')))))
                         %}
+
+                        {# Facture disponible uniquement si paiement validé (>= EN_COURS) ou si indicateur présent #}
+                        {% set paidNorms = ['EN_COURS', 'EN_PREPARATION', 'EXPEDIEE', 'LIVREE'] %}
+                        {% set hasInvoiceFlag = (o.invoiceSent is defined and o.invoiceSent) %}
+                        {% set canDownloadInvoice = (statusNorm in paidNorms) or hasInvoiceFlag %}
+
                         <tr>
                             <td>{{ o.reference }}</td>
                             <td>{{ o.createdAt|date('d/m/Y H:i') }}</td>
                             <td><span class="badge {{ badgeClass }}">{{ statusVal }}</span></td>
-                            <td class="text-end">{{ o.total|number_format(2, ',', ' ') }} €</td>
+                            <td class="text-end">{{ (o.total ?? 0)|number_format(2, ',', ' ') }} €</td>
                             <td class="text-end">
-                                <a class="btn btn-sm btn-outline-primary"
-                                   href="{{ path('app_account_order_show', {id: o.id}) }}">
-                                    Détails
-                                </a>
+                                <div class="btn-group" role="group" aria-label="Actions commande">
+                                    <a class="btn btn-sm btn-outline-primary"
+                                       href="{{ path('app_account_order_show', {id: o.id}) }}">
+                                        Détails
+                                    </a>
+                                    {# Bouton facture masqué si commande en attente de paiement (virement non reçu, etc.) #}
+                                    {% if canDownloadInvoice %}
+                                        <a class="btn btn-sm btn-outline-secondary"
+                                           href="{{ path('account_order_invoice', { id: o.id }) }}">
+                                            Facture (PDF)
+                                        </a>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                     {% endfor %}

@@ -9,13 +9,25 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class ArticleController extends AbstractController
 {
-    #[Route('/article/{slug}', name: 'article_show')]
-    public function show(string $slug, ArticleRepository $articleRepository): Response
+    /**
+     * Route canonique : /article/{id}-{slug}
+     * On charge par ID (fiable même si plusieurs articles ont le même slug).
+     * Si le slug ne correspond pas à celui stocké, on redirige en 301 vers l’URL canonique.
+     */
+    #[Route('/article/{id}-{slug}', name: 'article_show', requirements: ['id' => '\d+'])]
+    public function show(int $id, string $slug, ArticleRepository $articleRepository): Response
     {
-        $article = $articleRepository->findOneBy(['slug' => $slug]);
+        $article = $articleRepository->find($id);
 
         if (!$article) {
             throw $this->createNotFoundException('Article introuvable');
+        }
+
+        if ($article->getSlug() !== $slug) {
+            return $this->redirectToRoute('article_show', [
+                'id'   => $article->getId(),
+                'slug' => $article->getSlug() ?? '',
+            ], 301);
         }
 
         return $this->render('article/show.html.twig', [
@@ -23,7 +35,30 @@ class ArticleController extends AbstractController
         ]);
     }
 
-    #[Route('/article/id/{id}', name: 'article_show_by_id')]
+    /**
+     * Route legacy : /article/{slug}
+     * On conserve pour compat. Si collision de slug, on prend le plus récent
+     * et on redirige vers la route canonique.
+     */
+    #[Route('/article/{slug}', name: 'article_show_legacy', priority: -10)]
+    public function showLegacy(string $slug, ArticleRepository $articleRepository): Response
+    {
+        $article = $articleRepository->findOneBy(['slug' => $slug], ['createdAt' => 'DESC']);
+
+        if (!$article) {
+            throw $this->createNotFoundException('Article introuvable');
+        }
+
+        return $this->redirectToRoute('article_show', [
+            'id'   => $article->getId(),
+            'slug' => $article->getSlug() ?? '',
+        ], 301);
+    }
+
+    /**
+     * Accès par ID pur : redirige vers l’URL canonique id-slug.
+     */
+    #[Route('/article/id/{id}', name: 'article_show_by_id', requirements: ['id' => '\d+'])]
     public function showById(int $id, ArticleRepository $articleRepository): Response
     {
         $article = $articleRepository->find($id);
@@ -32,9 +67,9 @@ class ArticleController extends AbstractController
             throw $this->createNotFoundException('Article introuvable');
         }
 
-        // Redirection permanente vers la route avec slug
         return $this->redirectToRoute('article_show', [
-            'slug' => $article->getSlug(),
+            'id'   => $article->getId(),
+            'slug' => $article->getSlug() ?? '',
         ], 301);
     }
 }

@@ -1,4 +1,5 @@
 <?php
+// src/Controller/PaiementController.php
 
 declare(strict_types=1);
 
@@ -9,30 +10,26 @@ use App\Enum\OrderStatus;
 use App\Service\InvoiceService;
 use App\Service\StripePaymentService;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
-use Symfony\Component\Mailer\MailerInterface;
-use Symfony\Component\Mime\Address;
 use Symfony\Component\Routing\Annotation\Route;
 
 /**
- * Contrôleur de gestion des paiements :
- * - CB / Stripe (success / cancel)
- * - Virement bancaire (manuel)
- * - Téléchargement de facture
+ * Gestion post-paiement :
+ * - Success / Cancel Stripe (UX),
+ * - Page d’instructions virement,
+ * - Téléchargement de la facture.
  */
 final class PaiementController extends AbstractController
 {
     public function __construct(
-        private readonly StripePaymentService $stripe,
+        private readonly StripePaymentService   $stripe,
         private readonly EntityManagerInterface $em,
-        private readonly InvoiceService $invoiceService,
-        private readonly MailerInterface $mailer,
+        private readonly InvoiceService         $invoiceService,
     ) {}
 
     #[Route('/paiement/success', name: 'paiement_success', methods: ['GET'])]
@@ -46,8 +43,7 @@ final class PaiementController extends AbstractController
                 $session = $this->stripe->retrieveCheckoutSession($sessionId);
 
                 if (($session->payment_status ?? null) === 'paid') {
-                    // Le webhook décrémente le stock et marque payé.
-                    // Ici on se contente de vider le panier côté UX.
+                    // Le webhook réalise le traitement métier. Ici on vide juste le panier côté UX.
                     $sessionStorage->remove('cart');
                 }
 
@@ -56,8 +52,8 @@ final class PaiementController extends AbstractController
                     $order = $this->em->getRepository(Order::class)
                         ->findOneBy(['reference' => $orderRef]);
                 }
-            } catch (\Throwable $e) {
-                // Silent fallback pour ne pas bloquer l'affichage
+            } catch (\Throwable) {
+                // Tolérant à l’erreur pour ne pas bloquer l’affichage.
             }
         }
 
@@ -82,6 +78,10 @@ HTML;
         return new Response($html);
     }
 
+    /**
+     * Ancienne route de facture (laisser en place si des liens historiques existent).
+     * NB : l'accès réel à la facture est déjà sécurisé dans OrderController::downloadInvoice().
+     */
     #[Route('/commande/{id}/facture', name: 'order_invoice_pdf', methods: ['GET'])]
     public function invoice(Order $order): Response
     {
@@ -103,13 +103,15 @@ HTML;
     }
 
     /**
-     * Page d’instructions pour le virement :
-     * - Positionne la commande en "En attente de paiement" (idempotent)
-     * - Envoie un e-mail de confirmation avec RIB
-     * - N'empêche pas l'affichage si l'envoi échoue
+     * Page d’instructions virement :
+     * - Laisse/positionne la commande en EN_ATTENTE_PAIEMENT.
+     * - Affiche le récapitulatif + RIB.
+     *
+     * IMPORTANT : l'e-mail d'instructions virement est envoyé UNE SEULE FOIS
+     * dans CheckoutController::confirm() (pour éviter les doublons).
      */
     #[Route('/paiement/virement', name: 'paiement_bank_transfer', methods: ['GET'])]
-    public function bankTransfer(Request $request, SessionInterface $session): Response
+    public function bankTransfer(Request $request): Response
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
@@ -124,46 +126,23 @@ HTML;
             throw $this->createAccessDeniedException();
         }
 
-        //  1) Mettre/laisser le statut en attente de paiement
+        // Assure l’état "en attente de paiement" (idempotent).
         try {
-            if (method_exists($order, 'getStatus') && $order->getStatus() !== OrderStatus::EN_COURS) {
+            if ($order->getStatus() !== OrderStatus::EN_COURS) {
                 $order->setStatus(OrderStatus::EN_ATTENTE_PAIEMENT);
                 $this->em->flush();
             }
-        } catch (\Throwable $e) {
-            // On n'interrompt pas l'affichage si le flush échoue
+        } catch (\Throwable) {
+            // On n'interrompt pas l'affichage si le flush échoue.
         }
 
-        //  2) Anti double-envoi d'e-mail
-        $flagKey = 'bt_mail_sent_' . $order->getId();
-        if (!$session->get($flagKey, false)) {
-            try {
-                $from = (string) ($this->getParameter('app.contact_from') ?? 'no-reply@maisonvintage.test');
-
-                $email = (new TemplatedEmail())
-                    ->from(new Address($from, 'Maison Vintage'))
-                    ->to($order->getUser()->getEmail())
-                    ->subject('Confirmation de votre commande ' . $order->getReference() . ' — en attente de virement')
-                    ->htmlTemplate('emails/order_confirmation.html.twig')
-                    ->context([
-                        'order' => $order,
-                        'user'  => $order->getUser(),
-                    ]);
-
-                $this->mailer->send($email);
-                $session->set($flagKey, true);
-            } catch (\Throwable $e) {
-                // Le rendu de la page reste accessible même si le mail échoue
-            }
-        }
-
-        //  3) Affichage du RIB et du récapitulatif
+        // Affiche le récapitulatif + coordonnées bancaires (plus d'envoi d'e-mail ici).
         return $this->render('paiement/bank_transfer.html.twig', [
             'order'         => $order,
-            'bank_holder'   => (string) ($this->getParameter('bank.holder') ?? ''),
+            'bank_holder'   => (string) ($this->getParameter('bank.holder')   ?? ''),
             'bank_bankname' => (string) ($this->getParameter('bank.bankname') ?? ''),
-            'bank_iban'     => (string) ($this->getParameter('bank.iban') ?? ''),
-            'bank_bic'      => (string) ($this->getParameter('bank.bic') ?? ''),
+            'bank_iban'     => (string) ($this->getParameter('bank.iban')     ?? ''),
+            'bank_bic'      => (string) ($this->getParameter('bank.bic')      ?? ''),
         ]);
     }
 }

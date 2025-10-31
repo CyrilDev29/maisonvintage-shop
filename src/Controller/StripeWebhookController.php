@@ -1,4 +1,5 @@
 <?php
+// src/Controller/StripeWebhookController.php
 
 declare(strict_types=1);
 
@@ -21,11 +22,10 @@ use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Routing\Annotation\Route;
 
 /**
- * Webhook Stripe :
- * - Utilise metadata.order_ref ou client_reference_id
- * - Traite checkout.session.completed / async_payment_succeeded (+ fallback payment_intent.succeeded)
- * - Idempotent via order.isInvoiceSent()
- * - Accès aux propriétés Stripe *sécurisés* (évite les 500 si champs manquants)
+ * Webhook Stripe (idempotent) :
+ * - Valide les paiements et exécute le flux post-paiement (stock, statut, factures, e-mails).
+ * - Ne suppose jamais la présence d’un champ Stripe (accès "safe").
+ * - Renvoie 200 même en cas d’erreur contrôlée pour éviter les retries en boucle.
  */
 final class StripeWebhookController extends AbstractController
 {
@@ -69,7 +69,7 @@ final class StripeWebhookController extends AbstractController
                 $paymentStatus   = $session->payment_status ?? null;
                 $paymentIntentId = isset($session->payment_intent) ? (string)$session->payment_intent : null;
 
-                // Récupération email *safe*
+                // Email client "safe"
                 $customerEmail = null;
                 if (isset($session->customer_email) && is_string($session->customer_email)) {
                     $customerEmail = $session->customer_email;
@@ -104,7 +104,6 @@ final class StripeWebhookController extends AbstractController
                         'payment_intent' => $paymentIntentId,
                         'error'          => $e->getMessage(),
                     ]);
-                    // On renvoie 200 pour éviter que Stripe retente en boucle
                     return new Response('failed_internal', Response::HTTP_OK, ['Content-Type' => 'text/plain']);
                 }
             }
@@ -116,7 +115,7 @@ final class StripeWebhookController extends AbstractController
                 $orderRef        = isset($pi->metadata['order_ref']) ? (string) $pi->metadata['order_ref'] : null;
                 $paymentIntentId = $pi->id ?? null;
 
-                // Email *safe*
+                // Email client "safe"
                 $customerEmail = null;
                 if (isset($pi->receipt_email) && is_string($pi->receipt_email)) {
                     $customerEmail = $pi->receipt_email;
@@ -163,7 +162,6 @@ final class StripeWebhookController extends AbstractController
                     $orderRef = (string) $obj->client_reference_id;
                 }
 
-                // last_payment_error *safe*
                 $failureCode = $declineCode = $failureMessage = null;
                 if (isset($obj->last_payment_error) && is_object($obj->last_payment_error)) {
                     $failureCode    = $obj->last_payment_error->code        ?? null;
@@ -203,8 +201,7 @@ final class StripeWebhookController extends AbstractController
     }
 
     /**
-     * Décrémente le stock, met la commande en EN_COURS, génère/attache la facture si possible,
-     * envoie les e-mails. Idempotent via invoiceSent.
+     * Traite une commande payée : stock, statut, factures, e-mails (idempotent via invoiceSent).
      */
     private function processPaidOrder(string $orderRef, ?string $sessionId, ?string $paymentIntentId, ?string $customerEmail): string
     {
@@ -214,6 +211,7 @@ final class StripeWebhookController extends AbstractController
             return 'order_not_found';
         }
 
+        // Renseigne session / PI s’ils ne le sont pas encore (tolérant aux erreurs).
         $idsUpdated = false;
         if ($sessionId && method_exists($order, 'getStripeSessionId') && method_exists($order, 'setStripeSessionId') && !$order->getStripeSessionId()) {
             $order->setStripeSessionId($sessionId);
@@ -234,6 +232,7 @@ final class StripeWebhookController extends AbstractController
             }
         }
 
+        // Idempotence : si la facture a déjà été envoyée on s’arrête là.
         if (method_exists($order, 'isInvoiceSent') && $order->isInvoiceSent()) {
             $this->logger->info('[Stripe][Webhook] Order already processed (invoice sent)', [
                 'order_ref'      => $orderRef,
@@ -243,6 +242,7 @@ final class StripeWebhookController extends AbstractController
             return 'already_processed';
         }
 
+        // Décrémentation stock + passage en EN_COURS sous transaction.
         $conn = $this->em->getConnection();
         $conn->beginTransaction();
 
@@ -288,7 +288,7 @@ final class StripeWebhookController extends AbstractController
             return 'processing_error';
         }
 
-        // Génération PDF tolérante (ne bloque pas l’envoi des mails si échec)
+        // Génération des PDF (non bloquant).
         $clientPdfPath = $sellerPdfPath = null;
         try {
             $clientPdfPath = $this->invoiceService->generate($order, false);
@@ -300,19 +300,32 @@ final class StripeWebhookController extends AbstractController
             ]);
         }
 
-        // Envoi des e-mails (synchro en DEV grâce à messenger.yaml)
-        $from     = (string) ($this->getParameter('app.contact_from') ?? 'no-reply@maisonvintage.test');
-        $sellerTo = (string) ($this->getParameter('app.seller_email') ?? $from);
+        // Prépare les valeurs bancaires pour le template (même si non utilisées selon le statut).
+        $from       = (string) ($this->getParameter('app.contact_from') ?? 'no-reply@maisonvintage.test');
+        $sellerTo   = (string) ($this->getParameter('app.seller_email') ?? $from);
+        $bankHolder = (string) ($this->getParameter('bank.holder')   ?? '');
+        $bankName   = (string) ($this->getParameter('bank.bankname') ?? '');
+        $bankIban   = (string) ($this->getParameter('bank.iban')     ?? '');
+        $bankBic    = (string) ($this->getParameter('bank.bic')      ?? '');
+
         $user     = $order->getUser();
         $clientTo = method_exists($user, 'getEmail') ? (string) $user->getEmail() : ($customerEmail ?: $from);
 
+        // Mail client (bloquant pour marquer l’état "invoice sent").
         try {
             $emailClient = (new TemplatedEmail())
                 ->from(new Address($from, 'Maison Vintage'))
                 ->to($clientTo)
                 ->subject('Confirmation de votre commande ' . $order->getReference())
                 ->htmlTemplate('emails/order_confirmation.html.twig')
-                ->context(['order' => $order, 'user' => $user]);
+                ->context([
+                    'order'         => $order,
+                    'user'          => $user,
+                    'bank_holder'   => $bankHolder,
+                    'bank_bankname' => $bankName,
+                    'bank_iban'     => $bankIban,
+                    'bank_bic'      => $bankBic,
+                ]);
 
             if ($clientPdfPath && is_file($clientPdfPath)) {
                 $emailClient->attachFromPath($clientPdfPath, sprintf('Facture-%s.pdf', $order->getReference()));
@@ -332,6 +345,7 @@ final class StripeWebhookController extends AbstractController
             return 'processed_mail_client_failed';
         }
 
+        // Mail vendeur (non bloquant).
         try {
             $emailSeller = (new TemplatedEmail())
                 ->from(new Address($from, 'Maison Vintage'))
