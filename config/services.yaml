@@ -1,7 +1,6 @@
 # config/services.yaml
 parameters:
     app.contact_from: '%env(string:CONTACT_FROM)%'
-    # Utilise directement CONTACT_TO (il est bien défini dans ton .env.local)
     app.seller_email: '%env(string:CONTACT_TO)%'
 
     stripe.public_key: '%env(string:STRIPE_PUBLIC_KEY)%'
@@ -10,6 +9,10 @@ parameters:
     bank.bankname: '%env(string:BANK_BANKNAME)%'
     bank.iban: '%env(string:BANK_IBAN)%'
     bank.bic: '%env(string:BANK_BIC)%'
+
+    # Durées de réservation configurables
+    maisonvintage.ttl.bank_transfer_hours: 72   # virement : 72h
+    maisonvintage.ttl.card_minutes: 30          # CB/PayPal : 30 min
 
 services:
     _defaults:
