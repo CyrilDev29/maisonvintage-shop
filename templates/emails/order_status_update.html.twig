@@ -1,39 +1,93 @@
 {# templates/emails/order_status_update.html.twig #}
-{% extends 'base.html.twig' %}
-{% block title %}Mise à jour de votre commande{% endblock %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Mise à jour de votre commande</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <style>
+        body{font-family:Arial,sans-serif;background:#f9f9f9;color:#222;margin:0;padding:20px}
+        .container{max-width:650px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:20px}
+        h1{font-size:20px;margin:0 0 10px}
+        h3{margin:18px 0 8px}
+        ul{margin:8px 0 0 18px;padding:0}
+        .btn{display:inline-block;background:#2c3e50;color:#fff !important;text-decoration:none;padding:10px 16px;border-radius:4px}
+        .muted{color:#666;font-size:12px}
+        .status{display:inline-block;background:#e9ecef;border-radius:4px;padding:6px 10px;margin-top:8px}
+        .info{margin-top:18px;border:1px solid #cfe2ff;background:#f8fbff;padding:12px;border-radius:6px}
+        code{font-family:Consolas,Monaco,monospace}
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Commande {{ order.reference }}</h1>
 
-{% block body %}
-    <section style="max-width:650px;margin:2rem auto;padding:1rem;font-family:Arial,sans-serif;color:#222;">
-        <h1 style="font-size:1.4rem;">Commande {{ order.reference }}</h1>
+    {# Nom client : fallback robuste #}
+    {% set _ship = order.shippingSnapshot ?? null %}
+    {% set _customer_fallback =
+        (order.prenom|default('') ~ ' ' ~ order.nom|default(''))|trim ?: (
+        (user.prenom|default('') ~ ' ' ~ user.nom|default(''))|trim ?: (order.user.email|default('Client'))
+        ) %}
+    {% set customer_name = (_ship and _ship.fullName is defined and _ship.fullName) ? _ship.fullName : _customer_fallback %}
 
-        <p>Bonjour {{ order.prenom }} {{ order.nom }},</p>
-        <p>Le statut de votre commande a changé : <strong>{{ order.status.value }}</strong>.</p>
+    <p>Bonjour {{ customer_name }},</p>
 
-        <h2 style="margin-top:1.5rem;font-size:1.1rem;">Récapitulatif</h2>
-        <ul style="list-style:none;padding-left:0;margin-top:0.5rem;">
-            {% for it in order.items %}
-                {% set unit = (it.unitPrice|replace({',':'.'})) + 0 %}
-                <li style="margin-bottom:4px;">
-                    {{ it.productName }} — {{ it.quantity }} × {{ unit|number_format(2, ',', ' ') }} €
-                </li>
-            {% endfor %}
-        </ul>
+    {# Statut lisible + normalisé #}
+    {% set _status =
+        order.status ? (attribute(order.status,'value') is defined
+        ? order.status.value
+        : (attribute(order.status,'name') is defined ? order.status.name : order.status))
+        : 'Indéfini'
+    %}
+    {% set _norm = _status|upper|replace({' ':'_','-':'_'}) %}
 
-        {% set total_num = (order.total|replace({',':'.'})) + 0 %}
-        <p style="margin-top:0.8rem;">
-            <strong>Total :</strong> {{ total_num|number_format(2, ',', ' ') }} €
+    <p>Le statut de votre commande a changé : <span class="status"><strong>{{ _status }}</strong></span></p>
+
+    <h3>Récapitulatif</h3>
+    <ul>
+        {% for it in order.items %}
+            {% set unit = (it.unitPrice|default(0)|replace({',':'.'})) + 0 %}
+            <li>{{ it.productName }} — {{ it.quantity }} × {{ unit|number_format(2, ',', ' ') }} €</li>
+        {% else %}
+            <li class="muted">Aucune ligne.</li>
+        {% endfor %}
+    </ul>
+
+    {% set total_num = (order.total|default(0)|replace({',':'.'})) + 0 %}
+    <p><strong>Total :</strong> {{ total_num|number_format(2, ',', ' ') }} €</p>
+
+    <p style="margin-top:12px">
+        <a href="{{ url('app_account_order_show', { id: order.id }) }}" class="btn">Voir le détail de la commande</a>
+    </p>
+
+    {# Virement : RIB si le statut commence par EN_ATTENTE... (plus robuste) #}
+    {% if _norm starts with 'EN_ATTENTE' %}
+        <div class="info">
+            <h3 style="margin-top:0">Informations pour le virement</h3>
+            {% set _holder   = bank_holder|default('') %}
+            {% set _bankname = bank_bankname|default('') %}
+            {% set _iban     = bank_iban|default('') %}
+            {% set _bic      = bank_bic|default('') %}
+            <ul style="list-style:none;margin:0;padding:0">
+                <li><strong>Titulaire&nbsp;:</strong> {{ _holder }}</li>
+                <li><strong>Banque&nbsp;:</strong> {{ _bankname }}</li>
+                <li><strong>IBAN&nbsp;:</strong> <code>{{ _iban }}</code></li>
+                <li><strong>BIC&nbsp;:</strong> <code>{{ _bic }}</code></li>
+            </ul>
+            <p style="margin-top:8px">Utilisez la référence <strong>{{ order.reference }}</strong> comme libellé du virement.</p>
+        </div>
+    {% endif %}
+
+    {# Bouton facture si paiement validé #}
+    {% set paid_norms = ['EN_COURS','EN_PREPARATION','EXPEDIEE','LIVREE'] %}
+    {% set has_invoice_flag = (order.invoiceSent is defined and order.invoiceSent) %}
+    {% if _norm in paid_norms or has_invoice_flag %}
+        <p style="margin-top:12px">
+            <a href="{{ url('account_order_invoice', { id: order.id }) }}" class="btn">Télécharger ma facture (PDF)</a>
         </p>
+    {% endif %}
 
-        <p style="margin-top:1.5rem;">
-            Vous pouvez consulter votre commande ici :
-            <a href="{{ url('app_account_order_show', { id: order.id }) }}" style="color:#0d6efd;text-decoration:none;">
-                Voir le détail de la commande
-            </a>.
-        </p>
-
-        <p style="margin-top:1.5rem;">
-            Merci de votre confiance,<br>
-            <strong>L’équipe Maison Vintage</strong>
-        </p>
-    </section>
-{% endblock %}
+    <p class="muted" style="margin-top:16px">Message automatique — Maison Vintage</p>
+</div>
+</body>
+</html>

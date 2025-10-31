@@ -1,5 +1,10 @@
+# config/packages/dev/mailer.yaml
 framework:
     mailer:
-        dsn: '%env(MAILER_DSN)%'
-        # En DEV : on court-circuite Messenger pour envoyer tout de suite vers MailHog
+        # En DEV, on envoie directement vers le transport défini par MAILER_DSN
+        # (ex : smtp://127.0.0.1:1025 pour MailHog), sans passer par Messenger.
+        dsn: '%env(resolve:MAILER_DSN)%'
+
+        # Court-circuite l’envoi asynchrone pour voir le mail immédiatement
+        # dans MailHog pendant les tests locaux.
         message_bus: false

@@ -1,12 +1,14 @@
 # config/packages/dev/messenger.yaml
 framework:
     messenger:
-        # On redéfinit (et remplace) la section transports pour le dev
+        # En DEV, on écrase les transports pour simplifier le debug :
+        # - "sync" : exécution immédiate dans le même process (utile pour voir les effets tout de suite)
+        # - "failed" : on garde une file d'échecs au besoin
         transports:
             sync: 'sync://'
             failed: 'doctrine://default?queue_name=failed'
 
-        # Et on force le routage des messages sensibles à partir en "sync"
+        # Routage : on force les messages sensibles à partir en synchrones
         routing:
             Symfony\Component\Mailer\Messenger\SendEmailMessage: sync
             Symfony\Component\Notifier\Message\ChatMessage: sync

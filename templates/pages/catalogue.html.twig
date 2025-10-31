@@ -22,7 +22,7 @@
                     {% if a.quantity > 0 %}
                         <li class="product-card">
                             <div class="product-media">
-                                <a href="{{ path('article_show', {slug: a.slug}) }}" style="display:block;width:100%;height:100%;">
+                                <a href="{{ path('article_show', { id: a.id, slug: a.slug }) }}" style="display:block;width:100%;height:100%;">
                                     {% if a.image %}
                                         <img
                                             src="{{ asset('uploads/articles/' ~ a.image) }}"
@@ -33,7 +33,7 @@
                             </div>
                             <div class="product-body">
                                 <h2 class="product-title">
-                                    <a href="{{ path('article_show', {slug: a.slug}) }}" class="text-reset">
+                                    <a href="{{ path('article_show', { id: a.id, slug: a.slug }) }}" class="text-reset">
                                         {{ a.titre }}
                                     </a>
                                 </h2>

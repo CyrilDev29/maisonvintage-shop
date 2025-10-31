@@ -65,7 +65,7 @@
             </thead>
             <tbody>
             {% for line in items %}
-                {% set _slug = line.article.slug ?? null %}
+                {% set _slug = line.article.slug ?? '' %}
                 {% set mainSrc = vich_uploader_asset(line.article, 'imageFile')
                     ?? (line.article.images|length > 0
                     ? vich_uploader_asset(line.article.images|first, 'file')
@@ -78,10 +78,10 @@
                              style="width:80px;height:80px;object-fit:cover;border-radius:6px;">
                     </td>
                     <td>
-                        {% if _slug is not empty %}
-                            <a href="{{ path('article_show', { slug: _slug }) }}">{{ line.article.titre }}</a>
+                        {% if _slug %}
+                            <a href="{{ path('article_show', { id: line.article.id, slug: _slug }) }}">{{ line.article.titre }}</a>
                         {% else %}
-                            <a href="{{ path('article_show', { id: line.article.id }) }}">{{ line.article.titre }}</a>
+                            <a href="{{ path('article_show_by_id', { id: line.article.id }) }}">{{ line.article.titre }}</a>
                         {% endif %}
                     </td>
                     <td class="text-end">{{ line.price|number_format(2, ',', ' ') }} €</td>

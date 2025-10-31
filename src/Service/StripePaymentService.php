@@ -79,8 +79,9 @@ final class StripePaymentService
             throw new \InvalidArgumentException('At least one line item is required to create a Checkout Session.');
         }
 
-        // Méthodes de paiement : carte + PayPal si activé sur le compte Stripe.
-        // Si PayPal n’est pas disponible côté compte/region, Stripe masquera l’option automatiquement.
+        // Méthodes de paiement :
+        // - 'card' est toujours présent
+        // - 'paypal' : nécessite d'être activé côté compte Stripe ; sinon Stripe renverra une erreur à la création
         $paymentMethodTypes = ['card'];
         if ($this->enablePaypal) {
             $paymentMethodTypes[] = 'paypal';
@@ -108,7 +109,6 @@ final class StripePaymentService
 
         $session = $this->client->checkout->sessions->create($params);
 
-        // Petit log pour vérifier rapidement ce que propose Checkout (carte/PayPal).
         $this->logger?->info('[Stripe][Checkout] Session created', [
             'session_id' => $session->id,
             'order_ref'  => $orderReference,
@@ -139,6 +139,7 @@ final class StripePaymentService
     public function verifyWebhook(string $payload, string $signatureHeader): Event
     {
         if (empty($this->webhookSecret)) {
+            // Important : sans secret, on refuse le traitement pour éviter les faux positifs.
             throw new \RuntimeException('Stripe webhook secret not configured. Set STRIPE_WEBHOOK_SECRET.');
         }
 

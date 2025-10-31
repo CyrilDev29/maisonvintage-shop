@@ -43,7 +43,11 @@ class OrderController extends AbstractController
 
     /**
      * Téléchargement de la facture client (PDF).
-     * Génère la facture si besoin via InvoiceService, puis force le téléchargement.
+     *
+     * IMPORTANT :
+     * - La facture n'est disponible qu'après validation effective du paiement
+     *   (ex. statut >= EN_COURS : CB/PayPal validés par webhook, virement validé manuellement).
+     * - On bloque explicitement pour les statuts d'attente (ex. EN_ATTENTE_PAIEMENT).
      */
     #[Route('/{id}/invoice', name: 'account_order_invoice', requirements: ['id' => '\d+'], methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
@@ -56,11 +60,24 @@ class OrderController extends AbstractController
             throw $this->createAccessDeniedException('Vous ne pouvez pas accéder à cette facture.');
         }
 
+        // Refus systématique si commande annulée
         if ($order->getStatus() === OrderStatus::ANNULEE) {
             $this->addFlash('warning', 'Cette commande est annulée : la facture n’est plus disponible.');
             return $this->redirectToRoute('app_account_order_show', ['id' => $order->getId()]);
         }
 
+        // Refus tant que le paiement n’est pas validé (virement en attente, etc.)
+        // Adapte la liste si ton enum contient d’autres statuts "en attente".
+        $waitingStatuses = [
+            OrderStatus::EN_ATTENTE_PAIEMENT, // affiché dans ton e-mail ("En attente de paiement")
+            // OrderStatus::EN_ATTENTE_VIREMENT, // décommente si tu as un statut dédié
+        ];
+        if (in_array($order->getStatus(), $waitingStatuses, true)) {
+            $this->addFlash('info', 'La facture sera disponible après validation du paiement (virement reçu).');
+            return $this->redirectToRoute('app_account_order_show', ['id' => $order->getId()]);
+        }
+
+        // À ce stade, le paiement est validé : génération si besoin + téléchargement
         $pdfPath = $invoiceService->generate($order, false);
         $downloadName = sprintf('Facture-%s.pdf', $order->getReference());
 
@@ -213,7 +230,7 @@ class OrderController extends AbstractController
 
             $mailer->send($email);
         } catch (\Throwable $mailErr) {
-            // Ne pas interrompre l’expérience utilisateur si l’email échoue.
+            // On n'interrompt pas l'expérience utilisateur si l'email échoue.
         }
 
         return $this->redirectToRoute('app_account_order_show', ['id' => $order->getId()]);

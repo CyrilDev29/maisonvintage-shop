@@ -60,39 +60,36 @@
 
         .mv-nouveautes{ flex:1 1 auto; display:flex; }
         .mv-nouveautes .product-grid{
-            /* même hauteur que le conteneur (donc celle du héros grâce à align-items-stretch) */
             height:100%;
             width:100%;
             display:grid;
             grid-template-columns: repeat(3, 1fr);   /* 3 × 3 */
-            grid-template-rows: repeat(3, 1fr);      /* force 3 rangées de hauteur égale */
+            grid-template-rows: repeat(3, 1fr);      /* force 3 rangées */
             gap: 14px;
             margin: 0; padding: 0; list-style: none;
         }
         @media (max-width: 991.98px){
             .mv-nouveautes .product-grid{
                 grid-template-columns: repeat(2, 1fr);
-                grid-template-rows: repeat(3, 1fr);    /* 2 × 3 sur md */
+                grid-template-rows: repeat(3, 1fr);
             }
         }
         @media (max-width: 420px){
             .mv-nouveautes .product-grid{
                 grid-template-columns: 1fr;
-                grid-template-rows: none;              /* sur petit mobile, hauteur libre */
+                grid-template-rows: none;
             }
         }
 
-        /* Cartes : on reprend TON style de catégorie, mais on les rend flex pour remplir la cellule */
         .mv-nouveautes .product-card{
             border-radius:12px;
             box-shadow: var(--mv-shadow);
             overflow:hidden;
             border:1px solid var(--mv-border);
             background: var(--mv-surface);
-            display:flex; flex-direction:column; min-height:0; /* important pour que ça tienne dans 1fr */
+            display:flex; flex-direction:column; min-height:0;
         }
         .mv-nouveautes .product-media{
-            /* La cellule de grille donne la hauteur; on fait occuper ~60% à l’image */
             flex: 0 0 60%;
             background:#f1ede6;
             position:relative;
@@ -147,7 +144,7 @@
                                 {% for a in visibles %}
                                     <li class="product-card">
                                         <div class="product-media">
-                                            <a href="{{ path('article_show', {slug: a.slug}) }}">
+                                            <a href="{{ path('article_show', { id: a.id, slug: a.slug }) }}">
                                                 {% if a.image %}
                                                     <img src="{{ asset('uploads/articles/' ~ a.image) }}" alt="{{ a.titre }}">
                                                 {% endif %}
@@ -155,7 +152,7 @@
                                         </div>
                                         <div class="product-body">
                                             <h2 class="product-title">
-                                                <a href="{{ path('article_show', {slug: a.slug}) }}" class="text-reset">
+                                                <a href="{{ path('article_show', { id: a.id, slug: a.slug }) }}" class="text-reset">
                                                     {{ a.titre }}
                                                 </a>
                                             </h2>

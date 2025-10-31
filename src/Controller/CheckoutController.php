@@ -1,4 +1,5 @@
 <?php
+// src/Controller/CheckoutController.php
 
 namespace App\Controller;
 
@@ -20,6 +21,12 @@ use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mailer\MailerInterface;
 
+/**
+ * Tunnel de commande :
+ * - Panier → snapshot adresses → création Order EN_ATTENTE_PAIEMENT
+ * - Virement : décrémente le stock immédiatement, envoie mail d’instructions
+ * - CB : redirection Stripe, traitement final par webhook
+ */
 class CheckoutController extends AbstractController
 {
     #[Route('/checkout', name: 'checkout', methods: ['GET'])]
@@ -131,6 +138,7 @@ class CheckoutController extends AbstractController
     ): Response {
         $this->denyAccessUnlessGranted('ROLE_USER');
 
+        // CSRF basique pour le POST de confirmation.
         $token = $request->request->get('_token');
         if (!$this->isCsrfTokenValid('checkout_confirm', $token)) {
             $this->addFlash('danger', 'Jeton CSRF invalide. Merci de réessayer.');
@@ -146,6 +154,7 @@ class CheckoutController extends AbstractController
 
         $user = $this->getUser();
 
+        // Récupération des adresses depuis la session (sélection préalable).
         $shippingId  = $request->getSession()->get('checkout.address_id');
         $billingSame = (bool) $request->getSession()->get('checkout.billing_same', true);
         $billingId   = $request->getSession()->get('checkout.billing_address_id');
@@ -175,7 +184,7 @@ class CheckoutController extends AbstractController
 
         $paymentMethod = (string) ($request->request->get('payment_method') ?? 'card');
 
-        // Recontrôle du stock à J+0 (évite la surprise entre page et POST)
+        // Re-contrôle du stock juste avant création de commande.
         $articles = $articleRepository->findBy(['id' => array_keys($cart)]);
         foreach ($articles as $article) {
             $qtyInCart = max(0, (int)($cart[$article->getId()] ?? 0));
@@ -196,14 +205,7 @@ class CheckoutController extends AbstractController
 
             $order = new Order();
             $order->setUser($user);
-
-            /**
-             * IMPORTANT : statut initial systématiquement EN_ATTENTE_PAIEMENT,
-             * quelle que soit la méthode. La promotion de l’état sera faite :
-             * - par le webhook Stripe/PayPal (paiements en ligne),
-             * - ou manuellement côté virement.
-             */
-            $order->setStatus(OrderStatus::EN_ATTENTE_PAIEMENT);
+            $order->setStatus(OrderStatus::EN_ATTENTE_PAIEMENT); // promotion par webhook ou virement
 
             if (method_exists($order, 'setSnapshotFromUser')) {
                 $order->setSnapshotFromUser($user);
@@ -246,7 +248,7 @@ class CheckoutController extends AbstractController
                 $item->setUnitPrice(number_format($price, 2, '.', ''));
                 $item->setQuantity($qty);
 
-                // Image produit (robuste aux différents getters que tu utilises)
+                // Image produit (résiste aux différents getters).
                 $img = null;
                 if (method_exists($article, 'getImageUrl') && $article->getImageUrl()) {
                     $img = $article->getImageUrl();
@@ -281,7 +283,7 @@ class CheckoutController extends AbstractController
             $em->persist($order);
             $em->flush();
 
-            // Cas virement : on décrémente ici (flux manuel), on vide le panier, on envoie le mail d’instructions.
+            // Cas virement : décrémentation immédiate + mail d’instructions.
             if ($paymentMethod === 'bank_transfer') {
                 foreach ($articles as $article) {
                     $qty = max(0, (int)($cart[$article->getId()] ?? 0));
@@ -295,9 +297,12 @@ class CheckoutController extends AbstractController
 
                 $session->remove('cart');
 
-                // Email de confirmation pour virement (sans PDF)
-                $from     = (string) ($this->getParameter('app.contact_from') ?? 'no-reply@maisonvintage.test');
-                $clientTo = method_exists($user, 'getEmail') ? (string) $user->getEmail() : null;
+                $from       = (string) ($this->getParameter('app.contact_from') ?? 'no-reply@maisonvintage.test');
+                $clientTo   = method_exists($user, 'getEmail') ? (string) $user->getEmail() : null;
+                $bankHolder = (string) ($this->getParameter('bank.holder')   ?? '');
+                $bankName   = (string) ($this->getParameter('bank.bankname') ?? '');
+                $bankIban   = (string) ($this->getParameter('bank.iban')     ?? '');
+                $bankBic    = (string) ($this->getParameter('bank.bic')      ?? '');
 
                 if ($clientTo) {
                     $emailClient = (new TemplatedEmail())
@@ -305,12 +310,15 @@ class CheckoutController extends AbstractController
                         ->to($clientTo)
                         ->subject('Confirmation de votre commande ' . $order->getReference() . ' — en attente de virement')
                         ->htmlTemplate('emails/order_confirmation.html.twig')
-                        ->context(['order' => $order, 'user' => $user]);
-                    try {
-                        $mailer->send($emailClient);
-                    } catch (\Throwable $e) {
-                        // non bloquant
-                    }
+                        ->context([
+                            'order'         => $order,
+                            'user'          => $user,
+                            'bank_holder'   => $bankHolder,
+                            'bank_bankname' => $bankName,
+                            'bank_iban'     => $bankIban,
+                            'bank_bic'      => $bankBic,
+                        ]);
+                    try { $mailer->send($emailClient); } catch (\Throwable) { /* non bloquant */ }
                 }
 
                 return $this->redirectToRoute('paiement_bank_transfer', [
@@ -319,7 +327,7 @@ class CheckoutController extends AbstractController
                 ]);
             }
 
-            // Paiement Stripe : on ne touche ni stock ni statut ici. Le webhook s’en charge.
+            // CB : on laisse le webhook faire le traitement final.
             $conn->commit();
 
             $lineItems = [];
@@ -359,7 +367,7 @@ class CheckoutController extends AbstractController
     public function redirectToStripe(string $sessionId, Request $request, ParameterBagInterface $params): Response
     {
         $stripePublicKey = (string) $params->get('stripe.public_key');
-        $sessionUrl = (string) $request->query->get('sessionUrl', '');
+        $sessionUrl      = (string) $request->query->get('sessionUrl', '');
 
         return $this->render('checkout/redirect.html.twig', [
             'sessionId'       => $sessionId,

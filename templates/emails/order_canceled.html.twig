@@ -1,11 +1,4 @@
 {# templates/emails/order_canceled.html.twig #}
-{#
-Email d’alerte : annulation de commande
-Variables :
-  - order : \App\Entity\Order
-  - user  : \App\Entity\User
-  - refundedNow : bool (optionnel)
-#}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -13,30 +6,26 @@ Variables :
     <title>Annulation commande {{ order.reference }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; color:#222; background:#f6f7fb; margin:0; padding:0; }
-        .container { max-width:680px; margin:0 auto; background:#ffffff; border:1px solid #e9ecef; border-radius:8px; overflow:hidden; }
-        .header { background:#111; color:#fff; padding:16px 20px; font-size:16px; font-weight:bold; }
-        .content { padding:20px; }
-        .muted { color:#666; font-size:13px; }
-        .badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:12px; background:#dc3545; color:#fff; }
-        .badge-ok { background:#198754; }
-        .badge-warn { background:#fd7e14; }
-        table { width:100%; border-collapse:collapse; margin-top:12px; }
-        th, td { padding:8px; border-bottom:1px solid #eee; font-size:14px; text-align:left; }
-        th { background:#f9fafc; }
-        .text-right { text-align:right; }
-        .total-row td { font-weight:bold; }
-        .footer { padding:16px 20px; color:#666; font-size:12px; }
-        .small { font-size:12px; color:#555; }
-        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+        body{font-family:Arial,sans-serif;color:#222;background:#f6f7fb;margin:0;padding:20px}
+        .container{max-width:680px;margin:0 auto;background:#fff;border:1px solid #e9ecef;border-radius:8px;overflow:hidden}
+        .header{background:#111;color:#fff;padding:16px 20px;font-size:16px;font-weight:bold}
+        .content{padding:20px}
+        .muted{color:#666;font-size:13px}
+        .badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:12px;background:#dc3545;color:#fff}
+        .badge-ok{background:#198754}
+        .badge-warn{background:#fd7e14}
+        table{width:100%;border-collapse:collapse;margin-top:12px}
+        th,td{padding:8px;border-bottom:1px solid #eee;font-size:14px;text-align:left}
+        th{background:#f9fafc}
+        .text-right{text-align:right}
+        .total-row td{font-weight:bold}
+        .footer{padding:16px 20px;color:#666;font-size:12px}
+        .mono{font-family:Consolas,Monaco,monospace}
     </style>
 </head>
 <body>
 <div class="container">
-    <div class="header">
-        Annulation de commande — {{ order.reference }}
-    </div>
-
+    <div class="header">Annulation de commande — {{ order.reference }}</div>
     <div class="content">
         <p>
             <span class="badge">ANNULÉE</span>
@@ -47,10 +36,7 @@ Variables :
             {% endif %}
         </p>
 
-        <p>
-            Bonjour,<br>
-            La commande <strong>{{ order.reference }}</strong> a été annulée.
-        </p>
+        <p>Bonjour,<br>La commande <strong>{{ order.reference }}</strong> a été annulée.</p>
 
         <p class="muted">
             Date de création : {{ order.createdAt|date('d/m/Y H:i') }}<br>
@@ -59,18 +45,10 @@ Variables :
             Annulée le : {{ order.canceledAt ? order.canceledAt|date('d/m/Y H:i') : '—' }}
         </p>
 
-        <div class="small" style="margin:10px 0 6px;">
-            {% if order.stripePaymentIntentId %}
-                PaymentIntent : <span class="mono">{{ order.stripePaymentIntentId }}</span><br>
-            {% endif %}
-            {% if order.stripeRefundId %}
-                Refund ID : <span class="mono">{{ order.stripeRefundId }}</span>
-                {% if order.refundedAt %} — le {{ order.refundedAt|date('d/m/Y H:i') }}{% endif %}
-                <br>
-            {% endif %}
-            {% if order.stripeSessionId %}
-                Checkout Session : <span class="mono">{{ order.stripeSessionId }}</span>
-            {% endif %}
+        <div class="muted" style="margin:10px 0 6px;">
+            {% if order.stripePaymentIntentId %}PaymentIntent : <span class="mono">{{ order.stripePaymentIntentId }}</span><br>{% endif %}
+            {% if order.stripeRefundId %}Refund ID : <span class="mono">{{ order.stripeRefundId }}</span>{% if order.refundedAt %} — le {{ order.refundedAt|date('d/m/Y H:i') }}{% endif %}<br>{% endif %}
+            {% if order.stripeSessionId %}Checkout Session : <span class="mono">{{ order.stripeSessionId }}</span>{% endif %}
         </div>
 
         <h3 style="margin:20px 0 8px;">Articles</h3>
@@ -110,10 +88,7 @@ Variables :
             {{ order.codePostal }} {{ order.ville }} — {{ order.pays }}
         </p>
     </div>
-
-    <div class="footer">
-        Notification automatique — référence {{ order.reference }}.
-    </div>
+    <div class="footer">Notification automatique — référence {{ order.reference }}.</div>
 </div>
 </body>
 </html>

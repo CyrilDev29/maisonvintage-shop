@@ -1,12 +1,11 @@
 # config/services.yaml
-# Application services and parameters.
-
 parameters:
-    app.contact_from: '%env(CONTACT_FROM)%'
-    app.seller_email: '%env(CONTACT_FROM)%'
-    stripe.public_key: '%env(STRIPE_PUBLIC_KEY)%'
+    app.contact_from: '%env(string:CONTACT_FROM)%'
+    # Utilise directement CONTACT_TO (il est bien défini dans ton .env.local)
+    app.seller_email: '%env(string:CONTACT_TO)%'
 
-    # Bank transfer parameters
+    stripe.public_key: '%env(string:STRIPE_PUBLIC_KEY)%'
+
     bank.holder: '%env(string:BANK_HOLDER)%'
     bank.bankname: '%env(string:BANK_BANKNAME)%'
     bank.iban: '%env(string:BANK_IBAN)%'
@@ -33,10 +32,12 @@ services:
 
     App\Service\StripePaymentService:
         arguments:
-            $publicKey: '%env(STRIPE_PUBLIC_KEY)%'
-            $secretKey: '%env(STRIPE_SECRET_KEY)%'
-            $successUrl: '%env(PAYMENT_SUCCESS_URL)%'
-            $cancelUrl: '%env(PAYMENT_CANCEL_URL)%'
-            $currency: '%env(PAYMENT_CURRENCY)%'
+            $publicKey: '%env(string:STRIPE_PUBLIC_KEY)%'
+            $secretKey: '%env(string:STRIPE_SECRET_KEY)%'
+            $successUrl: '%env(string:PAYMENT_SUCCESS_URL)%'
+            $cancelUrl:  '%env(string:PAYMENT_CANCEL_URL)%'
+            $currency:   '%env(string:PAYMENT_CURRENCY)%'
             $enablePaypal: true
-            $webhookSecret: '%env(STRIPE_WEBHOOK_SECRET)%'
+            $webhookSecret: '%env(string:STRIPE_WEBHOOK_SECRET)%'
+
+    App\Service\OrderStatusNotifier: ~

@@ -4,6 +4,7 @@ namespace App\Controller\Admin;
 
 use App\Entity\Order;
 use App\Enum\OrderStatus;
+use App\Service\InvoiceService;
 use App\Service\StripePaymentService;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
@@ -25,6 +26,7 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Address;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
@@ -35,6 +37,7 @@ class OrderCrudController extends AbstractCrudController
         private ParameterBagInterface $params,
         private StripePaymentService $stripe,
         private CsrfTokenManagerInterface $csrf,
+        private InvoiceService $invoiceService, // <-- ajouté (génération facture)
     ) {}
 
     public static function getEntityFqcn(): string
@@ -60,12 +63,10 @@ class OrderCrudController extends AbstractCrudController
         yield TextField::new('reference', 'Référence')->onlyOnIndex();
         yield AssociationField::new('user', 'Client')->hideOnForm();
 
-        // Affichage du statut avec badge coloré
         yield TextField::new('status', 'Statut')
             ->setTemplatePath('admin/fields/order_status_badge.html.twig')
             ->hideOnForm();
 
-        // Sélection de statut via enum dans le formulaire
         yield ChoiceField::new('status', 'Statut')
             ->setChoices([
                 'En attente de paiement' => OrderStatus::EN_ATTENTE_PAIEMENT,
@@ -128,7 +129,6 @@ class OrderCrudController extends AbstractCrudController
                 return true;
             });
 
-        // Traductions et cohérence des actions
         return $actions
             ->add(Crud::PAGE_INDEX, Action::DETAIL)
             ->add(Crud::PAGE_DETAIL, $refund)
@@ -146,25 +146,68 @@ class OrderCrudController extends AbstractCrudController
         }
 
         $uow = $em->getUnitOfWork();
-        $original = $uow->getOriginalEntityData($entityInstance);
+        $original  = $uow->getOriginalEntityData($entityInstance);
         $oldStatus = $original['status'] ?? null;
         $newStatus = $entityInstance->getStatus();
 
         parent::updateEntity($em, $entityInstance);
 
+        // Envoi d’email au client à chaque changement de statut
         if ($oldStatus !== $newStatus && $entityInstance->getUser()?->getEmail()) {
-            $from = $this->params->has('app.contact_from')
-                ? (string) $this->params->get('app.contact_from')
-                : 'no-reply@maisonvintage.test';
+            $from     = (string) ($this->params->get('app.contact_from') ?? 'no-reply@maisonvintage.test');
+            $sellerTo = (string) ($this->params->get('app.seller_email') ?? $from);
 
-            $email = (new TemplatedEmail())
-                ->from($from)
-                ->to($entityInstance->getUser()->getEmail())
-                ->subject('Mise à jour de votre commande ' . $entityInstance->getReference())
-                ->htmlTemplate('emails/order_status_update.html.twig')
-                ->context(['order' => $entityInstance]);
+            // Contexte commun (inclut RIB pour l'état "En attente ...")
+            $context = [
+                'order'         => $entityInstance,
+                'bank_holder'   => (string) ($this->params->get('bank.holder')   ?? ''),
+                'bank_bankname' => (string) ($this->params->get('bank.bankname') ?? ''),
+                'bank_iban'     => (string) ($this->params->get('bank.iban')     ?? ''),
+                'bank_bic'      => (string) ($this->params->get('bank.bic')      ?? ''),
+            ];
 
-            $this->mailer->send($email);
+            // Mail client (status update)
+            try {
+                $emailClient = (new TemplatedEmail())
+                    ->from(new Address($from, 'Maison Vintage'))
+                    ->to($entityInstance->getUser()->getEmail())
+                    ->subject('Mise à jour de votre commande ' . $entityInstance->getReference())
+                    ->htmlTemplate('emails/order_status_update.html.twig')
+                    ->context($context);
+
+                // Si la commande devient EN_COURS : générer et joindre la facture
+                if ($newStatus === OrderStatus::EN_COURS) {
+                    $pdfPath = $this->invoiceService->generate($entityInstance, false); // idempotent
+                    if (is_string($pdfPath) && is_file($pdfPath)) {
+                        $emailClient->attachFromPath($pdfPath, sprintf('Facture-%s.pdf', $entityInstance->getReference()));
+                    }
+                }
+
+                $this->mailer->send($emailClient);
+            } catch (\Throwable $e) {
+                // Non bloquant pour l’admin
+            }
+
+            // Copie à la vendeuse avec la facture si EN_COURS
+            if ($newStatus === OrderStatus::EN_COURS && $sellerTo) {
+                try {
+                    $emailSeller = (new TemplatedEmail())
+                        ->from(new Address($from, 'Maison Vintage'))
+                        ->to($sellerTo)
+                        ->subject('Copie facture — ' . $entityInstance->getReference())
+                        ->htmlTemplate('emails/order_status_update.html.twig')
+                        ->context($context);
+
+                    $clientPdf = $this->invoiceService->generate($entityInstance, false);
+                    if (is_string($clientPdf) && is_file($clientPdf)) {
+                        $emailSeller->attachFromPath($clientPdf, sprintf('Facture-%s.pdf', $entityInstance->getReference()));
+                    }
+
+                    $this->mailer->send($emailSeller);
+                } catch (\Throwable $e) {
+                    // Non bloquant
+                }
+            }
         }
     }
 

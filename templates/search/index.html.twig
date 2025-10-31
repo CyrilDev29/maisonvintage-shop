@@ -45,7 +45,7 @@
                 {% for article in pagination %}
                     <div class="col-6 col-md-4 col-lg-3">
                         <article class="card h-100">
-                            <a href="{{ path('article_show', {slug: article.slug}) }}" class="text-decoration-none text-reset">
+                            <a href="{{ path('article_show', { id: article.id, slug: article.slug }) }}" class="text-decoration-none text-reset">
                                 {% set galleryFirst = article.images|length ? (article.images|first) : null %}
                                 {% set src =
                                     article.image
