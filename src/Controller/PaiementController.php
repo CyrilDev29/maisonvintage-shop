@@ -66,16 +66,7 @@ final class PaiementController extends AbstractController
     #[Route('/paiement/cancel', name: 'paiement_cancel', methods: ['GET'])]
     public function cancel(): Response
     {
-        $html = <<<HTML
-<!DOCTYPE html><html lang="fr"><meta charset="utf-8">
-<title>Paiement annulé</title>
-<body style="font-family:Arial,sans-serif;padding:2rem">
-<h1 style="margin:0 0 1rem">Paiement annulé</h1>
-<p>Le paiement a été annulé. Aucun débit ne sera effectué.</p>
-<p>Vous pouvez réessayer depuis votre panier.</p>
-</body></html>
-HTML;
-        return new Response($html);
+        return $this->render('paiement/cancel.html.twig');
     }
 
     /**

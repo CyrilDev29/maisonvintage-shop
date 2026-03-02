@@ -12,10 +12,35 @@
         </div>
 
         {% if order %}
+            {% set total_articles = (order.total|default(0)|replace({',':'.'})) + 0 %}
+            {% set total_port = (order.shippingAmountCents is defined ? (order.shippingAmountCents / 100) : 0) + 0 %}
+            {% set total_ttc = total_articles + total_port %}
+
             <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
                 <h1 class="h4 mb-0">Commande {{ order.reference }}</h1>
                 <div class="text-muted">
-                    Total : <strong>{{ order.total|number_format(2, ',', ' ') }} €</strong>
+                    Total TTC : <strong>{{ total_ttc|number_format(2, ',', ' ') }} €</strong>
+                </div>
+            </div>
+
+            {# Totaux détaillés #}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="h6 mb-3">Récapitulatif des montants</h2>
+                    <div class="d-flex justify-content-between border-top pt-2">
+                        <span class="text-muted">Total articles</span>
+                        <strong>{{ total_articles|number_format(2, ',', ' ') }} €</strong>
+                    </div>
+                    {% if total_port > 0 %}
+                        <div class="d-flex justify-content-between border-top pt-2">
+                            <span class="text-muted">Frais de port</span>
+                            <strong>{{ total_port|number_format(2, ',', ' ') }} €</strong>
+                        </div>
+                    {% endif %}
+                    <div class="d-flex justify-content-between border-top pt-2">
+                        <span class="text-muted">Total TTC</span>
+                        <strong>{{ total_ttc|number_format(2, ',', ' ') }} €</strong>
+                    </div>
                 </div>
             </div>
 
@@ -43,7 +68,7 @@
                     <div class="card h-100">
                         <div class="card-body">
                             <h2 class="h6 mb-2">Adresse de facturation</h2>
-                            {% set b = order.billingSnapshot %}
+                            {% set b = order.billingSnapshot ?? order.shippingSnapshot %}
                             {% if b %}
                                 <div>
                                     {{ b.fullName ?? '' }}<br>
@@ -58,6 +83,19 @@
                     </div>
                 </div>
             </div>
+
+            {# Bloc expédition #}
+            {% set hasShippingInfo = order.shippingCarrier or order.shippingMethod or total_port > 0 %}
+            {% if hasShippingInfo %}
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h2 class="h6 mb-2">Expédition</h2>
+                        {% if order.shippingCarrier %}Transporteur : <strong>{{ order.shippingCarrier }}</strong><br>{% endif %}
+                        {% if order.shippingMethod %}Service : <strong>{{ order.shippingMethod }}</strong><br>{% endif %}
+                        {% if total_port > 0 %}Frais de port : <strong>{{ total_port|number_format(2, ',', ' ') }} €</strong>{% endif %}
+                    </div>
+                </div>
+            {% endif %}
 
             {# Lignes de commande #}
             <div class="card mb-4">
@@ -74,6 +112,7 @@
                         </thead>
                         <tbody>
                         {% for it in order.items %}
+                            {% set lineTotal = (it.unitPrice * it.quantity) %}
                             <tr>
                                 <td>
                                     {% if it.productImage %}
@@ -88,10 +127,7 @@
                                 <td>{{ it.productName }}</td>
                                 <td class="text-end">{{ it.unitPrice|number_format(2, ',', ' ') }} €</td>
                                 <td class="text-center">{{ it.quantity }}</td>
-                                <td class="text-end">
-                                    {% set lineTotal = (it.unitPrice * it.quantity) %}
-                                    {{ lineTotal|number_format(2, ',', ' ') }} €
-                                </td>
+                                <td class="text-end">{{ lineTotal|number_format(2, ',', ' ') }} €</td>
                             </tr>
                         {% else %}
                             <tr><td colspan="5" class="text-center text-muted py-4">Aucune ligne.</td></tr>
@@ -99,14 +135,23 @@
                         </tbody>
                         <tfoot>
                         <tr>
-                            <th colspan="4" class="text-end">Total</th>
-                            <th class="text-end">{{ order.total|number_format(2, ',', ' ') }} €</th>
+                            <th colspan="4" class="text-end">Total articles</th>
+                            <th class="text-end">{{ total_articles|number_format(2, ',', ' ') }} €</th>
+                        </tr>
+                        {% if total_port > 0 %}
+                            <tr>
+                                <th colspan="4" class="text-end">Frais de port</th>
+                                <th class="text-end">{{ total_port|number_format(2, ',', ' ') }} €</th>
+                            </tr>
+                        {% endif %}
+                        <tr>
+                            <th colspan="4" class="text-end">Total TTC</th>
+                            <th class="text-end">{{ total_ttc|number_format(2, ',', ' ') }} €</th>
                         </tr>
                         </tfoot>
                     </table>
                 </div>
             </div>
-
         {% else %}
             <h1 class="h4">Paiement confirmé</h1>
             <p class="text-muted">Nous n’avons pas pu retrouver le détail de la commande. Vous pourrez le consulter depuis votre historique.</p>
@@ -131,7 +176,6 @@
                 try {
                     fetch(url, { credentials: 'same-origin' })
                         .then(function () {
-                            // Mise à jour optimiste du badge si présent
                             var els = document.querySelectorAll('[data-cart-count], .js-cart-count, #cart-count, #cart_badge');
                             els.forEach(function (el) { el.textContent = '0'; el.hidden = false; });
                             window.dispatchEvent(new CustomEvent('cart:cleared'));

@@ -108,7 +108,27 @@ class Order
     #[ORM\Column(length: 64, nullable: true)]
     private ?string $stripeRefundId = null;
 
-    /* ---------- Nouveaux champs NON cassants pour la réservation/CRON ---------- */
+    /* ---------- Nouveaux champs NON cassants (expédition + réservation) ---------- */
+
+    /**
+     * Transporteur sélectionné (ex: COLISSIMO, MONDIAL_RELAY, COCOLIS).
+     * Stocké en string pour rester indépendant de l’implémentation.
+     */
+    #[ORM\Column(length: 32, nullable: true)]
+    private ?string $shippingCarrier = null;
+
+    /**
+     * Méthode/service chez le transporteur (ex: DOMICILE, RELAIS...).
+     */
+    #[ORM\Column(length: 32, nullable: true)]
+    private ?string $shippingMethod = null;
+
+    /**
+     * Montant TTC des frais de port **en centimes** (EUR).
+     * 0 par défaut pour ne pas impacter les totaux existants.
+     */
+    #[ORM\Column(type: Types::INTEGER, options: ['default' => 0])]
+    private int $shippingAmountCents = 0;
 
     /**
      * Moyen de paiement choisi par l’utilisateur au checkout.
@@ -124,6 +144,13 @@ class Order
      */
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $reservedUntil = null;
+
+    /**
+     * Identifiant du point relais si livraison en relais (ex: Mondial Relay, Relais Colis).
+     * NULL si livraison à domicile.
+     */
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $shippingRelayId = null;
 
     public function __construct()
     {
@@ -228,10 +255,65 @@ class Order
     public function getStripeRefundId(): ?string { return $this->stripeRefundId; }
     public function setStripeRefundId(?string $id): self { $this->stripeRefundId = $id; return $this; }
 
-    // Nouveaux champs
+    // Nouveaux champs — expédition
+    public function getShippingCarrier(): ?string { return $this->shippingCarrier; }
+    public function setShippingCarrier(?string $carrier): self
+    {
+        $this->shippingCarrier = $carrier ? \trim($carrier) : null;
+        return $this;
+    }
+
+    public function getShippingMethod(): ?string { return $this->shippingMethod; }
+    public function setShippingMethod(?string $method): self
+    {
+        $this->shippingMethod = $method ? \trim($method) : null;
+        return $this;
+    }
+
+    public function getShippingAmountCents(): int { return $this->shippingAmountCents; }
+    public function setShippingAmountCents(int $amountCents): self
+    {
+        $this->shippingAmountCents = max(0, $amountCents);
+        return $this;
+    }
+
+    // Paiement choisi + réservation
     public function getPaymentMethod(): ?string { return $this->paymentMethod; }
     public function setPaymentMethod(?string $method): self { $this->paymentMethod = $method ? \trim($method) : null; return $this; }
 
     public function getReservedUntil(): ?\DateTimeImmutable { return $this->reservedUntil; }
     public function setReservedUntil(?\DateTimeImmutable $dt): self { $this->reservedUntil = $dt; return $this; }
+
+    /* ===================== Helpers sûrs (non utilisés ailleurs) ===================== */
+
+    /** Total TTC actuel en centimes (conversion sûre) */
+    public function getTotalCents(): int
+    {
+        // Conversion string "123.45" -> 12345 (arrondi propre)
+        return (int) \round((float) str_replace(',', '.', $this->total) * 100);
+    }
+
+    /** Grand total (articles + port) **en centimes** */
+    public function getGrandTotalCents(): int
+    {
+        return $this->getTotalCents() + $this->shippingAmountCents;
+    }
+
+    // Relay point ID
+    public function getShippingRelayId(): ?string { return $this->shippingRelayId; }
+    public function setShippingRelayId(?string $id): self
+    {
+        $this->shippingRelayId = $id ? \trim($id) : null;
+        return $this;
+    }
+
+    /**
+     * Grand total (articles + port) au format "EUR" string "0.00".
+     * Méthode ADDITIVE : rien ne remplace getTotal(), c’est juste une option.
+     */
+    public function getTotalWithShipping(): string
+    {
+        $euros = $this->getGrandTotalCents() / 100;
+        return \number_format($euros, 2, '.', '');
+    }
 }

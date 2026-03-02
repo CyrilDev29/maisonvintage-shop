@@ -134,7 +134,7 @@ class OrderController extends AbstractController
         $conn->beginTransaction();
 
         try {
-            // Rétablissement du stock UNIQUEMENT si la commande a été effectivement traitée/payée.
+            // Rétablissement du stock uniquement si la commande a été effectivement traitée/payée.
             if ($isProcessedPaid) {
                 foreach ($order->getItems() as $item) {
                     $productId = method_exists($item, 'getProductId') ? $item->getProductId() : null;

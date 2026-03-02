@@ -43,6 +43,7 @@ class PagesController extends AbstractController
         return $this->render('pages/nouveau_cocon.html.twig');
     }
 
+
     #[Route('/victime-de-son-succes', name: 'victime_succes')]
     public function victimeSucces(ArticleRepository $articleRepository): Response
     {

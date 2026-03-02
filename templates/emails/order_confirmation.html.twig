@@ -19,6 +19,9 @@
         .button { display: inline-block; padding: 10px 16px; background-color: #2c3e50; color: #fff !important; text-decoration: none; border-radius: 4px; margin-top: 15px; }
         .muted { color: #666; font-size: 12px; }
         .info { margin-top:25px;border:1px solid #cce5ff;background:#f8fbff;padding:15px;border-radius:6px; }
+        .totals { margin-top: 12px; }
+        .totals-row { display:flex; justify-content: space-between; padding:6px 0; border-top:1px solid #eee; }
+        .totals-row strong { font-weight: 700; }
         code { font-family: Consolas, Monaco, monospace; }
         @media (max-width:600px){ .addresses{grid-template-columns:1fr;} }
     </style>
@@ -34,9 +37,30 @@
     {% set customer_name = (_ship and _ship.fullName is defined and _ship.fullName) ? _ship.fullName : _customer_fallback %}
 
     <h2>Merci pour votre commande, {{ customer_name }} !</h2>
-
     <p>Votre commande <strong>{{ order.reference }}</strong> a bien été enregistrée.</p>
-    <p class="total">Montant total : {{ (order.total|default(0))|number_format(2, ',', ' ') }} €</p>
+
+    {# Calcul du total TTC complet #}
+    {% set total_articles = (order.total|default(0)) + 0 %}
+    {% set total_port = (order.shippingAmountCents is defined ? (order.shippingAmountCents / 100) : 0) + 0 %}
+    {% set total_ttc = total_articles + total_port %}
+
+    <p class="total">
+        Total TTC : <strong>{{ total_ttc|number_format(2, ',', ' ') }} €</strong>
+    </p>
+
+    {# Détail des montants #}
+    <div class="totals" style="margin-bottom:20px;">
+        <div class="totals-row">
+            <span class="muted">Total articles</span>
+            <span><strong>{{ total_articles|number_format(2, ',', ' ') }} €</strong></span>
+        </div>
+        {% if total_port > 0 %}
+            <div class="totals-row">
+                <span class="muted">Frais de port</span>
+                <span><strong>{{ total_port|number_format(2, ',', ' ') }} €</strong></span>
+            </div>
+        {% endif %}
+    </div>
 
     <div class="addresses">
         <div class="addr">
@@ -68,7 +92,22 @@
         </div>
     </div>
 
-    <h3>Détails de votre commande :</h3>
+    {# Transporteur / service / relais (si dispo) #}
+    {% if order.shippingCarrier or order.shippingMethod or total_port > 0 %}
+        <div class="addr" style="margin-top:10px;">
+            <h3>Expédition</h3>
+            {% if order.shippingCarrier %}Transporteur : <strong>{{ order.shippingCarrier }}</strong><br>{% endif %}
+            {% if order.shippingMethod  %}Service : <strong>{{ order.shippingMethod }}</strong><br>{% endif %}
+            {% if order.shippingRelayId is defined and order.shippingRelayId %}
+                Point relais : <strong>{{ order.shippingRelayId }}</strong><br>
+            {% endif %}
+            {% if total_port > 0 %}
+                Frais de port : <strong>{{ total_port|number_format(2, ',', ' ') }} €</strong>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <h3 style="margin-top:16px;">Détails de votre commande :</h3>
     <table>
         <thead>
         <tr>
@@ -95,7 +134,7 @@
         </tbody>
     </table>
 
-    {# Lecture "agnostique" du statut : enum (value/name) ou string, puis normalisation #}
+    {# Statut de la commande #}
     {% set _status =
         order.status is defined and order.status
         ? (attribute(order.status, 'value') is defined
@@ -110,7 +149,7 @@
         <strong>{{ _status ?? 'Non défini' }}</strong>
     </p>
 
-    {# --- Virement : encart RIB si EN_ATTENTE* (ex: EN_ATTENTE_DE_PAIEMENT) --- #}
+    {# --- Virement : encart RIB si EN_ATTENTE* --- #}
     {% set awaiting = (_norm is not null and _norm starts with 'EN_ATTENTE') %}
     {% if awaiting %}
         {% set _holder   = bank_holder|default('') %}
@@ -133,12 +172,10 @@
         </div>
     {% endif %}
 
-    {# Boutons utiles #}
     <p style="margin-top:25px;">
         <a href="{{ url('app_account_order_show', { id: order.id }) }}" class="button">Voir ma commande</a>
     </p>
 
-    {# Facture disponible si paiement validé (ou flag forcé) #}
     {% set paid_norms = ['EN_COURS', 'EN_PREPARATION', 'EXPEDIEE', 'LIVREE'] %}
     {% set has_invoice_flag = (order.invoiceSent is defined and order.invoiceSent) %}
     {% set is_invoice_available = (_norm in paid_norms) or has_invoice_flag %}

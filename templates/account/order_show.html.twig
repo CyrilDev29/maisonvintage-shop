@@ -2,40 +2,73 @@
 {% block title %}Commande {{ order.reference }}{% endblock %}
 
 {% block body %}
+    {% set total_articles = (order.total|default(0)|replace({',':'.'})) + 0 %}
+    {% set total_port = (order.shippingAmountCents is defined ? (order.shippingAmountCents / 100) : 0) + 0 %}
+    {% set total_ttc = total_articles + total_port %}
+
     <div class="container my-4">
-        <h1 class="h4 mb-3">Commande {{ order.reference }}</h1>
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+            <h1 class="h4 mb-0">Commande {{ order.reference }}</h1>
+            <div class="text-muted">
+                Total TTC : <strong>{{ total_ttc|number_format(2, ',', ' ') }} €</strong>
+            </div>
+        </div>
 
         <div class="mb-3">
             <strong>Date :</strong> {{ order.createdAt|date('d/m/Y H:i') }}<br>
             <strong>Statut :</strong>
             <span class="badge
-            {% if order.status.value == 'En attente de paiement' %} bg-secondary
-            {% elseif order.status.value == 'En cours' %} bg-warning text-dark
-            {% elseif order.status.value == 'En préparation' %} bg-info text-dark
-            {% elseif order.status.value == 'Expédiée' %} bg-success
-            {% elseif order.status.value == 'Livrée' %} bg-success
-            {% elseif order.status.value == 'Annulée' %} bg-danger
-            {% else %} bg-light text-dark
-            {% endif %}
-        ">
-            {{ order.status.value }}
-        </span><br>
-            <strong>Total :</strong> {{ order.total|number_format(2, ',', ' ') }} €
+                {% if order.status.value == 'En attente de paiement' %} bg-secondary
+                {% elseif order.status.value == 'En cours' %} bg-warning text-dark
+                {% elseif order.status.value == 'En préparation' %} bg-info text-dark
+                {% elseif order.status.value == 'Expédiée' %} bg-success
+                {% elseif order.status.value == 'Livrée' %} bg-success
+                {% elseif order.status.value == 'Annulée' %} bg-danger
+                {% else %} bg-light text-dark
+                {% endif %}
+            ">{{ order.status.value }}</span>
         </div>
 
-        {# --- Téléchargement facture (non affiché si commande annulée) --- #}
-        {% if order.status.value != 'Annulée' %}
-            <div class="mb-4">
-                <a href="{{ path('account_order_invoice', { id: order.id }) }}"
-                   class="btn btn-outline-primary btn-sm">
-                    📄 Télécharger la facture (PDF)
-                </a>
+        {# --- Totaux détaillés --- #}
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Récapitulatif des montants</h2>
+                <div class="d-flex justify-content-between border-top pt-2">
+                    <span class="text-muted">Total articles</span>
+                    <strong>{{ total_articles|number_format(2, ',', ' ') }} €</strong>
+                </div>
+                {% if total_port > 0 %}
+                    <div class="d-flex justify-content-between border-top pt-2">
+                        <span class="text-muted">Frais de port</span>
+                        <strong>{{ total_port|number_format(2, ',', ' ') }} €</strong>
+                    </div>
+                {% endif %}
+                <div class="d-flex justify-content-between border-top pt-2">
+                    <span class="text-muted">Total TTC</span>
+                    <strong>{{ total_ttc|number_format(2, ',', ' ') }} €</strong>
+                </div>
+            </div>
+        </div>
+
+        {# --- Bloc expédition --- #}
+        {% set hasShippingInfo = order.shippingCarrier or order.shippingMethod or total_port > 0 %}
+        {% if hasShippingInfo %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="h6 mb-3">Expédition</h2>
+                    <div>
+                        {% if order.shippingCarrier %}Transporteur : <strong>{{ order.shippingCarrier }}</strong><br>{% endif %}
+                        {% if order.shippingMethod %}Service : <strong>{{ order.shippingMethod }}</strong><br>{% endif %}
+                        {% if total_port > 0 %}Frais de port : <strong>{{ total_port|number_format(2, ',', ' ') }} €</strong><br>{% endif %}
+                    </div>
+                </div>
             </div>
         {% endif %}
 
-        <h2 class="h5 mt-4">Articles</h2>
+        {# --- Lignes de commande --- #}
+        <h2 class="h5 mt-2">Articles</h2>
         <div class="table-responsive">
-            <table class="table table-bordered align-middle">
+            <table class="table table-bordered align-middle mb-0">
                 <thead class="table-light">
                 <tr>
                     <th style="width:90px;">Photo</th>
@@ -52,11 +85,9 @@
                             {% set img = item.productImage %}
                             {% if img %}
                                 {% set url = (img matches '/^https?:\\/\\//') ? img : asset(img) %}
-                                <img src="{{ url }}" alt="{{ item.productName }}"
-                                     class="img-thumbnail"
-                                     style="width:72px;height:72px;object-fit:cover;">
+                                <img src="{{ url }}" alt="{{ item.productName }}" class="img-thumbnail" style="width:72px;height:72px;object-fit:cover;">
                             {% else %}
-                                <span class="text-muted">—</span>
+                                <img src="{{ asset('images/placeholder.png') }}" alt="" class="img-thumbnail" style="width:72px;height:72px;object-fit:cover;">
                             {% endif %}
                         </td>
                         <td>{{ item.productName }}</td>
@@ -64,36 +95,78 @@
                         <td class="text-center">{{ item.quantity }}</td>
                         <td class="text-end">{{ item.lineTotal|number_format(2, ',', ' ') }} €</td>
                     </tr>
+                {% else %}
+                    <tr><td colspan="5" class="text-center text-muted py-4">Aucune ligne.</td></tr>
                 {% endfor %}
                 </tbody>
             </table>
         </div>
 
-        <h2 class="h5 mt-4">Adresse de livraison</h2>
-        <p>
-            {{ order.prenom }} {{ order.nom }}<br>
-            {{ order.rue }}<br>
-            {{ order.codePostal }} {{ order.ville }}<br>
-            {{ order.pays }}<br>
-            📞 {{ order.telephone }}<br>
-            ✉️ {{ order.user.email }}
-        </p>
+        {# --- Adresses (snapshots si présents, sinon anciens champs) --- #}
+        <div class="row g-3 mt-4">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h2 class="h6 mb-2">Adresse de livraison</h2>
+                        {% set s = order.shippingSnapshot ?? null %}
+                        {% if s %}
+                            <div>
+                                <strong>{{ s.fullName ?? '' }}</strong><br>
+                                {{ s.line1 ?? '' }}{% if s.line2 %}, {{ s.line2 }}{% endif %}<br>
+                                {{ s.postalCode ?? '' }} {{ s.city ?? '' }} — {{ s.country ?? '' }}
+                                {% if s.phone %}<div class="mt-1 text-muted">Tél. {{ s.phone }}</div>{% endif %}
+                            </div>
+                        {% else %}
+                            <div>
+                                {{ order.prenom }} {{ order.nom }}<br>
+                                {{ order.rue }}<br>
+                                {{ order.codePostal }} {{ order.ville }}<br>
+                                {{ order.pays }}<br>
+                                {% if order.telephone %}<span class="text-muted">Tél. {{ order.telephone }}</span>{% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h2 class="h6 mb-2">Adresse de facturation</h2>
+                        {% set b = order.billingSnapshot ?? (order.shippingSnapshot ?? null) %}
+                        {% if b %}
+                            <div>
+                                <strong>{{ b.fullName ?? '' }}</strong><br>
+                                {{ b.line1 ?? '' }}{% if b.line2 %}, {{ b.line2 }}{% endif %}<br>
+                                {{ b.postalCode ?? '' }} {{ b.city ?? '' }} — {{ b.country ?? '' }}
+                                {% if b.phone %}<div class="mt-1 text-muted">Tél. {{ b.phone }}</div>{% endif %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted mb-0">Non renseignée.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        {# --- Annulation (si autorisée) --- #}
-        {% if order.status.value in ['En attente de paiement', 'En cours', 'En préparation'] %}
-            <form method="post"
-                  action="{{ path('app_account_order_cancel', { id: order.id }) }}"
-                  onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cette commande ? Cette action est irréversible.');"
-                  class="mb-4">
-                <input type="hidden" name="_token" value="{{ csrf_token('cancel_order_' ~ order.id) }}">
-                <button type="submit" class="btn btn-danger btn-sm">
-                    ❌ Annuler la commande
-                </button>
-            </form>
-        {% endif %}
+        {# --- Boutons & actions --- #}
+        <div class="d-flex flex-wrap gap-2 mt-4">
+            {% if order.status.value != 'Annulée' %}
+                <a href="{{ path('account_order_invoice', { id: order.id }) }}" class="btn btn-outline-primary btn-sm">
+                    📄 Télécharger la facture (PDF)
+                </a>
+            {% endif %}
 
-        <a href="{{ path('app_account_orders') }}" class="btn btn-secondary mt-3">
-            ← Retour à mes commandes
-        </a>
+            {% if order.status.value in ['En attente de paiement', 'En cours', 'En préparation'] %}
+                <form method="post"
+                      action="{{ path('app_account_order_cancel', { id: order.id }) }}"
+                      onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cette commande ? Cette action est irréversible.');"
+                      class="d-inline">
+                    <input type="hidden" name="_token" value="{{ csrf_token('cancel_order_' ~ order.id) }}">
+                    <button type="submit" class="btn btn-danger btn-sm">❌ Annuler la commande</button>
+                </form>
+            {% endif %}
+
+            <a href="{{ path('app_account_orders') }}" class="btn btn-secondary btn-sm">← Retour à mes commandes</a>
+        </div>
     </div>
 {% endblock %}
