@@ -19,10 +19,10 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
  * Libère automatiquement les commandes "En attente de paiement" dont la réservation a expiré.
- * - Pour les virements : le stock avait été décrémenté à la création => on RESTOCK.
- * - Pour CB/PayPal : aucun décrément initial, donc pas de restock nécessaire.
+ * - Pour les virements : le stock avait été décrémenté à la création => RESTOCK.
+ * - Pour CB/PayPal : pas de restock.
  *
- * Idempotent : ne touche que les commandes EN_ATTENTE_PAIEMENT avec reservedUntil dépassé.
+ * Idempotent : ne touche que les commandes EN_ATTENTE_PAIEMENT expirées.
  */
 #[AsCommand(
     name: 'app:orders:auto-release',
@@ -41,91 +41,119 @@ final class AutoReleaseOrdersCommand extends Command
     protected function configure(): void
     {
         $this
-            // Permet de simuler sans rien écrire en base
-            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Simule les changements (aucun flush).');
+            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Simule les changements (aucun flush).')
+            ->addOption('card-minutes', null, InputOption::VALUE_REQUIRED, 'TTL CB/PayPal en minutes (fallback si reserved_until manquant)', '30')
+            ->addOption('bank-hours',   null, InputOption::VALUE_REQUIRED, 'TTL virement en heures (fallback si reserved_until manquant)', '72')
+            ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Nombre max. de commandes à traiter', '200');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io      = new SymfonyStyle($input, $output);
-        $dryRun  = (bool) $input->getOption('dry-run');
-        $now     = new \DateTimeImmutable('now');
+        $io       = new SymfonyStyle($input, $output);
+        $dryRun   = (bool) $input->getOption('dry-run');
+        $now      = new \DateTimeImmutable('now');
+        $limit    = (int)  $input->getOption('limit');
+        $cardTTL  = max(1, (int) $input->getOption('card-minutes'));
+        $bankTTL  = max(1, (int) $input->getOption('bank-hours'));
 
+        // Ton repo peut déjà filtrer les expirées ; on garde ça,
+        // mais on mettra un fallback ci-dessous si besoin.
         $expired = $this->orders->findExpiredPending($now);
+
+        // Sécurité : limite de charge si le repo ne limite pas
+        if (\is_array($expired) && $limit > 0 && \count($expired) > $limit) {
+            $expired = \array_slice($expired, 0, $limit);
+        }
 
         if (!$expired) {
             $io->success('Aucune commande expirée à libérer.');
             return Command::SUCCESS;
         }
 
-        $io->section(sprintf('Commandes expirées trouvées : %d', \count($expired)));
+        $io->section(sprintf('Commandes candidates : %d', \count($expired)));
 
         $released = 0;
         $restockedLines = 0;
 
         foreach ($expired as $order) {
+            if (!$order instanceof Order) {
+                continue;
+            }
             // Sécurité : on n’agit que sur EN_ATTENTE_PAIEMENT
             if ($order->getStatus() !== OrderStatus::EN_ATTENTE_PAIEMENT) {
                 continue;
             }
 
+            // --- Fallback d’expiration si reserved_until absent ou incohérent ---
+            $pm = \method_exists($order, 'getPaymentMethod') ? (string) ($order->getPaymentMethod() ?? '') : '';
+            $reservedUntil = \method_exists($order, 'getReservedUntil') ? $order->getReservedUntil() : null;
+
+            if (!$reservedUntil instanceof \DateTimeImmutable) {
+                // on reconstruit une deadline à partir de createdAt + TTL
+                $created  = $order->getCreatedAt() ?? new \DateTimeImmutable('-1 day');
+                $ttlMin   = ($pm === 'bank_transfer') ? ($bankTTL * 60) : $cardTTL;
+                $reservedUntil = $created->modify(sprintf('+%d minutes', $ttlMin));
+            }
+
+            if ($reservedUntil > $now) {
+                // finalement pas expirée (le repo serait plus laxiste)
+                continue;
+            }
+            // --------------------------------------------------------------------
+
             $this->em->getConnection()->beginTransaction();
             try {
-                $pm = method_exists($order, 'getPaymentMethod') ? ($order->getPaymentMethod() ?? '') : '';
                 $isBankTransfer = ($pm === 'bank_transfer');
 
-                // Restock uniquement pour le virement (décrément fait au checkout)
                 if ($isBankTransfer) {
                     foreach ($order->getItems() as $item) {
-                        $productId = method_exists($item, 'getProductId') ? $item->getProductId() : null;
-                        $qty       = (int) $item->getQuantity();
-
+                        $productId = \method_exists($item, 'getProductId') ? $item->getProductId() : null;
+                        $qty       = (int) ($item->getQuantity() ?? 0);
                         if (!$productId || $qty <= 0) {
                             continue;
                         }
 
                         $article = $this->articles->find($productId);
                         if (!$article) {
-                            // L’article a pu être supprimé : on ignore la ligne.
                             continue;
                         }
 
-                        // On verrouille pour éviter un conflit de concurrence.
                         $this->em->lock($article, LockMode::PESSIMISTIC_WRITE);
-
-                        $current = (int) ($article->getQuantity() ?? 0);
-                        $article->setQuantity($current + $qty);
+                        $article->setQuantity((int) $article->getQuantity() + $qty);
                         $this->em->persist($article);
                         $restockedLines++;
                     }
                 }
 
-                // Marque l’ordre comme annulé et date l’annulation (si le champ existe).
                 $order->setStatus(OrderStatus::ANNULEE);
-                if (method_exists($order, 'setCanceledAt')) {
+                if (\method_exists($order, 'setCanceledAt')) {
                     $order->setCanceledAt(new \DateTimeImmutable());
                 }
 
-                if (!$dryRun) {
+                if ($dryRun) {
+                    $this->em->getConnection()->rollBack();
+                } else {
                     $this->em->flush();
                     $this->em->getConnection()->commit();
-                } else {
-                    $this->em->getConnection()->rollBack();
                 }
 
                 $released++;
-                $io->writeln(sprintf(' - %s [%s] libérée (%s)', $order->getReference(), $order->getId(), $pm ?: 'unknown'));
+                $output->writeln(sprintf(
+                    ' - %s [id:%s] annulée%s',
+                    (string) $order->getReference(),
+                    (string) $order->getId(),
+                    $isBankTransfer ? ' + restock' : ''
+                ));
             } catch (\Throwable $e) {
                 if ($this->em->getConnection()->isTransactionActive()) {
                     $this->em->getConnection()->rollBack();
                 }
-                // On passe à l’ordre suivant sans stopper la commande.
-                $io->warning(sprintf('Echec libération %s : %s', $order->getReference(), $e->getMessage()));
+                $io->warning(sprintf('Échec libération %s : %s', (string) $order->getReference(), $e->getMessage()));
             }
         }
 
         $io->success(sprintf(
-            'Terminé : %d commande(s) libérée(s). Lignes restockées : %d. %s',
+            'Terminé : %d commande(s) annulée(s). Lignes restockées : %d. %s',
             $released,
             $restockedLines,
             $dryRun ? '[dry-run]' : ''

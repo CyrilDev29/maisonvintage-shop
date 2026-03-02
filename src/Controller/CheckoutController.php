@@ -1,6 +1,8 @@
 <?php
 // src/Controller/CheckoutController.php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\Order;
@@ -9,6 +11,7 @@ use App\Enum\OrderStatus;
 use App\Repository\ArticleRepository;
 use App\Repository\AddressRepository;
 use App\Service\StripePaymentService;
+use App\Service\Shipping\ShippingManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
@@ -21,19 +24,16 @@ use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mailer\MailerInterface;
 
-/**
- * Tunnel de commande.
- * Ajout non cassant : enregistre paymentMethod + reservedUntil (durées paramétrables).
- */
 class CheckoutController extends AbstractController
 {
     #[Route('/checkout', name: 'checkout', methods: ['GET'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function index(
-        SessionInterface $session,
-        ArticleRepository $articleRepository,
-        Request $request,
-        AddressRepository $addressRepo
+        SessionInterface   $session,
+        ArticleRepository  $articleRepository,
+        Request            $request,
+        AddressRepository  $addressRepo,
+        ShippingManager    $shippingManager
     ): Response {
         /** @var array<int,int> $cart */
         $cart = $session->get('cart', []);
@@ -49,9 +49,7 @@ class CheckoutController extends AbstractController
         $articles = $articleRepository->findBy(['id' => array_keys($cart)]);
         foreach ($articles as $article) {
             $wanted = max(0, (int)($cart[$article->getId()] ?? 0));
-            if ($wanted === 0) {
-                continue;
-            }
+            if ($wanted === 0) continue;
 
             $stock = max(0, (int) $article->getQuantity());
             if ($stock === 0) {
@@ -90,13 +88,11 @@ class CheckoutController extends AbstractController
 
         $user = $this->getUser();
 
+        // Adresse(s)
         $selectedAddress = null;
         $shippingId = $request->getSession()->get('checkout.address_id');
         if ($shippingId && $user) {
-            $selectedAddress = $addressRepo->findOneBy([
-                'id'   => $shippingId,
-                'user' => $user,
-            ]);
+            $selectedAddress = $addressRepo->findOneBy(['id' => $shippingId, 'user' => $user]);
         }
 
         $billingSame = (bool) $request->getSession()->get('checkout.billing_same', true);
@@ -104,22 +100,55 @@ class CheckoutController extends AbstractController
         if (!$billingSame && $user) {
             $billingId = $request->getSession()->get('checkout.billing_address_id');
             if ($billingId) {
-                $selectedBilling = $addressRepo->findOneBy([
-                    'id'   => $billingId,
-                    'user' => $user,
-                ]);
+                $selectedBilling = $addressRepo->findOneBy(['id' => $billingId, 'user' => $user]);
             }
         }
 
         $canConfirm = (bool) $selectedAddress && ($billingSame || (bool) $selectedBilling);
 
+        // Devis multi-transporteurs (stub)
+        $shippingOptions = [];
+        $shippingSelection = (array) $request->getSession()->get('checkout.shipping', []);
+        if ($selectedAddress) {
+            $cartLines = [];
+            foreach ($items as $it) {
+                $a = $it['article'];
+                $qty = (int) $it['qty'];
+                // On tente de lire le poids (kg) et le convertir en grammes
+                $gr = 0;
+                if (\method_exists($a, 'getWeightKg') && $a->getWeightKg() !== null) {
+                    $kg = (float) $a->getWeightKg();
+                    if ($kg > 0) {
+                        $gr = (int) round($kg * 1000);
+                    }
+                }
+                $cartLines[] = [
+                    'qty' => $qty,
+                    'weight_gr' => $gr > 0 ? $gr : null,
+                ];
+            }
+
+            $quoteAll = $shippingManager->quoteAll($cartLines, $selectedAddress);
+            foreach ($quoteAll->options as $opt) {
+                $shippingOptions[] = [
+                    'carrier'      => $opt->carrier->value,
+                    'code'         => $opt->code,
+                    'label'        => $opt->label,
+                    'amount_cents' => $opt->amountCents,
+                    'metadata'     => $opt->metadata ?? [],
+                ];
+            }
+        }
+
         return $this->render('checkout/checkout.html.twig', [
-            'items'            => $items,
-            'total'            => $total,
-            'selectedAddress'  => $selectedAddress,
-            'billingSame'      => $billingSame,
-            'selectedBilling'  => $selectedBilling,
-            'canConfirm'       => $canConfirm,
+            'items'             => $items,
+            'total'             => $total,
+            'selectedAddress'   => $selectedAddress,
+            'billingSame'       => $billingSame,
+            'selectedBilling'   => $selectedBilling,
+            'canConfirm'        => $canConfirm,
+            'shippingOptions'   => $shippingOptions,
+            'shippingSelection' => $shippingSelection,
         ]);
     }
 
@@ -136,7 +165,7 @@ class CheckoutController extends AbstractController
     ): Response {
         $this->denyAccessUnlessGranted('ROLE_USER');
 
-        // CSRF basique pour le POST de confirmation.
+        // CSRF
         $token = $request->request->get('_token');
         if (!$this->isCsrfTokenValid('checkout_confirm', $token)) {
             $this->addFlash('danger', 'Jeton CSRF invalide. Merci de réessayer.');
@@ -152,7 +181,7 @@ class CheckoutController extends AbstractController
 
         $user = $this->getUser();
 
-        // Récupération des adresses depuis la session (sélection préalable).
+        // Adresses
         $shippingId  = $request->getSession()->get('checkout.address_id');
         $billingSame = (bool) $request->getSession()->get('checkout.billing_same', true);
         $billingId   = $request->getSession()->get('checkout.billing_address_id');
@@ -180,16 +209,35 @@ class CheckoutController extends AbstractController
             }
         }
 
-        // Moyen de paiement choisi depuis le formulaire
-        $paymentMethod = (string) ($request->request->get('payment_method') ?? 'card'); // 'bank_transfer' | 'card' | 'paypal'
+        // Paiement choisi
+        $paymentMethod = (string) ($request->request->get('payment_method') ?? 'card');
 
-        // Re-contrôle du stock juste avant création de commande.
+        // ========= Expédition OBLIGATOIRE côté serveur =========
+        $postedCarrier     = (string) ($request->request->get('shipping_carrier') ?? '');
+        $postedMethod      = (string) ($request->request->get('shipping_method') ?? '');
+        $postedAmountCents = $request->request->get('shipping_amount_cents');
+        $postedRelayId     = (string) ($request->request->get('shipping_relay_id') ?? '');
+
+        // manquant ?
+        if ($postedCarrier === '' || $postedMethod === '' || $postedAmountCents === null) {
+            $this->addFlash('danger', 'Veuillez sélectionner un mode d’expédition.');
+            return $this->redirectToRoute('checkout');
+        }
+
+        $shippingAmountCents = max(0, (int) $postedAmountCents);
+
+        // Si la méthode choisie exige un point relais, on impose le relayId
+        $needsRelay = \in_array($postedMethod, ['RELAIS', 'POINT_RELAIS'], true);
+        if ($needsRelay && $postedRelayId === '') {
+            $this->addFlash('danger', 'Veuillez sélectionner un point relais.');
+            return $this->redirectToRoute('checkout');
+        }
+
+        // Stock
         $articles = $articleRepository->findBy(['id' => array_keys($cart)]);
         foreach ($articles as $article) {
             $qtyInCart = max(0, (int)($cart[$article->getId()] ?? 0));
-            if ($qtyInCart === 0) {
-                continue;
-            }
+            if ($qtyInCart === 0) continue;
             if ($qtyInCart > (int) $article->getQuantity()) {
                 $this->addFlash('danger', sprintf('Le stock de "%s" vient de changer. Merci de vérifier votre panier.', $article->getTitre()));
                 return $this->redirectToRoute('cart_show');
@@ -206,7 +254,7 @@ class CheckoutController extends AbstractController
             $order->setUser($user);
             $order->setStatus(OrderStatus::EN_ATTENTE_PAIEMENT);
 
-            // Enregistre le moyen de paiement et la deadline via paramètres configurables
+            // Paiement choisi + réservation
             if (method_exists($order, 'setPaymentMethod')) {
                 $order->setPaymentMethod($paymentMethod);
             }
@@ -214,16 +262,13 @@ class CheckoutController extends AbstractController
                 $bankHours  = (int) ($this->getParameter('maisonvintage.ttl.bank_transfer_hours') ?? 72);
                 $cardMin    = (int) ($this->getParameter('maisonvintage.ttl.card_minutes') ?? 30);
                 $ttlMinutes = ($paymentMethod === 'bank_transfer') ? ($bankHours * 60) : $cardMin;
-
-                $order->setReservedUntil(
-                    (new \DateTimeImmutable())->modify(sprintf('+%d minutes', max(1, $ttlMinutes)))
-                );
+                $order->setReservedUntil( (new \DateTimeImmutable())->modify(sprintf('+%d minutes', max(1, $ttlMinutes))) );
             }
 
+            // Snapshots adresses
             if (method_exists($order, 'setSnapshotFromUser')) {
                 $order->setSnapshotFromUser($user);
             }
-
             $order->setShippingSnapshot([
                 'fullName'   => $shipping->getFullName(),
                 'line1'      => $shipping->getLine1(),
@@ -243,13 +288,33 @@ class CheckoutController extends AbstractController
                 'phone'      => $billing->getPhone(),
             ]);
 
+            // Enregistre le choix expédition (et session)
+            $shippingSelection = [
+                'carrier'      => $postedCarrier,
+                'method'       => $postedMethod,
+                'amount_cents' => $shippingAmountCents,
+                'relay_id'     => $postedRelayId ?: null,
+            ];
+            $request->getSession()->set('checkout.shipping', $shippingSelection);
+
+            if (method_exists($order, 'setShippingCarrier'))       { $order->setShippingCarrier($postedCarrier); }
+            if (method_exists($order, 'setShippingMethod'))        { $order->setShippingMethod($postedMethod); }
+            if (method_exists($order, 'setShippingAmountCents'))   { $order->setShippingAmountCents($shippingAmountCents); }
+            if (method_exists($order, 'setShippingRelayId'))       { $order->setShippingRelayId($postedRelayId ?: null); }
+
+            // Lignes
             foreach ($articles as $article) {
                 $qty = max(0, (int)($cart[$article->getId()] ?? 0));
-                if ($qty === 0) {
+                if ($qty === 0) continue;
+
+                $price    = (float) $article->getPrix();
+
+                // Validation du prix (sécurité anti-fraude)
+                if ($price <= 0) {
+                    // Prix invalide, on ignore cet article
                     continue;
                 }
 
-                $price    = (float) $article->getPrix();
                 $subtotal = $price * $qty;
                 $total   += $subtotal;
 
@@ -261,21 +326,10 @@ class CheckoutController extends AbstractController
                 $item->setUnitPrice(number_format($price, 2, '.', ''));
                 $item->setQuantity($qty);
 
-                // Image produit (robuste)
+                // Image produit (version simplifiée)
                 $img = null;
-                if (method_exists($article, 'getImageUrl') && $article->getImageUrl()) {
-                    $img = $article->getImageUrl();
-                } elseif (method_exists($article, 'getImagePath') && $article->getImagePath()) {
-                    $img = $article->getImagePath();
-                } elseif (method_exists($article, 'getImageName') && $article->getImageName()) {
-                    $img = '/uploads/articles/' . ltrim((string) $article->getImageName(), '/');
-                } elseif (method_exists($article, 'getImage') && $article->getImage()) {
-                    $val = (string) $article->getImage();
-                    if (preg_match('#^https?://#i', $val) || str_starts_with($val, '/')) {
-                        $img = $val;
-                    } else {
-                        $img = '/uploads/articles/' . ltrim($val, '/');
-                    }
+                if ($article->getImage()) {
+                    $img = '/uploads/articles/' . ltrim($article->getImage(), '/');
                 }
                 if (method_exists($item, 'setProductImage')) {
                     $item->setProductImage($img);
@@ -290,13 +344,16 @@ class CheckoutController extends AbstractController
                 return $this->redirectToRoute('cart_show');
             }
 
+            // On conserve getTotal() pour les articles ; le port est séparé
             $order->setTotal(number_format($total, 2, '.', ''));
             $order->setReference('MV-' . date('Y') . '-' . str_pad((string) random_int(1, 999999), 6, '0', STR_PAD_LEFT));
+
+
 
             $em->persist($order);
             $em->flush();
 
-            // Cas virement : décrémentation immédiate + mail d’instructions
+            // Virement : décrémentation immédiate + mail
             if ($paymentMethod === 'bank_transfer') {
                 foreach ($articles as $article) {
                     $qty = max(0, (int)($cart[$article->getId()] ?? 0));
@@ -331,7 +388,7 @@ class CheckoutController extends AbstractController
                             'bank_iban'     => $bankIban,
                             'bank_bic'      => $bankBic,
                         ]);
-                    try { $mailer->send($emailClient); } catch (\Throwable) { /* non bloquant */ }
+                    try { $mailer->send($emailClient); } catch (\Throwable) {}
                 }
 
                 return $this->redirectToRoute('paiement_bank_transfer', [
@@ -340,7 +397,7 @@ class CheckoutController extends AbstractController
                 ]);
             }
 
-            // CB/PayPal : redirection Stripe. Traitement final via webhook.
+            // CB/PayPal : Stripe + frais de port en line item
             $conn->commit();
 
             $lineItems = [];
@@ -356,10 +413,20 @@ class CheckoutController extends AbstractController
 
             $email = method_exists($user, 'getEmail') ? $user->getEmail() : null;
 
+            $opts = [
+                'shipping_amount_cents' => $shippingAmountCents,
+                'shipping_label' => sprintf(
+                    'Frais de port — %s %s',
+                    $postedCarrier,
+                    $postedMethod
+                ),
+            ];
+
             $sessionStripe = $stripe->createCheckoutSession(
                 $lineItems,
                 $order->getReference(),
-                $email
+                $email,
+                $opts
             );
 
             return $this->redirectToRoute('checkout_redirect', [
@@ -371,7 +438,7 @@ class CheckoutController extends AbstractController
             if ($conn->isTransactionActive()) {
                 $conn->rollBack();
             }
-            $this->addFlash('danger', 'Une erreur est survenue lors de la validation du panier : ' . $e->getMessage());
+            $this->addFlash('danger', 'Erreur lors de la validation du panier : ' . $e->getMessage());
             return $this->redirectToRoute('cart_show');
         }
     }

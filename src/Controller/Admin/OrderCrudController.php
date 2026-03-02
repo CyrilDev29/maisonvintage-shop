@@ -21,6 +21,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\MoneyField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\Field;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -37,7 +38,7 @@ class OrderCrudController extends AbstractCrudController
         private ParameterBagInterface $params,
         private StripePaymentService $stripe,
         private CsrfTokenManagerInterface $csrf,
-        private InvoiceService $invoiceService, // <-- ajouté (génération facture)
+        private InvoiceService $invoiceService,
     ) {}
 
     public static function getEntityFqcn(): string
@@ -78,9 +79,33 @@ class OrderCrudController extends AbstractCrudController
             ])
             ->onlyOnForms();
 
+        yield TextField::new('paymentMethod', 'Paiement')
+            ->formatValue(function ($value) {
+                return match ($value) {
+                    'card'          => 'Carte / PayPal',
+                    'paypal'        => 'PayPal',
+                    'bank_transfer' => 'Virement',
+                    null, ''        => 'Inconnu',
+                    default         => (string)$value,
+                };
+            })
+            ->hideOnForm();
+
+        yield Field::new('thumbnails', 'Articles')
+            ->setTemplatePath('admin/fields/order_items_thumbs.html.twig')
+            ->setVirtual(true)
+            ->setSortable(false)
+            ->onlyOnIndex();
+
         yield MoneyField::new('total', 'Total')
             ->setCurrency('EUR')
             ->setStoredAsCents(false);
+
+        // ✅ Colonne "Réservée jusqu’au" pour suivi TTL
+        yield DateTimeField::new('reservedUntil', 'Réservée jusqu’au')
+            ->setFormat('short', 'short')
+            ->hideOnForm()
+            ->onlyOnIndex();
 
         yield DateTimeField::new('createdAt', 'Créée le')->hideOnForm();
         yield DateTimeField::new('updatedAt', 'Mise à jour le')->hideOnForm();
@@ -103,6 +128,7 @@ class OrderCrudController extends AbstractCrudController
         yield TextField::new('stripePaymentIntentId', 'PaymentIntent')->onlyOnDetail();
         yield TextField::new('stripeSessionId', 'Checkout Session')->onlyOnDetail();
         yield TextField::new('stripeRefundId', 'Refund ID')->onlyOnDetail();
+        yield DateTimeField::new('reservedUntil', 'Réservée jusqu’au')->onlyOnDetail();
         yield DateTimeField::new('canceledAt', 'Annulée le')->onlyOnDetail();
         yield DateTimeField::new('refundedAt', 'Remboursée le')->onlyOnDetail();
     }
@@ -152,12 +178,10 @@ class OrderCrudController extends AbstractCrudController
 
         parent::updateEntity($em, $entityInstance);
 
-        // Envoi d’email au client à chaque changement de statut
         if ($oldStatus !== $newStatus && $entityInstance->getUser()?->getEmail()) {
             $from     = (string) ($this->params->get('app.contact_from') ?? 'no-reply@maisonvintage.test');
             $sellerTo = (string) ($this->params->get('app.seller_email') ?? $from);
 
-            // Contexte commun (inclut RIB pour l'état "En attente ...")
             $context = [
                 'order'         => $entityInstance,
                 'bank_holder'   => (string) ($this->params->get('bank.holder')   ?? ''),
@@ -166,7 +190,6 @@ class OrderCrudController extends AbstractCrudController
                 'bank_bic'      => (string) ($this->params->get('bank.bic')      ?? ''),
             ];
 
-            // Mail client (status update)
             try {
                 $emailClient = (new TemplatedEmail())
                     ->from(new Address($from, 'Maison Vintage'))
@@ -175,20 +198,16 @@ class OrderCrudController extends AbstractCrudController
                     ->htmlTemplate('emails/order_status_update.html.twig')
                     ->context($context);
 
-                // Si la commande devient EN_COURS : générer et joindre la facture
                 if ($newStatus === OrderStatus::EN_COURS) {
-                    $pdfPath = $this->invoiceService->generate($entityInstance, false); // idempotent
+                    $pdfPath = $this->invoiceService->generate($entityInstance, false);
                     if (is_string($pdfPath) && is_file($pdfPath)) {
                         $emailClient->attachFromPath($pdfPath, sprintf('Facture-%s.pdf', $entityInstance->getReference()));
                     }
                 }
 
                 $this->mailer->send($emailClient);
-            } catch (\Throwable $e) {
-                // Non bloquant pour l’admin
-            }
+            } catch (\Throwable $e) {}
 
-            // Copie à la vendeuse avec la facture si EN_COURS
             if ($newStatus === OrderStatus::EN_COURS && $sellerTo) {
                 try {
                     $emailSeller = (new TemplatedEmail())
@@ -204,9 +223,7 @@ class OrderCrudController extends AbstractCrudController
                     }
 
                     $this->mailer->send($emailSeller);
-                } catch (\Throwable $e) {
-                    // Non bloquant
-                }
+                } catch (\Throwable $e) {}
             }
         }
     }
