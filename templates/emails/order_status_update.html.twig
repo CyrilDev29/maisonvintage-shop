@@ -15,6 +15,9 @@
         .muted{color:#666;font-size:12px}
         .status{display:inline-block;background:#e9ecef;border-radius:4px;padding:6px 10px;margin-top:8px}
         .info{margin-top:18px;border:1px solid #cfe2ff;background:#f8fbff;padding:12px;border-radius:6px}
+        .totals{margin-top:12px}
+        .totals-row{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid #eee}
+        .totals-row strong{font-weight:700}
         code{font-family:Consolas,Monaco,monospace}
     </style>
 </head>
@@ -43,6 +46,43 @@
 
     <p>Le statut de votre commande a changé : <span class="status"><strong>{{ _status }}</strong></span></p>
 
+    {# ===== Totaux (articles + port) ===== #}
+    {% set total_articles = (order.total|default(0)) + 0 %}
+    {% set total_port = (order.shippingAmountCents is defined ? (order.shippingAmountCents / 100) : 0) + 0 %}
+    {% set total_ttc = total_articles + total_port %}
+
+    <div class="totals" style="margin-bottom:10px;">
+        <div class="totals-row">
+            <span class="muted">Total TTC</span>
+            <span><strong>{{ total_ttc|number_format(2, ',', ' ') }} €</strong></span>
+        </div>
+        <div class="totals-row">
+            <span class="muted">Total articles</span>
+            <span><strong>{{ total_articles|number_format(2, ',', ' ') }} €</strong></span>
+        </div>
+        {% if total_port > 0 %}
+            <div class="totals-row">
+                <span class="muted">Frais de port</span>
+                <span><strong>{{ total_port|number_format(2, ',', ' ') }} €</strong></span>
+            </div>
+        {% endif %}
+    </div>
+
+    {# Bloc expédition si on a des infos #}
+    {% if order.shippingCarrier or order.shippingMethod or total_port > 0 %}
+        <div style="border:1px solid #eee;border-radius:6px;padding:10px;background:#fafafa;margin:10px 0 16px;">
+            <h3 style="margin-top:0">Expédition</h3>
+            {% if order.shippingCarrier %}Transporteur : <strong>{{ order.shippingCarrier }}</strong><br>{% endif %}
+            {% if order.shippingMethod  %}Service : <strong>{{ order.shippingMethod }}</strong><br>{% endif %}
+            {% if order.shippingRelayId is defined and order.shippingRelayId %}
+                Point relais : <strong>{{ order.shippingRelayId }}</strong><br>
+            {% endif %}
+            {% if total_port > 0 %}
+                Frais de port : <strong>{{ total_port|number_format(2, ',', ' ') }} €</strong>
+            {% endif %}
+        </div>
+    {% endif %}
+
     <h3>Récapitulatif</h3>
     <ul>
         {% for it in order.items %}
@@ -53,14 +93,11 @@
         {% endfor %}
     </ul>
 
-    {% set total_num = (order.total|default(0)|replace({',':'.'})) + 0 %}
-    <p><strong>Total :</strong> {{ total_num|number_format(2, ',', ' ') }} €</p>
-
     <p style="margin-top:12px">
         <a href="{{ url('app_account_order_show', { id: order.id }) }}" class="btn">Voir le détail de la commande</a>
     </p>
 
-    {# Virement : RIB si le statut commence par EN_ATTENTE... (plus robuste) #}
+    {# Virement : RIB si le statut commence par EN_ATTENTE... #}
     {% if _norm starts with 'EN_ATTENTE' %}
         <div class="info">
             <h3 style="margin-top:0">Informations pour le virement</h3>

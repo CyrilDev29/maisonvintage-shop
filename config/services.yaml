@@ -5,14 +5,20 @@ parameters:
 
     stripe.public_key: '%env(string:STRIPE_PUBLIC_KEY)%'
 
-    bank.holder: '%env(string:BANK_HOLDER)%'
+    bank.holder:   '%env(string:BANK_HOLDER)%'
     bank.bankname: '%env(string:BANK_BANKNAME)%'
-    bank.iban: '%env(string:BANK_IBAN)%'
-    bank.bic: '%env(string:BANK_BIC)%'
+    bank.iban:     '%env(string:BANK_IBAN)%'
+    bank.bic:      '%env(string:BANK_BIC)%'
 
-    # Durées de réservation configurables
+    # Durées de réservation (checkout)
     maisonvintage.ttl.bank_transfer_hours: 72   # virement : 72h
     maisonvintage.ttl.card_minutes: 30          # CB/PayPal : 30 min
+
+    # --- Colissimo (devis) ---
+    # On mappe les variables d'env vers des parameters Symfony.
+    colissimo.api_base: '%env(string:COLISSIMO_API_BASE)%'
+    colissimo.api_key:  '%env(string:COLISSIMO_API_KEY)%'
+    shipping.colissimo_live: '%env(bool:SHIPPING_COLISSIMO_LIVE)%'
 
 services:
     _defaults:
@@ -35,12 +41,29 @@ services:
 
     App\Service\StripePaymentService:
         arguments:
-            $publicKey: '%env(string:STRIPE_PUBLIC_KEY)%'
-            $secretKey: '%env(string:STRIPE_SECRET_KEY)%'
-            $successUrl: '%env(string:PAYMENT_SUCCESS_URL)%'
-            $cancelUrl:  '%env(string:PAYMENT_CANCEL_URL)%'
-            $currency:   '%env(string:PAYMENT_CURRENCY)%'
+            $publicKey:   '%env(string:STRIPE_PUBLIC_KEY)%'
+            $secretKey:   '%env(string:STRIPE_SECRET_KEY)%'
+            $successUrl:  '%env(string:PAYMENT_SUCCESS_URL)%'
+            $cancelUrl:   '%env(string:PAYMENT_CANCEL_URL)%'
+            $currency:    '%env(string:PAYMENT_CURRENCY)%'
             $enablePaypal: true
             $webhookSecret: '%env(string:STRIPE_WEBHOOK_SECRET)%'
 
     App\Service\OrderStatusNotifier: ~
+
+    # -------- Colissimo API client + service --------
+    colissimo.client:
+        class: Symfony\Contracts\HttpClient\HttpClientInterface
+        factory: ['@http_client', 'withOptions']
+        arguments:
+            - {
+                base_uri: '%colissimo.api_base%',
+                headers: { 'X-Api-Key': '%colissimo.api_key%' }
+            }
+
+    App\Service\Shipping\ColissimoApi:
+        arguments:
+            $http:    '@colissimo.client'
+            $apiBase: '%colissimo.api_base%'
+            $apiKey:  '%colissimo.api_key%'
+            $enabled: '%shipping.colissimo_live%'
