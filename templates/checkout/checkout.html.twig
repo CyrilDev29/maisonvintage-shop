@@ -5,14 +5,12 @@
 {% block body %}
     <section class="container" style="max-width:1100px;margin:2rem auto;padding:0 1rem;">
         <h1>Récapitulatif</h1>
-
         <p class="text-muted">Connecté en tant que <strong>{{ app.user.userIdentifier }}</strong></p>
 
         {# Adresse de livraison #}
         <div class="card mb-3">
             <div class="card-body">
                 <h2 class="h6 mb-2">Adresse de livraison</h2>
-
                 {% if selectedAddress %}
                     <div>
                         {{ selectedAddress.fullName }}<br>
@@ -31,7 +29,6 @@
         <div class="card mb-3">
             <div class="card-body">
                 <h2 class="h6 mb-2">Adresse de facturation</h2>
-
                 {% if billingSame and selectedAddress %}
                     <div>
                         {{ selectedAddress.fullName }}<br>
@@ -53,6 +50,7 @@
             </div>
         </div>
 
+        {# Articles #}
         <table class="table align-middle">
             <thead>
             <tr>
@@ -70,13 +68,8 @@
                     ?? (line.article.images|length > 0
                     ? vich_uploader_asset(line.article.images|first, 'file')
                     : asset('images/placeholder.png')) %}
-
                 <tr>
-                    <td>
-                        <img src="{{ mainSrc }}"
-                             alt="{{ line.article.titre }}"
-                             style="width:80px;height:80px;object-fit:cover;border-radius:6px;">
-                    </td>
+                    <td><img src="{{ mainSrc }}" alt="{{ line.article.titre }}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;"></td>
                     <td>
                         {% if _slug %}
                             <a href="{{ path('article_show', { id: line.article.id, slug: _slug }) }}">{{ line.article.titre }}</a>
@@ -98,7 +91,53 @@
             </tfoot>
         </table>
 
-        {# Choix du moyen de paiement #}
+        {# ===================== EXPÉDITION (obligatoire) ===================== #}
+        {% set hasShipping = selectedAddress and (shippingOptions is defined and shippingOptions|length > 0) %}
+        {% set chosen = shippingSelection ?? {} %}
+        {% set chosenAmount = chosen.amount_cents is defined ? (chosen.amount_cents / 100) : 0 %}
+        {% set estimatedGrand = total + chosenAmount %}
+
+        {% if hasShipping %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h2 class="h6 mb-3">Expédition <span style="color:#dc3545;">(obligatoire)</span></h2>
+                    <p class="text-muted" style="margin-top:-.25rem">Choisissez une option d’expédition. Les frais de port s’ajouteront au paiement.</p>
+
+                    <div class="list-group">
+                        {% for opt in shippingOptions %}
+                            {% set id = 'ship_' ~ opt.carrier ~ '_' ~ opt.code %}
+                            {% set checked = (chosen.carrier ?? '') == opt.carrier and (chosen.method ?? '') == opt.code %}
+                            <label class="list-group-item d-flex align-items-center" for="{{ id }}" style="gap:.75rem;">
+                                <input class="form-check-input me-2" type="radio"
+                                       name="shipping_choice_radio"
+                                       id="{{ id }}"
+                                       data-need-relay="{{ (opt.metadata.needRelaySelection ?? false) ? '1' : '0' }}"
+                                       value="{{ opt.carrier }}::{{ opt.code }}::{{ opt.amount_cents }}"
+                                       {% if checked %}checked{% endif %}>
+                                <span>
+                {{ opt.label }}
+                <span class="text-muted">— {{ (opt.amount_cents / 100)|number_format(2, ',', ' ') }} €</span>
+              </span>
+                            </label>
+                        {% endfor %}
+                    </div>
+
+                    {# Champ point relais (affiché seulement si l’option le demande) #}
+                    <div id="relay-wrap" class="mt-3" style="display:none;">
+                        <label for="relay-input" class="form-label">Point relais (identifiant)</label>
+                        <input id="relay-input" type="text" class="form-control" placeholder="Ex. FR12345" value="{{ chosen.relay_id ?? '' }}">
+                        <div class="form-text">Obligatoire pour les livraisons en point relais.</div>
+                    </div>
+
+                    <div class="mt-3 small">
+                        <div>Frais de port estimés : <strong id="ship-est">{{ chosenAmount|number_format(2, ',', ' ') }} €</strong></div>
+                        <div>Total estimé : <strong id="grand-est">{{ estimatedGrand|number_format(2, ',', ' ') }} €</strong></div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        {# ===================== PAIEMENT ===================== #}
         <div class="card mb-3">
             <div class="card-body">
                 <h2 class="h6 mb-3">Moyen de paiement</h2>
@@ -106,17 +145,20 @@
                 <form id="payment-choice" method="post" action="{{ path('checkout_confirm') }}" target="_blank" rel="noopener">
                     <input type="hidden" name="_token" value="{{ csrf_token('checkout_confirm') }}">
 
+                    {# champs remplis par JS quand on choisit l’expédition #}
+                    <input type="hidden" name="shipping_carrier" id="shipping_carrier" value="{{ chosen.carrier ?? '' }}">
+                    <input type="hidden" name="shipping_method" id="shipping_method" value="{{ chosen.method ?? '' }}">
+                    <input type="hidden" name="shipping_amount_cents" id="shipping_amount_cents" value="{{ chosen.amount_cents ?? '' }}">
+                    <input type="hidden" name="shipping_relay_id" id="shipping_relay_id" value="{{ chosen.relay_id ?? '' }}">
+
                     <div class="form-check mb-2">
                         <input class="form-check-input" type="radio" name="payment_method" id="pay-card" value="card" checked>
-                        <label class="form-check-label" for="pay-card">
-                            Carte / PayPal (via Stripe)
-                        </label>
+                        <label class="form-check-label" for="pay-card">Carte / PayPal (via Stripe)</label>
                     </div>
 
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="radio" name="payment_method" id="pay-bank" value="bank_transfer">
                         <label class="form-check-label" for="pay-bank">Virement bancaire</label>
-
                         <div id="bank-box" class="mt-2" style="display:none;">
                             <div class="p-3" style="background:#f8fbff;border:1px solid #e0edf9;border-radius:6px;">
                                 Effectuez le paiement directement depuis votre compte bancaire.
@@ -126,16 +168,13 @@
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-between">
+                    <div class="d-flex justify-content-between align-items-center">
                         <a href="{{ path('cart_show') }}" class="btn btn-outline-secondary">← Retour au panier</a>
 
                         {% if canConfirm %}
-                            <button type="submit"
-                                    class="btn btn-primary btn-lg"
-                                    aria-label="Commander"
-                                    title="Commander"
-                                    formtarget="_blank">
-                                Commander
+                            {# Rouge + disabled tant qu’aucune expédition valide ; passe à la couleur navbar après sélection #}
+                            <button id="pay-submit" type="submit" class="btn btn-danger btn-lg disabled" disabled>
+                                Payer ma commande
                             </button>
                         {% else %}
                             <div class="text-end">
@@ -159,14 +198,104 @@
 
     <script>
         (function () {
+            // Aide virement
             var bank = document.getElementById('pay-bank');
             var card = document.getElementById('pay-card');
             var box  = document.getElementById('bank-box');
-            function toggle(){ box.style.display = bank && bank.checked ? 'block' : 'none'; }
-            if (bank && card && box) {
-                bank.addEventListener('change', toggle);
-                card.addEventListener('change', toggle);
-                toggle();
+            function toggleBank(){ if(box) box.style.display = (bank && bank.checked) ? 'block' : 'none'; }
+            if (bank && card) { bank.addEventListener('change', toggleBank); card.addEventListener('change', toggleBank); toggleBank(); }
+
+            // Expédition
+            var radios   = document.querySelectorAll('input[name="shipping_choice_radio"]');
+            var fCarrier = document.getElementById('shipping_carrier');
+            var fMethod  = document.getElementById('shipping_method');
+            var fAmount  = document.getElementById('shipping_amount_cents');
+            var fRelay   = document.getElementById('shipping_relay_id');
+
+            var relayWrap = document.getElementById('relay-wrap');
+            var relayInput= document.getElementById('relay-input');
+
+            var estShip  = document.getElementById('ship-est');
+            var estGrand = document.getElementById('grand-est');
+            var btnPay   = document.getElementById('pay-submit');
+
+            // couleur de la navbar pour le bouton validé
+            var nav = document.querySelector('nav.navbar, .navbar, header .navbar, header.navbar');
+            var navbarBg = nav ? getComputedStyle(nav).backgroundColor : null;
+
+            var baseTotal = {{ total|default(0)|json_encode|raw }};
+
+            function formatEuro(n){
+                try { return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+                catch(e){ return (Math.round(n * 100) / 100).toFixed(2).replace('.', ','); }
+            }
+
+            function needRelaySelected(){
+                if (!relayWrap) return false;
+                var visible = relayWrap.style.display !== 'none';
+                return visible && relayInput && relayInput.value.trim() === '';
+            }
+
+            function setPayEnabled(ok){
+                if (!btnPay) return;
+                btnPay.disabled = !ok;
+                btnPay.classList.toggle('disabled', !ok);
+                if (ok) {
+                    if (navbarBg) {
+                        btnPay.style.backgroundColor = navbarBg;
+                        btnPay.style.borderColor = navbarBg;
+                    }
+                    btnPay.classList.remove('btn-danger');
+                } else {
+                    btnPay.style.backgroundColor = '';
+                    btnPay.style.borderColor = '';
+                    btnPay.classList.add('btn-danger');
+                }
+            }
+
+            function updateButtonState(){
+                var ok = !!(fCarrier && fCarrier.value && fMethod && fMethod.value && fAmount && fAmount.value);
+                if (ok && needRelaySelected()) ok = false;
+                setPayEnabled(ok);
+            }
+
+            function onShipChange(e){
+                if (!e || !e.target || !e.target.value) return;
+                var parts = String(e.target.value).split('::'); // carrier::code::amount_cents
+                if (parts.length !== 3) return;
+                var carrier = parts[0], code = parts[1], cents = parseInt(parts[2] || '0', 10); if (isNaN(cents)) cents = 0;
+
+                if (fCarrier) fCarrier.value = carrier;
+                if (fMethod)  fMethod.value  = code;
+                if (fAmount)  fAmount.value  = String(cents);
+
+                var needRelay = (e.target.getAttribute('data-need-relay') === '1');
+                if (relayWrap) relayWrap.style.display = needRelay ? 'block' : 'none';
+                if (!needRelay && fRelay) { fRelay.value = ''; } // nettoie si on bascule vers domicile
+
+                var eurosShip = cents / 100;
+                var grand     = baseTotal + eurosShip;
+                if (estShip)  estShip.textContent  = formatEuro(eurosShip) + ' €';
+                if (estGrand) estGrand.textContent = formatEuro(grand) + ' €';
+
+                updateButtonState();
+            }
+
+            if (relayInput) {
+                relayInput.addEventListener('input', function(){
+                    if (fRelay) fRelay.value = relayInput.value.trim();
+                    updateButtonState();
+                });
+            }
+
+            // init
+            setPayEnabled(false);
+
+            if (radios && radios.length) {
+                radios.forEach(function(r){
+                    r.addEventListener('change', onShipChange);
+                    if (r.checked) { onShipChange({ target: r }); }
+                });
             }
         })();
     </script>

@@ -12,12 +12,13 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\CollectionField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\ImageField;
+// use EasyCorp\Bundle\EasyAdminBundle\Field\ImageField; // (remplacé par un template Twig)
 use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\MoneyField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextareaField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\Field;
 use Vich\UploaderBundle\Form\Type\VichImageType;
 
 class ArticleCrudController extends AbstractCrudController
@@ -51,6 +52,12 @@ class ArticleCrudController extends AbstractCrudController
     public function configureFields(string $pageName): iterable
     {
         yield IdField::new('id')->onlyOnIndex();
+
+        // Aperçu image via template Twig (évite "Inaccessible" selon la source d'image)
+        yield Field::new('id', 'Aperçu')
+            ->setTemplatePath('admin/fields/article_thumbnail.html.twig')
+            ->onlyOnIndex();
+
         yield TextField::new('titre', 'Titre');
         yield TextField::new('slug', 'Slug')->onlyOnIndex();
         yield TextareaField::new('description', 'Description')->hideOnIndex();
@@ -84,14 +91,12 @@ class ArticleCrudController extends AbstractCrudController
             ->setFormTypeOption('attr', ['step' => '0.1'])
             ->hideOnIndex();
 
+        // Champ Vich pour uploader l'image principale (formulaire uniquement)
         yield TextField::new('imageFile', 'Image principale')
             ->setFormType(VichImageType::class)
             ->onlyOnForms();
 
-        yield ImageField::new('image', 'Aperçu')
-            ->setBasePath('/uploads/articles')
-            ->onlyOnIndex();
-
+        // Galerie d’images (formulaire uniquement)
         yield CollectionField::new('images', 'Galerie (max 10)')
             ->setEntryType(ArticleImageType::class)
             ->setFormTypeOption('by_reference', false)

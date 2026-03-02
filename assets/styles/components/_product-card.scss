@@ -1,52 +1,64 @@
+// Grille responsive pour l'affichage des cartes produits
 .product-grid{
     list-style:none; margin:0; padding:0;
     display:grid; gap:24px;
+    // Grille adaptative : 4 colonnes sur grand écran
     grid-template-columns:repeat(4,1fr);
+    // Media queries pour le responsive (approche mobile-first)
     @media (max-width:1200px){ grid-template-columns:repeat(3,1fr); }
     @media (max-width:992px){  grid-template-columns:repeat(2,1fr); }
     @media (max-width:576px){  grid-template-columns:1fr; }
 }
 
+// Carte produit : conteneur principal
 .product-card{
     background:var(--mv-surface);
     border:1px solid var(--mv-border);
     border-radius:var(--mv-radius);
     box-shadow:var(--mv-shadow);
     text-align:center; overflow:hidden; position:relative;
+    // Transition pour les effets de survol
     transition:transform var(--mv-transition), box-shadow var(--mv-transition), border-color var(--mv-transition);
 }
+// Effet de survol : élévation de la carte
 .product-card:hover{
     transform:translateY(-3px);
     box-shadow:var(--mv-shadow-lg);
     border-color:#e4ded5;
 }
 
-/* visuel “affiche” */
+// Conteneur de l'image produit
 .product-media{
     aspect-ratio:4/5;
     background:#f1ede6;
     overflow:hidden;
 }
+// Image du produit : affichage et transition
 .product-media img{
     width:100%; height:100%; object-fit:cover;
     transform:scale(1.0);
+    // Transition fluide pour l'effet de zoom au survol
     transition:transform .4s cubic-bezier(.2,.6,.2,1);
 }
+// Zoom sur l'image au survol de la carte
 .product-card:hover .product-media img{ transform:scale(1.04); }
 
-/* contenu */
+// Conteneur du texte (titre, prix)
 .product-body{ padding:1rem 1rem 1.15rem; }
+
+// Titre du produit
 .product-title{
     font-family:var(--mv-font-serif);
     font-size:1.06rem; line-height:1.35;
     margin:.45rem 0 .3rem;
     color:var(--mv-contrast);
 }
+// Prix du produit
 .product-price{
     color:#1b1c1c; font-weight:700; letter-spacing:.01em;
 }
 
-/* badge (ex: “Nouveau”) */
+// Badge (ex: "Nouveau") en haut à droite de la carte
 .product-badge{
     position:absolute; top:10px; left:10px;
     background:rgba(255,255,255,.92); color:#222;

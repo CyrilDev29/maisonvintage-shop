@@ -26,7 +26,7 @@
                         <th scope="col">Référence</th>
                         <th scope="col">Date</th>
                         <th scope="col">Statut</th>
-                        <th scope="col" class="text-end">Total</th>
+                        <th scope="col" class="text-end">Total TTC</th>
                         <th scope="col" class="text-end">Actions</th>
                     </tr>
                     </thead>
@@ -41,7 +41,7 @@
                             : 'Indéfini'
                         %}
 
-                        {# Normalisation pour les comparaisons : "En cours" -> "EN_COURS" #}
+                        {# Normalisation pour comparaisons #}
                         {% set statusNorm = statusVal|upper|replace({' ': '_', '-': '_'}) %}
 
                         {# Badge selon le statut lisible #}
@@ -54,23 +54,34 @@
                             (statusVal == 'Livrée' ? 'bg-success' : 'bg-light text-dark')))))
                         %}
 
-                        {# Facture disponible uniquement si paiement validé (>= EN_COURS) ou si indicateur présent #}
+                        {# Facture dispo si payé (>= EN_COURS) ou flag #}
                         {% set paidNorms = ['EN_COURS', 'EN_PREPARATION', 'EXPEDIEE', 'LIVREE'] %}
                         {% set hasInvoiceFlag = (o.invoiceSent is defined and o.invoiceSent) %}
                         {% set canDownloadInvoice = (statusNorm in paidNorms) or hasInvoiceFlag %}
+
+                        {# ==== Totaux ==== #}
+                        {% set total_articles = (o.total|default(0)|replace({',':'.'})) + 0 %}
+                        {% set total_port = (o.shippingAmountCents is defined ? (o.shippingAmountCents / 100) : 0) + 0 %}
+                        {% set total_ttc = total_articles + total_port %}
 
                         <tr>
                             <td>{{ o.reference }}</td>
                             <td>{{ o.createdAt|date('d/m/Y H:i') }}</td>
                             <td><span class="badge {{ badgeClass }}">{{ statusVal }}</span></td>
-                            <td class="text-end">{{ (o.total ?? 0)|number_format(2, ',', ' ') }} €</td>
+                            <td class="text-end">
+                                {{ total_ttc|number_format(2, ',', ' ') }} €
+                                {% if total_port > 0 %}
+                                    <div class="small text-muted">
+                                        (dont port&nbsp;{{ total_port|number_format(2, ',', ' ') }} €)
+                                    </div>
+                                {% endif %}
+                            </td>
                             <td class="text-end">
                                 <div class="btn-group" role="group" aria-label="Actions commande">
                                     <a class="btn btn-sm btn-outline-primary"
                                        href="{{ path('app_account_order_show', {id: o.id}) }}">
                                         Détails
                                     </a>
-                                    {# Bouton facture masqué si commande en attente de paiement (virement non reçu, etc.) #}
                                     {% if canDownloadInvoice %}
                                         <a class="btn btn-sm btn-outline-secondary"
                                            href="{{ path('account_order_invoice', { id: o.id }) }}">

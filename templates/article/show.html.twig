@@ -4,6 +4,7 @@
 
 {% block body %}
     <section class="container" style="max-width:1100px;margin:2rem auto;padding:0 1rem;">
+        {# Fil d'Ariane (breadcrumb) pour la navigation #}
         <nav style="margin-bottom:1rem;font-size:.95rem;">
             <a href="{{ path('home') ?? '/' }}">Accueil</a>
             &nbsp;›&nbsp;
@@ -12,11 +13,14 @@
             <span>{{ article.titre }}</span>
         </nav>
 
-        {# --- Détermine la source de l'image principale (Vich -> 1ère galerie -> placeholder) --- #}
+        {# Détermine la source de l'image principale : image Vich OU première image de galerie OU placeholder #}
         {% set mainSrc = vich_uploader_asset(article, 'imageFile')
             ?? (article.images|length > 0 ? vich_uploader_asset(article.images|first, 'file') : asset('images/placeholder.png')) %}
 
+        {# Grille responsive : image à gauche, infos à droite #}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+
+            {# Bloc de gauche : image principale et miniatures #}
             <div>
                 <div id="product-main-wrap" style="width:100%;border:1px solid #eee;border-radius:8px;background:#fff;overflow:hidden;">
                     <img id="product-main"
@@ -26,7 +30,7 @@
                          loading="eager">
                 </div>
 
-                {# --- Miniatures (image principale + images de galerie) --- #}
+                {# Construction du tableau de miniatures (image principale + galerie) #}
                 {% set thumbs = [] %}
                 {% if vich_uploader_asset(article, 'imageFile') %}
                     {% set thumbs = thumbs|merge([ vich_uploader_asset(article, 'imageFile') ]) %}
@@ -35,6 +39,7 @@
                     {% set thumbs = thumbs|merge([ vich_uploader_asset(img, 'file') ]) %}
                 {% endfor %}
 
+                {# Affichage des miniatures cliquables #}
                 {% if thumbs|length > 0 %}
                     <div class="thumbs" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
                         {% for src in thumbs %}
@@ -54,22 +59,25 @@
                 {% endif %}
             </div>
 
+            {# Bloc de droite : informations produit #}
             <div>
                 <h1 style="margin:.25rem 0 1rem 0;">{{ article.titre }}</h1>
 
+                {# Affichage conditionnel du prix #}
                 {% if article.prix is not null %}
                     <div style="font-size:1.5rem;font-weight:700;margin-bottom:1rem;">
                         {{ article.prix|number_format(2, ',', ' ') }} €
                     </div>
                 {% endif %}
 
+                {# Affichage de la quantité disponible #}
                 {% if article.quantity is not null %}
                     <div style="margin-bottom:.75rem;color:#444;">
                         Quantité disponible : {{ article.quantity }}
                     </div>
                 {% endif %}
 
-                {# --- Dimensions et poids --- #}
+                {# Dimensions et poids du produit (affichage conditionnel) #}
                 <div style="margin:1rem 0;color:#555;line-height:1.5;">
                     {% if article.weightKg %}
                         <div>Poids : {{ (article.weightKg + 0)|number_format(3, ',', ' ') }} kg</div>
@@ -85,16 +93,20 @@
                     {% endif %}
                 </div>
 
+                {# Description du produit avec conversion des retours à la ligne #}
                 {% if article.description %}
                     <div style="margin:1rem 0 1.5rem 0;line-height:1.6;">
                         {{ article.description|nl2br }}
                     </div>
                 {% endif %}
 
-                {# --- Bloc "Ajouter au panier" --- #}
+                {# Formulaire d'ajout au panier (uniquement si stock disponible) #}
                 {% if article.quantity is defined and article.quantity > 0 %}
                     <form action="{{ path('cart_add', {id: article.id}) }}" method="post" style="margin:1rem 0 1.5rem 0;">
+                        {# Token CSRF pour sécuriser la soumission du formulaire #}
                         <input type="hidden" name="_token" value="{{ csrf_token('cart_add_' ~ article.id) }}">
+
+                        {# Sélecteur de quantité (si plus d'un exemplaire disponible) #}
                         {% if article.quantity > 1 %}
                             <label for="qty" style="display:inline-block;margin-right:.5rem;">Quantité</label>
                             <input id="qty" name="qty" type="number" value="1" min="1" max="{{ article.quantity }}"
@@ -109,6 +121,7 @@
                         </button>
                     </form>
                 {% else %}
+                    {# Message de rupture de stock #}
                     <div style="margin:1rem 0 1.5rem 0;color:#a00;font-weight:600;">
                         Rupture de stock
                     </div>
@@ -122,6 +135,7 @@
         </div>
     </section>
 
+    {# Script JavaScript pour le changement d'image au clic sur les miniatures #}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const mainImg = document.getElementById('product-main');
@@ -129,8 +143,7 @@
                 btn.addEventListener('click', function () {
                     const src = this.getAttribute('data-src');
                     if (!src || !mainImg) return;
-
-                    //  transition visuelle en cas de chagement
+                    // Transition visuelle lors du changement d'image
                     mainImg.style.opacity = '0.2';
                     const img = new Image();
                     img.onload = function () {

@@ -16,7 +16,7 @@ use Stripe\Event;
  *
  * - Crée les sessions Checkout.
  * - Vérifie les signatures de webhooks Stripe.
- * - Permet de relire une session Checkout pour afficher le récapitulatif.
+ * - Permet de relire une session Checkout.
  */
 final class StripePaymentService
 {
@@ -44,14 +44,22 @@ final class StripePaymentService
      * Crée une session Stripe Checkout (mode "payment").
      *
      * @param array<int,array{name:string,unit_amount:int,quantity:int}> $items
+     * @param array<string,mixed> $opts  (optionnel) ex:
+     *   - 'shipping_amount_cents' => int
+     *   - 'shipping_label'        => string
+     *
      * @throws ApiErrorException
      */
-    public function createCheckoutSession(array $items, string $orderReference, ?string $customerEmail = null): StripeCheckoutSession
-    {
+    public function createCheckoutSession(
+        array $items,
+        string $orderReference,
+        ?string $customerEmail = null,
+        array $opts = []
+    ): StripeCheckoutSession {
         $currency = \strtolower(\trim($this->currency)) ?: 'eur';
         $orderReference = \trim($orderReference);
 
-        // Construction des line items avec validations minimales.
+        // Construction des line items articles
         $lineItems = [];
         foreach ($items as $item) {
             $name       = isset($item['name']) ? (string) $item['name'] : 'Article';
@@ -75,13 +83,25 @@ final class StripePaymentService
             ];
         }
 
+        // Ajout (facultatif) des frais de port comme line item distinct
+        $shipCents = (int)($opts['shipping_amount_cents'] ?? 0);
+        if ($shipCents > 0) {
+            $shipLabel = (string)($opts['shipping_label'] ?? 'Frais de port');
+            $lineItems[] = [
+                'price_data' => [
+                    'currency'     => $currency,
+                    'unit_amount'  => $shipCents,
+                    'product_data' => ['name' => $shipLabel],
+                ],
+                'quantity' => 1,
+            ];
+        }
+
         if ($lineItems === []) {
             throw new \InvalidArgumentException('At least one line item is required to create a Checkout Session.');
         }
 
-        // Méthodes de paiement :
-        // - 'card' est toujours présent
-        // - 'paypal' : nécessite d'être activé côté compte Stripe ; sinon Stripe renverra une erreur à la création
+        // Méthodes de paiement
         $paymentMethodTypes = ['card'];
         if ($this->enablePaypal) {
             $paymentMethodTypes[] = 'paypal';
@@ -93,7 +113,7 @@ final class StripePaymentService
             'line_items'           => $lineItems,
             'success_url'          => $this->successUrl . '?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url'           => $this->cancelUrl,
-            'locale'               => 'fr', // interface Checkout en français
+            'locale'               => 'fr',
 
             // Traçabilité commande ↔ Stripe
             'client_reference_id'  => $orderReference,
@@ -113,6 +133,7 @@ final class StripePaymentService
             'session_id' => $session->id,
             'order_ref'  => $orderReference,
             'pm_types'   => $paymentMethodTypes,
+            'shipping_added' => $shipCents > 0 ? $shipCents : 0,
         ]);
 
         return $session;
@@ -139,7 +160,6 @@ final class StripePaymentService
     public function verifyWebhook(string $payload, string $signatureHeader): Event
     {
         if (empty($this->webhookSecret)) {
-            // Important : sans secret, on refuse le traitement pour éviter les faux positifs.
             throw new \RuntimeException('Stripe webhook secret not configured. Set STRIPE_WEBHOOK_SECRET.');
         }
 
@@ -149,24 +169,14 @@ final class StripePaymentService
     /**
      * Crée un remboursement Stripe sur un PaymentIntent.
      *
-     * @param string      $paymentIntentId  ex: "pi_3SKcfnD6gqIbu1ZX0NWCwa6L"
-     * @param int|null    $amount           Montant en CENTIMES (null = remboursement total)
-     * @param string|null $reason           "requested_by_customer" | "duplicate" | "fraudulent" | null
-     *
-     * @return string     refund id ex: "re_3SKchzD6gqIbu1ZX0xY..."
-     *
      * @throws ApiErrorException
      */
     public function refundPaymentIntent(string $paymentIntentId, ?int $amount = null, ?string $reason = 'requested_by_customer'): string
     {
-        $params = [
-            'payment_intent' => $paymentIntentId,
-        ];
-
+        $params = ['payment_intent' => $paymentIntentId];
         if ($amount !== null && $amount > 0) {
-            $params['amount'] = $amount; // en centimes
+            $params['amount'] = $amount;
         }
-
         if ($reason !== null) {
             $params['reason'] = $reason;
         }
