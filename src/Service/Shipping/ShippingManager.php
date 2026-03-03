@@ -5,20 +5,62 @@ declare(strict_types=1);
 namespace App\Service\Shipping;
 
 use App\Entity\Address;
-use App\Service\Shipping\Dto\ShippingOption;
 use App\Service\Shipping\Dto\ShippingQuote;
-use App\Service\Shipping\Model\Carrier;
 
 /**
- * Agrège les providers et renvoie une liste d’options.
+ * Agrège les providers et renvoie une liste d'options de tous les transporteurs.
  */
 final class ShippingManager
 {
+    /**
+     * @var array<ShippingProviderInterface>
+     */
+    private readonly array $providers;
+
     public function __construct(
         private readonly ColissimoProvider $colissimo,
-    ) {}
+        private readonly MondialRelayProvider $mondialRelay,
+        private readonly CocolisProvider $cocolis,
+    ) {
+        // Liste de tous les providers disponibles
+        $this->providers = [
+            $this->colissimo,
+            $this->mondialRelay,
+            $this->cocolis,
+        ];
+    }
 
     /**
+     * Retourne les options de tous les transporteurs disponibles.
+     *
+     * @param array<int,array{qty:int,weight_gr?:int|null,weight_kg?:float|null}> $cartLines
+     */
+    public function quoteAll(array $cartLines, Address $address): ShippingQuote
+    {
+        $allOptions = [];
+
+        foreach ($this->providers as $provider) {
+            try {
+                // Récupère les options de chaque provider
+                $quote = $provider->quote($cartLines, $address);
+
+                // Ajoute toutes les options de ce provider
+                foreach ($quote->options as $option) {
+                    $allOptions[] = $option;
+                }
+            } catch (\Throwable $e) {
+                // Si un provider échoue, on continue avec les autres
+                // En prod, tu pourrais logger l'erreur
+                continue;
+            }
+        }
+
+        return new ShippingQuote($allOptions);
+    }
+
+    /**
+     * Retourne les options Colissimo uniquement.
+     *
      * @param array<int,array{qty:int,weight_gr?:int|null,weight_kg?:float|null}> $cartLines
      */
     public function quoteColissimo(array $cartLines, Address $address): ShippingQuote
@@ -26,34 +68,37 @@ final class ShippingManager
         return $this->colissimo->quote($cartLines, $address);
     }
 
-    /** Mondial Relay : stub */
+    /**
+     * Retourne les options Mondial Relay uniquement.
+     *
+     * @param array<int,array{qty:int,weight_gr?:int|null,weight_kg?:float|null}> $cartLines
+     */
     public function quoteMondialRelay(array $cartLines, Address $address): ShippingQuote
     {
-        $opts = [
-            new ShippingOption(Carrier::MONDIAL_RELAY, 'RELAIS',   'Mondial Relay — Point relais', 499, ['needRelaySelection' => true]),
-            new ShippingOption(Carrier::MONDIAL_RELAY, 'DOMICILE', 'Mondial Relay — Domicile',     899),
-        ];
-        return new ShippingQuote($opts);
+        return $this->mondialRelay->quote($cartLines, $address);
     }
 
-    /** Cocolis : stub */
+    /**
+     * Retourne les options Cocolis uniquement.
+     *
+     * @param array<int,array{qty:int,weight_gr?:int|null,weight_kg?:float|null}> $cartLines
+     */
     public function quoteCocolis(array $cartLines, Address $address): ShippingQuote
     {
-        $opts = [
-            new ShippingOption(Carrier::COCOLIS, 'ECO', 'Cocolis — Partage de trajet (éco)', 1299, ['estimation' => 'variable']),
-        ];
-        return new ShippingQuote($opts);
+        return $this->cocolis->quote($cartLines, $address);
     }
 
-    /** Toutes les options (confort) */
-    public function quoteAll(array $cartLines, Address $address): ShippingQuote
+    /**
+     * Retourne un provider spécifique par son code.
+     */
+    public function getProvider(string $code): ?ShippingProviderInterface
     {
-        $all = [];
-        foreach ([$this->quoteColissimo($cartLines, $address),
-                     $this->quoteMondialRelay($cartLines, $address),
-                     $this->quoteCocolis($cartLines, $address)] as $q) {
-            foreach ($q->options as $o) { $all[] = $o; }
+        foreach ($this->providers as $provider) {
+            if ($provider->getCode() === $code) {
+                return $provider;
+            }
         }
-        return new ShippingQuote($all);
+
+        return null;
     }
 }
