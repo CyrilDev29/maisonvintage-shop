@@ -151,10 +151,51 @@
     {% block body %}{% endblock %}
 </main>
 
-<footer class="bg-dark text-white-50 py-3 mt-auto">
-    <div class="container d-flex justify-content-between small">
-        <span>&copy; {{ "now"|date("Y") }} Maison Vintage</span>
-        <span>Fait avec Symfony</span>
+<footer class="bg-dark text-white-50 py-4 mt-auto">
+    <div class="container">
+        <div class="row">
+            {# Colonne 1 : À propos #}
+            <div class="col-md-4 mb-3 mb-md-0">
+                <h5 class="text-white mb-3">Maison Vintage</h5>
+                <p class="small">
+                    Découvrez notre sélection unique d'objets et de meubles vintage soigneusement chinés.
+                </p>
+                <p class="small mb-0">
+                    <strong>Contact :</strong><br>
+                    <em>[contact@nomdedomaine.fr - À CONFIGURER]</em><br>
+                    <em>[TÉLÉPHONE À CONFIGURER]</em>
+                </p>
+            </div>
+
+            {# Colonne 2 : Navigation #}
+            <div class="col-md-4 mb-3 mb-md-0">
+                <h5 class="text-white mb-3">Navigation</h5>
+                <ul class="list-unstyled small">
+                    <li class="mb-2"><a href="{{ path('home') }}" class="text-white-50 text-decoration-none">Accueil</a></li>
+                    <li class="mb-2"><a href="{{ path('catalogue') }}" class="text-white-50 text-decoration-none">Catalogue</a></li>
+                    <li class="mb-2"><a href="{{ path('victime_succes') }}" class="text-white-50 text-decoration-none">Victime de son succès</a></li>
+                    <li class="mb-2"><a href="{{ path('contact') }}" class="text-white-50 text-decoration-none">Contact</a></li>
+                </ul>
+            </div>
+
+            {# Colonne 3 : Informations légales #}
+            <div class="col-md-4">
+                <h5 class="text-white mb-3">Informations légales</h5>
+                <ul class="list-unstyled small">
+                    <li class="mb-2"><a href="{{ path('cgv') }}" class="text-white-50 text-decoration-none">Conditions Générales de Vente</a></li>
+                    <li class="mb-2"><a href="{{ path('mentions_legales') }}" class="text-white-50 text-decoration-none">Mentions légales</a></li>
+                    <li class="mb-2"><a href="{{ path('politique_confidentialite') }}" class="text-white-50 text-decoration-none">Politique de confidentialité</a></li>
+                    <li class="mb-2"><a href="{{ path('politique_cookies') }}" class="text-white-50 text-decoration-none">Politique des cookies</a></li>
+                </ul>
+            </div>
+        </div>
+
+        {# Bas du footer #}
+        <hr class="border-secondary my-3">
+        <div class="d-flex justify-content-between align-items-center small">
+            <span>&copy; {{ "now"|date("Y") }} Maison Vintage - Tous droits réservés</span>
+            <span>Fait avec ❤️ et Symfony</span>
+        </div>
     </div>
 </footer>
 
@@ -176,18 +217,16 @@
             function hideBox(){ box.style.display='none'; box.innerHTML=''; input.setAttribute('aria-expanded','false'); activeIndex=-1; }
             function showBox(){ box.style.display='block'; input.setAttribute('aria-expanded','true'); }
 
-            // On demande à Twig une URL VALIDE, puis on remplace le segment "0-PLACEHOLDER"
-            const CANONICAL_STUB = "{{ path('article_show', { id: 0, slug: 'PLACEHOLDER' }) }}"; // ex: "/article/0-PLACEHOLDER"
+            const CANONICAL_STUB = "{{ path('article_show', { id: 0, slug: 'PLACEHOLDER' }) }}";
             function buildCanonicalHref(id, slug){
                 const repl = String(id) + '-' + encodeURIComponent(slug || '');
                 return CANONICAL_STUB.replace('/0-PLACEHOLDER', '/' + repl);
             }
 
-            // Routes de secours (by id, legacy slug) construites sur le même principe
-            const BYID_STUB = "{{ path('article_show_by_id', { id: 0 }) }}"; // "/article/id/0"
+            const BYID_STUB = "{{ path('article_show_by_id', { id: 0 }) }}";
             function buildByIdHref(id){ return BYID_STUB.replace('/0', '/' + String(id)); }
 
-            const LEGACY_STUB = "{{ path('article_show_legacy', { slug: 'PLACEHOLDER' }) }}"; // "/article/PLACEHOLDER"
+            const LEGACY_STUB = "{{ path('article_show_legacy', { slug: 'PLACEHOLDER' }) }}";
             function buildLegacyHref(slug){ return LEGACY_STUB.replace('PLACEHOLDER', encodeURIComponent(slug || '')); }
 
             function hrefFor(item){
@@ -219,7 +258,6 @@
                         const resp = await fetch(url, { signal: controller.signal, headers:{'Accept':'application/json'}});
                         if(!resp.ok){ hideBox(); return; }
                         const data = await resp.json();
-                        // data attendu: [{id, slug, titre, cat}, ...]
                         renderList(data);
                     }catch(e){ hideBox(); }
                 },150);
@@ -261,17 +299,14 @@
                 }
             }
 
-            // Init depuis l'attribut data-count
             render(el.dataset.count);
 
-            // 1) Événement custom
             document.addEventListener('cart:updated', (e) => {
                 const next = e?.detail?.count ?? 0;
                 render(next);
                 try { localStorage.setItem('mv-cart-count', String(next)); } catch (_) {}
             });
 
-            // 2) Sync inter-onglets
             try {
                 const cached = localStorage.getItem('mv-cart-count');
                 if (cached !== null) { render(cached); }
@@ -281,6 +316,66 @@
                     }
                 });
             } catch (_) {}
+        })();
+    </script>
+
+    {# Bannière cookies #}
+    <script>
+        (function() {
+            'use strict';
+            const COOKIE_NAME = 'mv_cookies_accepted';
+            const COOKIE_DURATION = 365;
+
+            function hasAccepted() {
+                return document.cookie.split('; ').find(row => row.startsWith(COOKIE_NAME + '=')) !== undefined;
+            }
+
+            function acceptCookies() {
+                const date = new Date();
+                date.setTime(date.getTime() + (COOKIE_DURATION * 24 * 60 * 60 * 1000));
+                document.cookie = COOKIE_NAME + '=1; expires=' + date.toUTCString() + '; path=/; SameSite=Lax';
+            }
+
+            function showBanner() {
+                if (hasAccepted()) return;
+
+                const banner = document.createElement('div');
+                banner.id = 'cookie-banner';
+                banner.innerHTML = `
+                <div class="container d-flex justify-content-between align-items-center flex-wrap">
+                    <div class="cookie-banner-text">
+                        <span class="me-2">🍪</span>
+                        <span>Ce site utilise uniquement des cookies essentiels pour son fonctionnement (panier, connexion).</span>
+                    </div>
+                    <div class="cookie-banner-actions">
+                        <a href="{{ path('politique_cookies') }}" class="btn btn-sm btn-outline-light me-2">En savoir plus</a>
+                        <button id="cookie-accept" class="btn btn-sm btn-light">J'ai compris</button>
+                    </div>
+                </div>
+            `;
+
+                banner.style.cssText = `
+                position: fixed; bottom: 0; left: 0; right: 0;
+                background: rgba(33, 37, 41, 0.95); color: white;
+                padding: 1rem 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+                z-index: 9999; font-size: 0.9rem;
+            `;
+
+                document.body.appendChild(banner);
+
+                document.getElementById('cookie-accept').addEventListener('click', function() {
+                    acceptCookies();
+                    banner.style.transition = 'opacity 0.3s ease';
+                    banner.style.opacity = '0';
+                    setTimeout(() => banner.remove(), 300);
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', showBanner);
+            } else {
+                showBanner();
+            }
         })();
     </script>
 {% endblock %}

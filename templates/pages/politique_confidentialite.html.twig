@@ -1,0 +1,254 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Politique de Confidentialité - Maison Vintage{% endblock %}
+
+{% block body %}
+<div class="container my-5" style="max-width: 900px;">
+    <h1 class="mb-4">Politique de Confidentialité</h1>
+
+    <p class="text-muted mb-4">
+        <strong>Dernière mise à jour :</strong> Mars 2026<br>
+        <strong>Version :</strong> 1.0
+    </p>
+
+    <p class="lead">
+        Maison Vintage accorde une grande importance à la protection de vos données personnelles.
+        Cette politique de confidentialité vous informe sur la manière dont nous collectons, utilisons
+        et protégeons vos données conformément au Règlement Général sur la Protection des Données (RGPD)
+        et à la loi Informatique et Libertés.
+    </p>
+
+    <hr class="my-4">
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">1. Responsable du traitement</h2>
+        <p>
+            Le responsable du traitement de vos données personnelles est :
+        </p>
+        <ul>
+            <li><strong>Raison sociale :</strong> CAVAREC Françoise</li>
+            <li><strong>Nom commercial :</strong> Maison Vintage</li>
+            <li><strong>Adresse :</strong> 95 Kerizac, 29870 Landéda, France</li>
+            <li><strong>Email :</strong> <em>[contact@nomdedomaine.fr - À CONFIGURER]</em></li>
+            <li><strong>Téléphone :</strong> <em>[NUMÉRO À CONFIGURER]</em></li>
+        </ul>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">2. Données personnelles collectées</h2>
+        <p>
+            Nous collectons les données personnelles suivantes :
+        </p>
+
+        <h3 class="h5 mt-4 mb-2">Lors de la création de votre compte :</h3>
+        <ul>
+            <li>Nom et prénom</li>
+            <li>Adresse email</li>
+            <li>Mot de passe (crypté)</li>
+        </ul>
+
+        <h3 class="h5 mt-4 mb-2">Lors d'une commande :</h3>
+        <ul>
+            <li>Informations de livraison (adresse complète, téléphone)</li>
+            <li>Informations de facturation (adresse complète)</li>
+            <li>Historique des commandes</li>
+        </ul>
+
+        <h3 class="h5 mt-4 mb-2">Lors du paiement :</h3>
+        <ul>
+            <li>Les informations de paiement sont traitées directement par notre prestataire sécurisé <strong>Stripe</strong></li>
+            <li>Nous ne conservons AUCUNE donnée bancaire (numéro de carte, cryptogramme, etc.)</li>
+            <li>Nous conservons uniquement la référence de transaction</li>
+        </ul>
+
+        <h3 class="h5 mt-4 mb-2">Données de navigation :</h3>
+        <ul>
+            <li>Adresse IP</li>
+            <li>Type de navigateur</li>
+            <li>Pages visitées</li>
+            <li>Cookies (voir notre <a href="{{ path('politique_cookies') }}">Politique des cookies</a>)</li>
+        </ul>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">3. Finalités du traitement</h2>
+        <p>
+            Vos données personnelles sont collectées et traitées pour les finalités suivantes :
+        </p>
+        <ul>
+            <li><strong>Gestion des commandes :</strong> traitement, préparation, expédition, facturation</li>
+            <li><strong>Gestion de votre compte client :</strong> création, authentification, historique</li>
+            <li><strong>Service client :</strong> réponse à vos questions, gestion des retours et réclamations</li>
+            <li><strong>Obligation légale :</strong> facturation, comptabilité (conservation 10 ans)</li>
+            <li><strong>Amélioration du site :</strong> statistiques de visite anonymisées</li>
+            <li><strong>Communication :</strong> emails transactionnels (confirmation commande, statut, facture)</li>
+        </ul>
+        <p>
+            <strong>Nous ne faisons PAS de marketing par email sans votre consentement explicite.</strong>
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">4. Base légale du traitement</h2>
+        <p>
+            Le traitement de vos données personnelles repose sur les bases légales suivantes :
+        </p>
+        <ul>
+            <li><strong>Exécution du contrat :</strong> traitement de votre commande</li>
+            <li><strong>Obligation légale :</strong> facturation, comptabilité</li>
+            <li><strong>Intérêt légitime :</strong> amélioration du service, prévention de la fraude</li>
+            <li><strong>Consentement :</strong> cookies non essentiels, newsletter (si applicable)</li>
+        </ul>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">5. Destinataires des données</h2>
+        <p>
+            Vos données personnelles sont destinées à :
+        </p>
+        <ul>
+            <li><strong>Maison Vintage :</strong> traitement interne des commandes</li>
+            <li><strong>Prestataires de paiement :</strong> Stripe (traitement sécurisé des paiements)</li>
+            <li><strong>Transporteurs :</strong> Colissimo, Mondial Relay, Cocolis (livraison uniquement)</li>
+            <li><strong>Hébergeur du site :</strong> <em>[NOM HÉBERGEUR]</em> (stockage des données)</li>
+        </ul>
+        <p>
+            <strong>Nous ne vendons ni ne louons jamais vos données à des tiers.</strong>
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">6. Durée de conservation</h2>
+        <p>
+            Vos données sont conservées pendant les durées suivantes :
+        </p>
+        <ul>
+            <li><strong>Compte client actif :</strong> tant que votre compte est actif + 3 ans après la dernière activité</li>
+            <li><strong>Données de commande :</strong> 10 ans (obligation légale comptable et fiscale)</li>
+            <li><strong>Données de facturation :</strong> 10 ans (obligation légale)</li>
+            <li><strong>Cookies :</strong> 13 mois maximum</li>
+            <li><strong>Logs de connexion :</strong> 12 mois</li>
+        </ul>
+        <p>
+            Passés ces délais, vos données sont supprimées ou anonymisées.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">7. Vos droits</h2>
+        <p>
+            Conformément au RGPD et à la loi Informatique et Libertés, vous disposez des droits suivants :
+        </p>
+        <ul>
+            <li><strong>Droit d'accès :</strong> vous pouvez demander une copie de vos données personnelles</li>
+            <li><strong>Droit de rectification :</strong> vous pouvez corriger vos données inexactes ou incomplètes</li>
+            <li><strong>Droit à l'effacement :</strong> vous pouvez demander la suppression de vos données (sauf obligations légales)</li>
+            <li><strong>Droit d'opposition :</strong> vous pouvez vous opposer au traitement de vos données (sauf motif légitime)</li>
+            <li><strong>Droit à la limitation :</strong> vous pouvez demander la limitation du traitement</li>
+            <li><strong>Droit à la portabilité :</strong> vous pouvez récupérer vos données dans un format structuré</li>
+            <li><strong>Droit de retirer votre consentement :</strong> pour les traitements basés sur le consentement</li>
+        </ul>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">8. Comment exercer vos droits ?</h2>
+        <p>
+            Pour exercer vos droits, vous pouvez nous contacter :
+        </p>
+        <ul>
+            <li><strong>Par email :</strong> <em>[contact@nomdedomaine.fr - À CONFIGURER]</em></li>
+            <li><strong>Par courrier :</strong> Maison Vintage - 95 Kerizac - 29870 Landéda</li>
+        </ul>
+        <p>
+            Merci de préciser :
+        </p>
+        <ul>
+            <li>Votre nom, prénom et adresse email</li>
+            <li>L'objet de votre demande (accès, rectification, suppression, etc.)</li>
+            <li>Une copie de votre pièce d'identité (pour vérifier votre identité)</li>
+        </ul>
+        <p>
+            <strong>Nous répondrons à votre demande dans un délai maximum d'1 mois.</strong>
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">9. Sécurité des données</h2>
+        <p>
+            Nous mettons en œuvre des mesures techniques et organisationnelles appropriées pour protéger
+            vos données personnelles contre tout accès non autorisé, perte, destruction ou divulgation :
+        </p>
+        <ul>
+            <li>Connexion HTTPS sécurisée (certificat SSL)</li>
+            <li>Mots de passe cryptés (algorithme bcrypt)</li>
+            <li>Hébergement sécurisé en France</li>
+            <li>Accès restreint aux données (personnel autorisé uniquement)</li>
+            <li>Sauvegardes régulières</li>
+            <li>Paiements sécurisés via Stripe (certifié PCI-DSS niveau 1)</li>
+        </ul>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">10. Cookies</h2>
+        <p>
+            Nous utilisons des cookies pour améliorer votre expérience sur notre site. Pour en savoir plus,
+            consultez notre <a href="{{ path('politique_cookies') }}">Politique des cookies</a>.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">11. Transfert de données hors UE</h2>
+        <p>
+            Vos données personnelles sont hébergées et traitées au sein de l'Union Européenne.
+        </p>
+        <p>
+            <strong>Stripe :</strong> En cas de paiement par carte bancaire, vos données de paiement transitent
+            par Stripe qui peut stocker certaines données aux États-Unis. Stripe est certifié conforme au RGPD
+            et aux clauses contractuelles types de l'UE.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">12. Modification de la politique</h2>
+        <p>
+            Nous nous réservons le droit de modifier cette politique de confidentialité à tout moment.
+            Toute modification sera publiée sur cette page avec une nouvelle date de mise à jour.
+        </p>
+        <p>
+            Nous vous encourageons à consulter régulièrement cette page pour prendre connaissance des éventuelles modifications.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">13. Réclamation auprès de la CNIL</h2>
+        <p>
+            Si vous estimez que vos droits ne sont pas respectés, vous avez le droit d'introduire une réclamation
+            auprès de la Commission Nationale de l'Informatique et des Libertés (CNIL) :
+        </p>
+        <ul>
+            <li><strong>Site internet :</strong> <a href="https://www.cnil.fr" target="_blank" rel="noopener">www.cnil.fr</a></li>
+            <li><strong>Adresse :</strong> CNIL - 3 Place de Fontenoy - TSA 80715 - 75334 PARIS CEDEX 07</li>
+            <li><strong>Téléphone :</strong> 01 53 73 22 22</li>
+        </ul>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">14. Contact</h2>
+        <p>
+            Pour toute question concernant cette politique de confidentialité ou le traitement de vos données,
+            vous pouvez nous contacter :
+        </p>
+        <ul>
+            <li><strong>Email :</strong> <em>[contact@nomdedomaine.fr - À CONFIGURER]</em></li>
+            <li><strong>Téléphone :</strong> <em>[NUMÉRO À CONFIGURER]</em></li>
+            <li><strong>Courrier :</strong> Maison Vintage - 95 Kerizac - 29870 Landéda</li>
+        </ul>
+    </section>
+
+    <hr class="my-4">
+
+    <div class="text-center">
+        <a href="{{ path('home') }}" class="btn btn-primary">Retour à l'accueil</a>
+    </div>
+</div>
+{% endblock %}
