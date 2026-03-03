@@ -43,7 +43,6 @@ class PagesController extends AbstractController
         return $this->render('pages/nouveau_cocon.html.twig');
     }
 
-
     #[Route('/victime-de-son-succes', name: 'victime_succes')]
     public function victimeSucces(ArticleRepository $articleRepository): Response
     {
@@ -92,5 +91,31 @@ class PagesController extends AbstractController
         return $this->render('pages/contact.html.twig', [
             'form' => $form->createView(),
         ]);
+    }
+
+    // ========== PAGES LÉGALES ==========
+
+    #[Route('/cgv', name: 'cgv')]
+    public function cgv(): Response
+    {
+        return $this->render('pages/cgv.html.twig');
+    }
+
+    #[Route('/mentions-legales', name: 'mentions_legales')]
+    public function mentionsLegales(): Response
+    {
+        return $this->render('pages/mentions_legales.html.twig');
+    }
+
+    #[Route('/politique-confidentialite', name: 'politique_confidentialite')]
+    public function politiqueConfidentialite(): Response
+    {
+        return $this->render('pages/politique_confidentialite.html.twig');
+    }
+
+    #[Route('/politique-cookies', name: 'politique_cookies')]
+    public function politiqueCookies(): Response
+    {
+        return $this->render('pages/politique_cookies.html.twig');
     }
 }

@@ -1,0 +1,149 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mentions Légales - Maison Vintage{% endblock %}
+
+{% block body %}
+<div class="container my-5" style="max-width: 900px;">
+    <h1 class="mb-4">Mentions Légales</h1>
+
+    <p class="text-muted mb-4">
+        Conformément aux dispositions de la loi n° 2004-575 du 21 juin 2004 pour la confiance en l'économie numérique,
+        il est précisé aux utilisateurs du site internet <strong>{{ app.request.schemeAndHttpHost }}</strong> l'identité
+        des différents intervenants dans le cadre de sa réalisation et de son suivi.
+    </p>
+
+    <hr class="my-4">
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">1. Éditeur du site</h2>
+        <p>
+            Le site <strong>{{ app.request.schemeAndHttpHost }}</strong> est édité par :
+        </p>
+        <ul>
+            <li><strong>Raison sociale :</strong> CAVAREC Françoise</li>
+            <li><strong>Nom commercial :</strong> Maison Vintage</li>
+            <li><strong>Forme juridique :</strong> Entrepreneur individuel</li>
+            <li><strong>Adresse du siège social :</strong> 95 Kerizac, 29870 Landéda, France</li>
+            <li><strong>SIREN :</strong> 752 102 897</li>
+            <li><strong>SIRET :</strong> 752 102 897 00036</li>
+            <li><strong>RCS :</strong> Brest 752 102 897</li>
+            <li><strong>TVA intracommunautaire :</strong> FR45752102897</li>
+            <li><strong>Code NAF/APE :</strong> 47.91B (Vente à distance sur catalogue spécialisé)</li>
+            <li><strong>Email :</strong> <em>[contact@nomdedomaine.fr - À CONFIGURER]</em></li>
+            <li><strong>Téléphone :</strong> <em>[NUMÉRO À CONFIGURER]</em></li>
+        </ul>
+        <p>
+            <strong>Directrice de la publication :</strong> Françoise LEDROIT Cavarec<br>
+            <strong>Responsable de la rédaction :</strong> Françoise LEDROIT Cavarec
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">2. Hébergement du site</h2>
+        <p>
+            Le site est hébergé par :
+        </p>
+        <ul>
+            <li><strong>Nom de l'hébergeur :</strong> <em>[NOM HÉBERGEUR - À CONFIGURER]</em></li>
+            <li><strong>Adresse :</strong> <em>[ADRESSE HÉBERGEUR - À CONFIGURER]</em></li>
+            <li><strong>Téléphone :</strong> <em>[TÉLÉPHONE HÉBERGEUR - À CONFIGURER]</em></li>
+        </ul>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">3. Développement et conception technique</h2>
+        <p>
+            Le site a été développé par :
+        </p>
+        <ul>
+            <li><strong>Développeur :</strong> Cyril Ledroit</li>
+            <li><strong>Technologies utilisées :</strong> Symfony 7.3, PHP 8.2+, MySQL</li>
+        </ul>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">4. Propriété intellectuelle</h2>
+        <p>
+            L'ensemble du contenu du site (structure, textes, images, graphismes, logos, icônes, sons, logiciels)
+            est la propriété exclusive de Maison Vintage, à l'exception des marques, logos ou contenus appartenant
+            à d'autres sociétés partenaires ou auteurs.
+        </p>
+        <p>
+            Toute reproduction, distribution, modification, adaptation, retransmission ou publication de ces
+            différents éléments est strictement interdite sans l'accord exprès par écrit de Maison Vintage.
+        </p>
+        <p>
+            Les photographies des produits sont la propriété de Maison Vintage et ne peuvent être utilisées
+            sans autorisation.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">5. Protection des données personnelles (RGPD)</h2>
+        <p>
+            Conformément au Règlement Général sur la Protection des Données (RGPD) et à la loi Informatique et
+            Libertés du 6 janvier 1978 modifiée, vous disposez d'un droit d'accès, de rectification, de suppression
+            et d'opposition aux données personnelles vous concernant.
+        </p>
+        <p>
+            Pour exercer ces droits ou pour toute question sur le traitement de vos données, vous pouvez contacter :
+        </p>
+        <ul>
+            <li><strong>Email :</strong> <em>[contact@nomdedomaine.fr - À CONFIGURER]</em></li>
+            <li><strong>Courrier :</strong> Maison Vintage - 95 Kerizac - 29870 Landéda</li>
+        </ul>
+        <p>
+            Pour plus d'informations sur le traitement de vos données personnelles, consultez notre
+            <a href="{{ path('politique_confidentialite') }}">Politique de confidentialité</a>.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">6. Cookies</h2>
+        <p>
+            Le site utilise des cookies pour améliorer l'expérience utilisateur et réaliser des statistiques de visite.
+            Pour en savoir plus, consultez notre <a href="{{ path('politique_cookies') }}">Politique des cookies</a>.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">7. Crédits</h2>
+        <p>
+            <strong>Icônes et ressources graphiques :</strong> Bootstrap Icons, Font Awesome (licences open source)
+        </p>
+        <p>
+            <strong>Framework :</strong> Symfony (licence MIT)
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">8. Limitation de responsabilité</h2>
+        <p>
+            Maison Vintage s'efforce d'assurer l'exactitude et la mise à jour des informations diffusées sur ce site,
+            dont elle se réserve le droit de corriger le contenu à tout moment et sans préavis.
+        </p>
+        <p>
+            Maison Vintage ne peut être tenue responsable des dommages directs ou indirects qui pourraient résulter
+            de l'accès au site ou de l'utilisation du site et de ses services.
+        </p>
+        <p>
+            Maison Vintage ne peut être tenue responsable de l'indisponibilité temporaire ou totale du site pour des
+            opérations de maintenance, mise à jour ou pour toute autre cause.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">9. Droit applicable</h2>
+        <p>
+            Les présentes mentions légales sont régies par le droit français. Tout litige relatif à l'utilisation
+            du site est de la compétence exclusive des tribunaux français.
+        </p>
+    </section>
+
+    <hr class="my-4">
+
+    <div class="text-center">
+        <a href="{{ path('home') }}" class="btn btn-primary">Retour à l'accueil</a>
+    </div>
+</div>
+{% endblock %}
