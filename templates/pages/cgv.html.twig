@@ -1,0 +1,218 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Conditions Générales de Vente - Maison Vintage{% endblock %}
+
+{% block body %}
+<div class="container my-5" style="max-width: 900px;">
+    <h1 class="mb-4">Conditions Générales de Vente</h1>
+
+    <p class="text-muted mb-4">
+        <strong>Dernière mise à jour :</strong> Mars 2026<br>
+        <strong>Version :</strong> 1.0
+    </p>
+
+    <hr class="my-4">
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">Article 1 - Objet</h2>
+        <p>
+            Les présentes Conditions Générales de Vente (CGV) régissent les ventes de produits vintage
+            proposés par <strong>CAVAREC Françoise</strong> (nom commercial : <strong>Maison Vintage</strong>),
+            sur le site internet <strong>{{ app.request.schemeAndHttpHost }}</strong>.
+        </p>
+        <p>
+            Toute commande passée sur le site implique l'acceptation sans réserve des présentes CGV
+            par le client.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">Article 2 - Identification du vendeur</h2>
+        <ul>
+            <li><strong>Raison sociale :</strong> CAVAREC Françoise</li>
+            <li><strong>Nom commercial :</strong> Maison Vintage</li>
+            <li><strong>Forme juridique :</strong> Entrepreneur individuel</li>
+            <li><strong>Adresse :</strong> 95 Kerizac, 29870 Landéda</li>
+            <li><strong>SIREN :</strong> 752 102 897</li>
+            <li><strong>SIRET :</strong> 752 102 897 00036</li>
+            <li><strong>RCS :</strong> Brest 752 102 897</li>
+            <li><strong>TVA intracommunautaire :</strong> FR45752102897</li>
+            <li><strong>Email :</strong> <em>[contact@nomdedomaine.fr - À CONFIGURER]</em></li>
+            <li><strong>Téléphone :</strong> <em>[NUMÉRO À CONFIGURER]</em></li>
+            <li><strong>Activité :</strong> 47.91B (Vente à distance sur catalogue spécialisé)</li>
+            <li><strong>Directrice de publication :</strong> Françoise Cavarec</li>
+        </ul>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">Article 3 - Produits</h2>
+        <p>
+            Les produits proposés sont des articles d'occasion, vintage ou anciens. Chaque produit fait
+            l'objet d'une description détaillée accompagnée de photographies. Les produits sont proposés
+            dans la limite des stocks disponibles.
+        </p>
+        <p>
+            <strong>Caractère unique :</strong> Les articles vintage étant par nature uniques, ils sont
+            vendus en l'état. Les éventuelles marques d'usure, patine ou défauts mineurs sont signalés
+            dans la description et font partie du charme de l'objet ancien.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">Article 4 - Prix</h2>
+        <p>
+            Les prix sont indiqués en euros (€) toutes taxes comprises (TTC), hors frais de livraison.
+            Les frais de port sont calculés en fonction du mode de livraison choisi et de la destination,
+            et sont clairement indiqués avant la validation de la commande.
+        </p>
+        <p>
+            Maison Vintage se réserve le droit de modifier ses prix à tout moment, mais les produits
+            seront facturés sur la base des tarifs en vigueur au moment de la validation de la commande.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">Article 5 - Commande</h2>
+        <p>
+            Le client passe commande en ajoutant les produits souhaités à son panier et en suivant le
+            processus de commande en ligne. La commande est ferme et définitive dès validation du paiement.
+        </p>
+        <p>
+            <strong>Validation de la commande :</strong> Un email de confirmation est envoyé au client
+            après validation de la commande. Cet email récapitule les produits commandés, le montant total
+            et les informations de livraison.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">Article 6 - Paiement</h2>
+        <p>
+            Le paiement peut être effectué par :
+        </p>
+        <ul>
+            <li><strong>Carte bancaire</strong> (via Stripe sécurisé)</li>
+            <li><strong>PayPal</strong></li>
+            <li><strong>Virement bancaire</strong> (la commande sera expédiée après réception du virement)</li>
+        </ul>
+        <p>
+            Les paiements par carte bancaire sont sécurisés par notre prestataire de paiement Stripe.
+            Aucune information bancaire n'est conservée sur nos serveurs.
+        </p>
+        <p>
+            <strong>Virement bancaire :</strong> Le client dispose de 72 heures pour effectuer le virement.
+            Passé ce délai, la commande sera automatiquement annulée et les articles remis en vente.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">Article 7 - Livraison</h2>
+        <p>
+            Les livraisons sont assurées par <strong>Colissimo</strong>, <strong>Mondial Relay</strong>
+            ou <strong>Cocolis</strong> selon le mode choisi par le client.
+        </p>
+        <p>
+            <strong>Délais de livraison :</strong>
+        </p>
+        <ul>
+            <li><strong>France métropolitaine :</strong> 2 à 5 jours ouvrés</li>
+            <li><strong>Union Européenne :</strong> 5 à 10 jours ouvrés</li>
+        </ul>
+        <p>
+            Les délais sont donnés à titre indicatif. En cas de retard de livraison, le client sera informé
+            par email.
+        </p>
+        <p>
+            <strong>Réception de la commande :</strong> Le client est tenu de vérifier l'état du colis à
+            la réception. En cas de dommage apparent, il doit formuler des réserves sur le bon de livraison
+            et nous contacter sous 48 heures.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">Article 8 - Droit de rétractation (14 jours)</h2>
+        <p>
+            Conformément à l'article L221-18 du Code de la consommation, le client dispose d'un délai de
+            <strong>14 jours calendaires</strong> à compter de la réception de sa commande pour exercer
+            son droit de rétractation, sans avoir à justifier de motifs ni à payer de pénalités.
+        </p>
+        <p>
+            <strong>Procédure de rétractation :</strong>
+        </p>
+        <ol>
+            <li>Informer Maison Vintage de votre décision de rétractation à l'adresse : <em>[contact@nomdedomaine.fr - À CONFIGURER]</em></li>
+            <li>Retourner le produit dans son emballage d'origine, en parfait état, à l'adresse suivante :
+                <strong>Maison Vintage - 95 Kerizac - 29870 Landéda</strong></li>
+            <li>Les frais de retour sont à la charge du client</li>
+        </ol>
+        <p>
+            <strong>Remboursement :</strong> Le remboursement sera effectué dans un délai de 14 jours
+            suivant la réception du produit retourné, après vérification de son état.
+        </p>
+        <p>
+            <strong>Exceptions :</strong> Le droit de rétractation ne s'applique pas aux produits
+            personnalisés ou confectionnés sur mesure.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">Article 9 - Garanties</h2>
+        <p>
+            Tous les produits bénéficient de la garantie légale de conformité (articles L217-4 et suivants
+            du Code de la consommation) et de la garantie contre les vices cachés (articles 1641 et suivants
+            du Code civil).
+        </p>
+        <p>
+            <strong>Garantie légale de conformité :</strong> Le client peut choisir entre la réparation
+            ou le remplacement du bien (selon disponibilité pour les articles vintage), sous réserve que
+            le coût ne soit pas disproportionné.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">Article 10 - Responsabilité</h2>
+        <p>
+            Maison Vintage ne saurait être tenue responsable de l'inexécution du contrat en cas de force
+            majeure, de perturbation ou grève totale ou partielle des services postaux ou de transport.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">Article 11 - Données personnelles</h2>
+        <p>
+            Les données personnelles collectées lors de la commande sont nécessaires au traitement de
+            celle-ci. Elles sont traitées conformément au RGPD. Pour plus d'informations, consultez notre
+            <a href="{{ path('politique_confidentialite') }}">Politique de confidentialité</a>.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">Article 12 - Médiation et litiges</h2>
+        <p>
+            En cas de litige, le client peut recourir gratuitement à un médiateur de la consommation dans
+            les conditions prévues par les articles L611-1 et suivants du Code de la consommation.
+        </p>
+        <p>
+            <strong>Médiateur de la consommation compétent :</strong><br>
+            Centre de médiation de la consommation (CM2C)<br>
+            <strong>Site internet :</strong> <a href="https://www.cm2c.net" target="_blank" rel="noopener">www.cm2c.net</a>
+        </p>
+        <p>
+            À défaut de résolution amiable, le litige sera porté devant les tribunaux compétents selon
+            les règles de droit commun.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">Article 13 - Loi applicable</h2>
+        <p>
+            Les présentes CGV sont soumises au droit français.
+        </p>
+    </section>
+
+    <hr class="my-4">
+
+    <div class="text-center">
+        <a href="{{ path('home') }}" class="btn btn-primary">Retour à l'accueil</a>
+    </div>
+</div>
+{% endblock %}
