@@ -15,10 +15,18 @@ parameters:
     maisonvintage.ttl.card_minutes: 30          # CB/PayPal : 30 min
 
     # --- Colissimo (devis) ---
-    # On mappe les variables d'env vers des parameters Symfony.
     colissimo.api_base: '%env(string:COLISSIMO_API_BASE)%'
     colissimo.api_key:  '%env(string:COLISSIMO_API_KEY)%'
     shipping.colissimo_live: '%env(bool:SHIPPING_COLISSIMO_LIVE)%'
+
+    # --- Mondial Relay (devis) ---
+    mondialrelay.api_key:    '%env(string:MONDIALRELAY_API_KEY)%'
+    mondialrelay.api_secret: '%env(string:MONDIALRELAY_API_SECRET)%'
+    shipping.mondialrelay_live: '%env(bool:SHIPPING_MONDIALRELAY_LIVE)%'
+
+    # --- Cocolis (devis) ---
+    cocolis.api_key: '%env(string:COCOLIS_API_KEY)%'
+    shipping.cocolis_live: '%env(bool:SHIPPING_COCOLIS_LIVE)%'
 
 services:
     _defaults:
@@ -67,3 +75,36 @@ services:
             $apiBase: '%colissimo.api_base%'
             $apiKey:  '%colissimo.api_key%'
             $enabled: '%shipping.colissimo_live%'
+
+    # -------- Mondial Relay API client + service --------
+    mondialrelay.client:
+        class: Symfony\Contracts\HttpClient\HttpClientInterface
+        factory: ['@http_client', 'withOptions']
+        arguments:
+            - {
+                base_uri: 'https://api.mondialrelay.com',
+                timeout: 6.0
+            }
+
+    App\Service\Shipping\MondialRelayApi:
+        arguments:
+            $http:      '@mondialrelay.client'
+            $apiKey:    '%mondialrelay.api_key%'
+            $apiSecret: '%mondialrelay.api_secret%'
+            $enabled:   '%shipping.mondialrelay_live%'
+
+    # -------- Cocolis API client + service --------
+    cocolis.client:
+        class: Symfony\Contracts\HttpClient\HttpClientInterface
+        factory: ['@http_client', 'withOptions']
+        arguments:
+            - {
+                base_uri: 'https://api.cocolis.fr',
+                timeout: 6.0
+            }
+
+    App\Service\Shipping\CocolisApi:
+        arguments:
+            $http:    '@cocolis.client'
+            $apiKey:  '%cocolis.api_key%'
+            $enabled: '%shipping.cocolis_live%'
