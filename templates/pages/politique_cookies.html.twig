@@ -1,0 +1,203 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Politique des Cookies - Maison Vintage{% endblock %}
+
+{% block body %}
+<div class="container my-5" style="max-width: 900px;">
+    <h1 class="mb-4">Politique des Cookies</h1>
+
+    <p class="text-muted mb-4">
+        <strong>Dernière mise à jour :</strong> Mars 2026<br>
+        <strong>Version :</strong> 1.0
+    </p>
+
+    <p class="lead">
+        Le site Maison Vintage utilise des cookies pour améliorer votre expérience de navigation
+        et réaliser des statistiques de visite. Cette page vous explique ce que sont les cookies,
+        comment nous les utilisons et comment vous pouvez les gérer.
+    </p>
+
+    <hr class="my-4">
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">1. Qu'est-ce qu'un cookie ?</h2>
+        <p>
+            Un cookie est un petit fichier texte déposé sur votre ordinateur, smartphone ou tablette
+            lors de votre visite sur un site internet. Les cookies permettent au site de mémoriser
+            vos actions et préférences (comme votre panier d'achat, votre langue, etc.) pendant
+            une certaine période.
+        </p>
+        <p>
+            Les cookies ne contiennent aucun virus et ne peuvent pas accéder aux données de votre disque dur.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">2. Quels cookies utilisons-nous ?</h2>
+
+        <h3 class="h5 mt-4 mb-3">🔒 Cookies strictement nécessaires (obligatoires)</h3>
+        <p>
+            Ces cookies sont indispensables au fonctionnement du site. Ils ne peuvent pas être désactivés.
+        </p>
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                <tr>
+                    <th>Nom du cookie</th>
+                    <th>Finalité</th>
+                    <th>Durée</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td><code>PHPSESSID</code></td>
+                    <td>Gestion de la session utilisateur (connexion, panier)</td>
+                    <td>Session (supprimé à la fermeture du navigateur)</td>
+                </tr>
+                <tr>
+                    <td><code>csrf_token</code></td>
+                    <td>Protection contre les attaques CSRF (sécurité)</td>
+                    <td>Session</td>
+                </tr>
+                <tr>
+                    <td><code>cookies_consent</code></td>
+                    <td>Mémorisation de vos choix concernant les cookies</td>
+                    <td>13 mois</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3 class="h5 mt-4 mb-3">📊 Cookies de statistiques (optionnels)</h3>
+        <p>
+            Ces cookies nous permettent de mesurer l'audience du site et d'améliorer son contenu.
+            Les données collectées sont anonymisées.
+        </p>
+        <div class="alert alert-info">
+            <strong>ℹ️ Note :</strong> Actuellement, nous n'utilisons pas de cookies de statistiques.
+            Si nous décidons d'en utiliser à l'avenir (Google Analytics, Matomo, etc.), nous vous
+            demanderons votre consentement via une bannière.
+        </div>
+
+        <h3 class="h5 mt-4 mb-3">🎯 Cookies publicitaires (non utilisés)</h3>
+        <p>
+            <strong>Nous n'utilisons PAS de cookies publicitaires.</strong> Nous ne faisons pas de publicité
+            ciblée et ne partageons pas vos données avec des régies publicitaires.
+        </p>
+
+        <h3 class="h5 mt-4 mb-3">📱 Cookies des réseaux sociaux (non utilisés)</h3>
+        <p>
+            <strong>Nous n'utilisons PAS de cookies de réseaux sociaux.</strong> Nous n'intégrons pas de
+            boutons de partage Facebook, Instagram, etc. qui déposeraient des cookies tiers.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">3. Cookies de nos prestataires</h2>
+
+        <h3 class="h5 mt-4 mb-2">Stripe (Paiements sécurisés)</h3>
+        <p>
+            Lorsque vous effectuez un paiement par carte bancaire, notre prestataire de paiement
+            <strong>Stripe</strong> peut déposer des cookies pour sécuriser la transaction et prévenir
+            la fraude. Ces cookies sont essentiels au bon fonctionnement du paiement.
+        </p>
+        <ul>
+            <li><strong>Finalité :</strong> Sécurisation des paiements, détection de fraude</li>
+            <li><strong>Durée :</strong> Variable selon le cookie</li>
+            <li><strong>Plus d'infos :</strong> <a href="https://stripe.com/fr/privacy" target="_blank" rel="noopener">Politique de confidentialité Stripe</a></li>
+        </ul>
+
+        <h3 class="h5 mt-4 mb-2">PayPal (Paiements sécurisés)</h3>
+        <p>
+            Si vous choisissez de payer via PayPal, PayPal peut déposer ses propres cookies pour
+            gérer votre session de paiement.
+        </p>
+        <ul>
+            <li><strong>Finalité :</strong> Gestion du paiement PayPal</li>
+            <li><strong>Plus d'infos :</strong> <a href="https://www.paypal.com/fr/webapps/mpp/ua/privacy-full" target="_blank" rel="noopener">Politique de confidentialité PayPal</a></li>
+        </ul>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">4. Comment gérer les cookies ?</h2>
+
+        <h3 class="h5 mt-4 mb-2">Via votre navigateur</h3>
+        <p>
+            Vous pouvez configurer votre navigateur pour accepter ou refuser les cookies,
+            ou pour être averti avant d'accepter un cookie.
+        </p>
+        <p>
+            <strong>Attention :</strong> La désactivation des cookies strictement nécessaires empêchera
+            le bon fonctionnement du site (connexion, panier, commande).
+        </p>
+        <p>
+            Pour gérer les cookies selon votre navigateur :
+        </p>
+        <ul>
+            <li><strong>Google Chrome :</strong> <a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener">Aide Google Chrome</a></li>
+            <li><strong>Mozilla Firefox :</strong> <a href="https://support.mozilla.org/fr/kb/activer-desactiver-cookies" target="_blank" rel="noopener">Aide Mozilla Firefox</a></li>
+            <li><strong>Safari :</strong> <a href="https://support.apple.com/fr-fr/guide/safari/sfri11471/mac" target="_blank" rel="noopener">Aide Safari</a></li>
+            <li><strong>Microsoft Edge :</strong> <a href="https://support.microsoft.com/fr-fr/microsoft-edge/supprimer-les-cookies-dans-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09" target="_blank" rel="noopener">Aide Microsoft Edge</a></li>
+        </ul>
+
+        <h3 class="h5 mt-4 mb-2">Via la bannière de consentement</h3>
+        <p>
+            Lors de votre première visite, une bannière vous demande votre consentement pour les cookies
+            non essentiels. Vous pouvez à tout moment modifier vos préférences en cliquant sur le lien
+            "Gérer mes cookies" en bas de page.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">5. Durée de conservation des cookies</h2>
+        <p>
+            Les cookies sont conservés pendant une durée maximale de <strong>13 mois</strong> conformément
+            aux recommandations de la CNIL.
+        </p>
+        <p>
+            Les cookies de session sont supprimés automatiquement à la fermeture de votre navigateur.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">6. Vos droits</h2>
+        <p>
+            Conformément au RGPD, vous disposez d'un droit d'accès, de rectification et de suppression
+            des données personnelles collectées via les cookies.
+        </p>
+        <p>
+            Pour exercer vos droits, consultez notre
+            <a href="{{ path('politique_confidentialite') }}">Politique de confidentialité</a> ou contactez-nous :
+        </p>
+        <ul>
+            <li><strong>Email :</strong> <em>[contact@nomdedomaine.fr - À CONFIGURER]</em></li>
+            <li><strong>Courrier :</strong> Maison Vintage - 95 Kerizac - 29870 Landéda</li>
+        </ul>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">7. Modification de la politique</h2>
+        <p>
+            Nous nous réservons le droit de modifier cette politique des cookies à tout moment.
+            Toute modification sera publiée sur cette page avec une nouvelle date de mise à jour.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 mb-3">8. Contact</h2>
+        <p>
+            Pour toute question concernant l'utilisation des cookies sur notre site, vous pouvez nous contacter :
+        </p>
+        <ul>
+            <li><strong>Email :</strong> <em>[contact@nomdedomaine.fr - À CONFIGURER]</em></li>
+            <li><strong>Téléphone :</strong> <em>[NUMÉRO À CONFIGURER]</em></li>
+        </ul>
+    </section>
+
+    <hr class="my-4">
+
+    <div class="text-center">
+        <a href="{{ path('home') }}" class="btn btn-primary">Retour à l'accueil</a>
+    </div>
+</div>
+{% endblock %}

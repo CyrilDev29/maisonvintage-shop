@@ -44,3 +44,45 @@ body {
     background-color: #0f0f10 !important;
     color: #f0f0f0 !important;
 }
+
+/* Bannière cookies */
+#cookie-banner {
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.cookie-banner-text {
+    flex: 1;
+    margin-bottom: 0.5rem;
+}
+
+.cookie-banner-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+}
+
+@media (max-width: 768px) {
+    #cookie-banner .container {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .cookie-banner-text {
+        margin-bottom: 1rem;
+    }
+
+    .cookie-banner-actions {
+        justify-content: center;
+    }
+}

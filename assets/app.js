@@ -12,3 +12,5 @@ function initBootstrapDropdowns() {
 }
 
 document.addEventListener('DOMContentLoaded', initBootstrapDropdowns);
+
+
