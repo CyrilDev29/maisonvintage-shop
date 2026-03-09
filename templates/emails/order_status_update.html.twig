@@ -3,128 +3,146 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mise à jour de votre commande</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
     <style>
-        body{font-family:Arial,sans-serif;background:#f9f9f9;color:#222;margin:0;padding:20px}
-        .container{max-width:650px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:20px}
-        h1{font-size:20px;margin:0 0 10px}
-        h3{margin:18px 0 8px}
-        ul{margin:8px 0 0 18px;padding:0}
-        .btn{display:inline-block;background:#2c3e50;color:#fff !important;text-decoration:none;padding:10px 16px;border-radius:4px}
-        .muted{color:#666;font-size:12px}
-        .status{display:inline-block;background:#e9ecef;border-radius:4px;padding:6px 10px;margin-top:8px}
-        .info{margin-top:18px;border:1px solid #cfe2ff;background:#f8fbff;padding:12px;border-radius:6px}
-        .totals{margin-top:12px}
-        .totals-row{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid #eee}
-        .totals-row strong{font-weight:700}
-        code{font-family:Consolas,Monaco,monospace}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+        .logo { max-width: 120px; height: auto; margin-bottom: 15px; }
+        .email-container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header { background: #1a1a1a; color: #ffffff; padding: 30px 20px; text-align: center; }
+        .header h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+        .header p { font-size: 14px; color: #cccccc; }
+        .content { padding: 30px 20px; }
+        .greeting { font-size: 16px; margin-bottom: 20px; color: #333; }
+        .info-box { background: #f8f9fa; border-left: 4px solid #1a1a1a; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .info-box h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #1a1a1a; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-box p { font-size: 14px; color: #666; line-height: 1.6; margin: 4px 0; }
+        .status-big { background: #1a1a1a; color: #ffffff; padding: 20px; text-align: center; margin: 20px 0; border-radius: 6px; font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .details-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eeeeee; font-size: 14px; }
+        .details-row:last-child { border-bottom: none; }
+        .details-row .label { color: #666; }
+        .details-row .value { font-weight: 600; color: #1a1a1a; }
+        .button { display: inline-block; background: #1a1a1a; color: #ffffff !important; text-decoration: none; padding: 14px 28px; border-radius: 6px; font-weight: 600; font-size: 14px; margin: 10px 5px; }
+        .button:hover { background: #333333; }
+        ul { margin: 10px 0; padding-left: 20px; }
+        ul li { margin: 8px 0; font-size: 14px; color: #333; }
+        .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; }
+        .footer a { color: #1a1a1a; text-decoration: none; margin: 0 8px; }
+        .footer a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>Commande {{ order.reference }}</h1>
+<div class="email-container">
+    <!-- Header with logo -->
+    <div class="header">
+        <img src="{{ absolute_url(asset('images/logo.png')) }}" alt="Maison Vintage" class="logo">
+        <h1>Mise à jour de commande</h1>
+        <p>Référence : {{ order.reference }}</p>
+    </div> </div>
 
-    {# Nom client : fallback robuste #}
-    {% set _ship = order.shippingSnapshot ?? null %}
-    {% set _customer_fallback =
-        (order.prenom|default('') ~ ' ' ~ order.nom|default(''))|trim ?: (
-        (user.prenom|default('') ~ ' ' ~ user.nom|default(''))|trim ?: (order.user.email|default('Client'))
-        ) %}
-    {% set customer_name = (_ship and _ship.fullName is defined and _ship.fullName) ? _ship.fullName : _customer_fallback %}
+    <!-- Content -->
+    <div class="content">
+        {% set _ship = order.shippingSnapshot ?? null %}
+        {% set _customer_fallback = (order.prenom|default('') ~ ' ' ~ order.nom|default(''))|trim ?: ((user.prenom|default('') ~ ' ' ~ user.nom|default(''))|trim ?: (order.user.email|default('Client'))) %}
+        {% set customer_name = (_ship and _ship.fullName is defined and _ship.fullName) ? _ship.fullName : _customer_fallback %}
 
-    <p>Bonjour {{ customer_name }},</p>
+        <p class="greeting">Bonjour <strong>{{ customer_name }}</strong>,</p>
 
-    {# Statut lisible + normalisé #}
-    {% set _status =
-        order.status ? (attribute(order.status,'value') is defined
-        ? order.status.value
-        : (attribute(order.status,'name') is defined ? order.status.name : order.status))
-        : 'Indéfini'
-    %}
-    {% set _norm = _status|upper|replace({' ':'_','-':'_'}) %}
+        <!-- Status -->
+        {% set _status = order.status ? (attribute(order.status,'value') is defined ? order.status.value : (attribute(order.status,'name') is defined ? order.status.name : order.status)) : 'Indéfini' %}
+        {% set _norm = _status|upper|replace({' ':'_','-':'_'}) %}
 
-    <p>Le statut de votre commande a changé : <span class="status"><strong>{{ _status }}</strong></span></p>
+        <p style="font-size: 14px; color: #666; margin-bottom: 20px;">
+            Le statut de votre commande a été mis à jour :
+        </p>
 
-    {# ===== Totaux (articles + port) ===== #}
-    {% set total_articles = (order.total|default(0)) + 0 %}
-    {% set total_port = (order.shippingAmountCents is defined ? (order.shippingAmountCents / 100) : 0) + 0 %}
-    {% set total_ttc = total_articles + total_port %}
+        <div class="status-big">{{ _status }}</div>
 
-    <div class="totals" style="margin-bottom:10px;">
-        <div class="totals-row">
-            <span class="muted">Total TTC</span>
-            <span><strong>{{ total_ttc|number_format(2, ',', ' ') }} €</strong></span>
+        <!-- Totals -->
+        {% set total_articles = (order.total|default(0)) + 0 %}
+        {% set total_port = (order.shippingAmountCents is defined ? (order.shippingAmountCents / 100) : 0) + 0 %}
+        {% set total_ttc = total_articles + total_port %}
+
+        <div style="margin: 20px 0;">
+            <div class="details-row">
+                <span class="label">Total TTC</span>
+                <span class="value">{{ total_ttc|number_format(2, ',', ' ') }} €</span>
+            </div>
+            <div class="details-row">
+                <span class="label">Total articles</span>
+                <span class="value">{{ total_articles|number_format(2, ',', ' ') }} €</span>
+            </div>
+            {% if total_port > 0 %}
+                <div class="details-row">
+                    <span class="label">Frais de port</span>
+                    <span class="value">{{ total_port|number_format(2, ',', ' ') }} €</span>
+                </div>
+            {% endif %}
         </div>
-        <div class="totals-row">
-            <span class="muted">Total articles</span>
-            <span><strong>{{ total_articles|number_format(2, ',', ' ') }} €</strong></span>
-        </div>
-        {% if total_port > 0 %}
-            <div class="totals-row">
-                <span class="muted">Frais de port</span>
-                <span><strong>{{ total_port|number_format(2, ',', ' ') }} €</strong></span>
+
+        <!-- Shipping info -->
+        {% if order.shippingCarrier or order.shippingMethod or total_port > 0 %}
+            <div class="info-box">
+                <h3>🚚 Informations d'expédition</h3>
+                {% if order.shippingCarrier %}<p><strong>Transporteur :</strong> {{ order.shippingCarrier }}</p>{% endif %}
+                {% if order.shippingMethod %}<p><strong>Service :</strong> {{ order.shippingMethod }}</p>{% endif %}
+                {% if order.shippingRelayId is defined and order.shippingRelayId %}<p><strong>Point relais :</strong> {{ order.shippingRelayId }}</p>{% endif %}
             </div>
         {% endif %}
+
+        <!-- Items summary -->
+        <h3 style="margin: 25px 0 10px; font-size: 16px; color: #1a1a1a;">Récapitulatif</h3>
+        <ul>
+            {% for it in order.items %}
+                {% set unit = (it.unitPrice|default(0)|replace({',':'.'})) + 0 %}
+                <li>{{ it.productName }} — {{ it.quantity }} × {{ unit|number_format(2, ',', ' ') }} €</li>
+            {% else %}
+                <li style="color: #999;">Aucune ligne</li>
+            {% endfor %}
+        </ul>
+
+        <!-- Bank transfer info if needed -->
+        {% if _norm starts with 'EN_ATTENTE' %}
+            <div class="info-box">
+                <h3>💳 Informations pour le virement</h3>
+                <p><strong>Titulaire :</strong> {{ bank_holder|default('MME CAVAREC FRANCOISE') }}</p>
+                <p><strong>Banque :</strong> {{ bank_bankname|default('Crédit Agricole Finistère - Agence Lannilis') }}</p>
+                <p><strong>IBAN :</strong> <code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px;">{{ bank_iban|default('FR76 1290 6000 2757 6578 7677 978') }}</code></p>
+                <p><strong>BIC :</strong> <code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px;">{{ bank_bic|default('AGRIFRPP829') }}</code></p>
+                <p style="margin-top: 10px; font-size: 13px; color: #856404;">
+                    ⚠️ Merci d'indiquer la référence <strong>{{ order.reference }}</strong> dans le libellé du virement.
+                </p>
+            </div>
+        {% endif %}
+
+        <!-- Action buttons -->
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ url('app_account_order_show', { id: order.id }) }}" class="button">Voir ma commande</a>
+
+            {% set paid_norms = ['EN_COURS','EN_PREPARATION','EXPEDIEE','LIVREE'] %}
+            {% set has_invoice_flag = (order.invoiceSent is defined and order.invoiceSent) %}
+            {% if _norm in paid_norms or has_invoice_flag %}
+                <a href="{{ url('account_order_invoice', { id: order.id }) }}" class="button">Télécharger ma facture</a>
+            {% endif %}
+        </div>
+
+        <p style="margin-top: 30px; font-size: 14px; color: #666;">
+            À très bientôt,<br>
+            <strong>L'équipe Maison Vintage</strong>
+        </p>
     </div>
 
-    {# Bloc expédition si on a des infos #}
-    {% if order.shippingCarrier or order.shippingMethod or total_port > 0 %}
-        <div style="border:1px solid #eee;border-radius:6px;padding:10px;background:#fafafa;margin:10px 0 16px;">
-            <h3 style="margin-top:0">Expédition</h3>
-            {% if order.shippingCarrier %}Transporteur : <strong>{{ order.shippingCarrier }}</strong><br>{% endif %}
-            {% if order.shippingMethod  %}Service : <strong>{{ order.shippingMethod }}</strong><br>{% endif %}
-            {% if order.shippingRelayId is defined and order.shippingRelayId %}
-                Point relais : <strong>{{ order.shippingRelayId }}</strong><br>
-            {% endif %}
-            {% if total_port > 0 %}
-                Frais de port : <strong>{{ total_port|number_format(2, ',', ' ') }} €</strong>
-            {% endif %}
-        </div>
-    {% endif %}
-
-    <h3>Récapitulatif</h3>
-    <ul>
-        {% for it in order.items %}
-            {% set unit = (it.unitPrice|default(0)|replace({',':'.'})) + 0 %}
-            <li>{{ it.productName }} — {{ it.quantity }} × {{ unit|number_format(2, ',', ' ') }} €</li>
-        {% else %}
-            <li class="muted">Aucune ligne.</li>
-        {% endfor %}
-    </ul>
-
-    <p style="margin-top:12px">
-        <a href="{{ url('app_account_order_show', { id: order.id }) }}" class="btn">Voir le détail de la commande</a>
-    </p>
-
-    {# Virement : RIB si le statut commence par EN_ATTENTE... #}
-    {% if _norm starts with 'EN_ATTENTE' %}
-        <div class="info">
-            <h3 style="margin-top:0">Informations pour le virement</h3>
-            {% set _holder   = bank_holder|default('') %}
-            {% set _bankname = bank_bankname|default('') %}
-            {% set _iban     = bank_iban|default('') %}
-            {% set _bic      = bank_bic|default('') %}
-            <ul style="list-style:none;margin:0;padding:0">
-                <li><strong>Titulaire&nbsp;:</strong> {{ _holder }}</li>
-                <li><strong>Banque&nbsp;:</strong> {{ _bankname }}</li>
-                <li><strong>IBAN&nbsp;:</strong> <code>{{ _iban }}</code></li>
-                <li><strong>BIC&nbsp;:</strong> <code>{{ _bic }}</code></li>
-            </ul>
-            <p style="margin-top:8px">Utilisez la référence <strong>{{ order.reference }}</strong> comme libellé du virement.</p>
-        </div>
-    {% endif %}
-
-    {# Bouton facture si paiement validé #}
-    {% set paid_norms = ['EN_COURS','EN_PREPARATION','EXPEDIEE','LIVREE'] %}
-    {% set has_invoice_flag = (order.invoiceSent is defined and order.invoiceSent) %}
-    {% if _norm in paid_norms or has_invoice_flag %}
-        <p style="margin-top:12px">
-            <a href="{{ url('account_order_invoice', { id: order.id }) }}" class="btn">Télécharger ma facture (PDF)</a>
+    <!-- Footer -->
+    <div class="footer">
+        <p style="margin-bottom: 10px;">&copy; {{ 'now'|date('Y') }} Maison Vintage - Tous droits réservés</p>
+        <p>
+            <a href="{{ url('cgv') }}">CGV</a> •
+            <a href="{{ url('mentions_legales') }}">Mentions légales</a> •
+            <a href="{{ url('politique_confidentialite') }}">Confidentialité</a>
         </p>
-    {% endif %}
-
-    <p class="muted" style="margin-top:16px">Message automatique — Maison Vintage</p>
+        <p style="margin-top: 10px; color: #999;">95 Kerizac, 29870 Landéda</p>
+    </div>
 </div>
 </body>
 </html>
