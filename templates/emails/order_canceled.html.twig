@@ -3,92 +3,143 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Annulation commande {{ order.reference }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Annulation commande {{ order.reference }}</title>
     <style>
-        body{font-family:Arial,sans-serif;color:#222;background:#f6f7fb;margin:0;padding:20px}
-        .container{max-width:680px;margin:0 auto;background:#fff;border:1px solid #e9ecef;border-radius:8px;overflow:hidden}
-        .header{background:#111;color:#fff;padding:16px 20px;font-size:16px;font-weight:bold}
-        .content{padding:20px}
-        .muted{color:#666;font-size:13px}
-        .badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:12px;background:#dc3545;color:#fff}
-        .badge-ok{background:#198754}
-        .badge-warn{background:#fd7e14}
-        table{width:100%;border-collapse:collapse;margin-top:12px}
-        th,td{padding:8px;border-bottom:1px solid #eee;font-size:14px;text-align:left}
-        th{background:#f9fafc}
-        .text-right{text-align:right}
-        .total-row td{font-weight:bold}
-        .footer{padding:16px 20px;color:#666;font-size:12px}
-        .mono{font-family:Consolas,Monaco,monospace}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+        .logo { max-width: 120px; height: auto; margin-bottom: 15px; }
+        .email-container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header { background: #dc3545; color: #ffffff; padding: 30px 20px; text-align: center; }
+        .header h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+        .header p { font-size: 14px; color: #ffe6e6; }
+        .content { padding: 30px 20px; }
+        .greeting { font-size: 16px; margin-bottom: 20px; color: #333; }
+        .info-box { background: #f8f9fa; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .info-box h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #1a1a1a; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-box p { font-size: 14px; color: #666; line-height: 1.6; margin: 4px 0; }
+        .badge { display: inline-block; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin: 5px 5px 5px 0; }
+        .badge-canceled { background: #dc3545; color: #ffffff; }
+        .badge-refunded { background: #198754; color: #ffffff; }
+        .badge-warning { background: #ffc107; color: #000000; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #f8f9fa; padding: 12px 8px; text-align: left; font-size: 13px; font-weight: 600; color: #333; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { padding: 12px 8px; border-bottom: 1px solid #eeeeee; font-size: 14px; color: #333; }
+        td.right { text-align: right; }
+        .total-row td { font-weight: 700; background: #f8f9fa; }
+        .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; }
+        .footer a { color: #1a1a1a; text-decoration: none; margin: 0 8px; }
+        .footer a:hover { text-decoration: underline; }
+        code { font-family: Consolas, Monaco, monospace; background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="header">Annulation de commande — {{ order.reference }}</div>
+<div class="email-container">
+    <!-- Header with logo -->
+    <div class="header">
+        <img src="{{ absolute_url(asset('images/logo.png')) }}" alt="Maison Vintage" class="logo">
+        <h1>Commande annulée</h1>
+        <p>Référence : {{ order.reference }}</p>
+    </div>
+
+    <!-- Content -->
     <div class="content">
-        <p>
-            <span class="badge">ANNULÉE</span>
+        <p class="greeting">Bonjour,</p>
+
+        <!-- Status badges -->
+        <div style="margin: 20px 0;">
+            <span class="badge badge-canceled">ANNULÉE</span>
             {% if refundedNow or order.refundedAt %}
-                <span class="badge badge-ok">REMBOURSÉE</span>
+                <span class="badge badge-refunded">REMBOURSÉE</span>
             {% else %}
-                <span class="badge badge-warn">REMBOURSEMENT À VÉRIFIER</span>
+                <span class="badge badge-warning">REMBOURSEMENT À VÉRIFIER</span>
             {% endif %}
-        </p>
-
-        <p>Bonjour,<br>La commande <strong>{{ order.reference }}</strong> a été annulée.</p>
-
-        <p class="muted">
-            Date de création : {{ order.createdAt|date('d/m/Y H:i') }}<br>
-            Client : {{ order.prenom }} {{ order.nom }} — {{ order.user.email }}<br>
-            Téléphone : {{ order.telephone }}<br>
-            Annulée le : {{ order.canceledAt ? order.canceledAt|date('d/m/Y H:i') : '—' }}
-        </p>
-
-        <div class="muted" style="margin:10px 0 6px;">
-            {% if order.stripePaymentIntentId %}PaymentIntent : <span class="mono">{{ order.stripePaymentIntentId }}</span><br>{% endif %}
-            {% if order.stripeRefundId %}Refund ID : <span class="mono">{{ order.stripeRefundId }}</span>{% if order.refundedAt %} — le {{ order.refundedAt|date('d/m/Y H:i') }}{% endif %}<br>{% endif %}
-            {% if order.stripeSessionId %}Checkout Session : <span class="mono">{{ order.stripeSessionId }}</span>{% endif %}
         </div>
 
-        <h3 style="margin:20px 0 8px;">Articles</h3>
-        <table role="presentation" aria-hidden="true">
+        <p style="font-size: 14px; color: #666; margin-bottom: 20px;">
+            La commande <strong>{{ order.reference }}</strong> a été annulée.
+        </p>
+
+        <!-- Order details -->
+        <div class="info-box">
+            <h3>ℹ️ Informations de la commande</h3>
+            <p><strong>Date de création :</strong> {{ order.createdAt|date('d/m/Y H:i') }}</p>
+            <p><strong>Client :</strong> {{ order.prenom }} {{ order.nom }}</p>
+            <p><strong>Email :</strong> {{ order.user.email }}</p>
+            <p><strong>Téléphone :</strong> {{ order.telephone }}</p>
+            <p><strong>Annulée le :</strong> {{ order.canceledAt ? order.canceledAt|date('d/m/Y H:i') : '—' }}</p>
+        </div>
+
+        <!-- Stripe details if available -->
+        {% if order.stripePaymentIntentId or order.stripeRefundId or order.stripeSessionId %}
+            <div style="margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 4px; font-size: 12px; color: #666;">
+                {% if order.stripePaymentIntentId %}<p><strong>PaymentIntent :</strong> <code>{{ order.stripePaymentIntentId }}</code></p>{% endif %}
+                {% if order.stripeRefundId %}
+                    <p>
+                        <strong>Refund ID :</strong> <code>{{ order.stripeRefundId }}</code>
+                        {% if order.refundedAt %} — Remboursé le {{ order.refundedAt|date('d/m/Y H:i') }}{% endif %}
+                    </p>
+                {% endif %}
+                {% if order.stripeSessionId %}<p><strong>Checkout Session :</strong> <code>{{ order.stripeSessionId }}</code></p>{% endif %}
+            </div>
+        {% endif %}
+
+        <!-- Order items -->
+        <h3 style="margin: 25px 0 15px; font-size: 16px; color: #1a1a1a;">Articles de la commande</h3>
+        <table>
             <thead>
             <tr>
                 <th>Produit</th>
-                <th class="text-right">PU (€)</th>
-                <th class="text-right">Qté</th>
-                <th class="text-right">Sous-total (€)</th>
+                <th class="right">PU (€)</th>
+                <th class="right">Qté</th>
+                <th class="right">Sous-total (€)</th>
             </tr>
             </thead>
             <tbody>
             {% for item in order.items %}
                 {% set unit = (item.unitPrice|replace({',':'.'})) + 0 %}
-                {% set qty  = (item.quantity ?? 0) + 0 %}
-                {% set sub  = unit * qty %}
+                {% set qty = (item.quantity ?? 0) + 0 %}
+                {% set sub = unit * qty %}
                 <tr>
                     <td>{{ item.productName }}</td>
-                    <td class="text-right">{{ unit|number_format(2, ',', ' ') }}</td>
-                    <td class="text-right">{{ qty }}</td>
-                    <td class="text-right">{{ sub|number_format(2, ',', ' ') }}</td>
+                    <td class="right">{{ unit|number_format(2, ',', ' ') }}</td>
+                    <td class="right">{{ qty }}</td>
+                    <td class="right">{{ sub|number_format(2, ',', ' ') }}</td>
                 </tr>
             {% endfor %}
             {% set total_num = (order.total|replace({',':'.'})) + 0 %}
             <tr class="total-row">
-                <td colspan="3" class="text-right">Total :</td>
-                <td class="text-right">{{ total_num|number_format(2, ',', ' ') }} €</td>
+                <td colspan="3" class="right">Total :</td>
+                <td class="right">{{ total_num|number_format(2, ',', ' ') }} €</td>
             </tr>
             </tbody>
         </table>
 
-        <h3 style="margin:20px 0 8px;">Adresse de livraison</h3>
-        <p class="muted" style="margin-top:0;">
+        <!-- Delivery address -->
+        <h3 style="margin: 25px 0 10px; font-size: 16px; color: #1a1a1a;">Adresse de livraison</h3>
+        <p style="font-size: 14px; color: #666; line-height: 1.6;">
             {{ order.prenom }} {{ order.nom }}<br>
             {{ order.rue }}<br>
-            {{ order.codePostal }} {{ order.ville }} — {{ order.pays }}
+            {{ order.codePostal }} {{ order.ville }}<br>
+            {{ order.pays }}
+        </p>
+
+        <p style="margin-top: 30px; font-size: 14px; color: #666;">
+            Si vous avez des questions concernant cette annulation, n'hésitez pas à nous contacter.<br><br>
+            <strong>L'équipe Maison Vintage</strong>
         </p>
     </div>
-    <div class="footer">Notification automatique — référence {{ order.reference }}.</div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p style="margin-bottom: 10px;">&copy; {{ 'now'|date('Y') }} Maison Vintage - Tous droits réservés</p>
+        <p>
+            <a href="{{ url('cgv') }}">CGV</a> •
+            <a href="{{ url('mentions_legales') }}">Mentions légales</a> •
+            <a href="{{ url('politique_confidentialite') }}">Confidentialité</a>
+        </p>
+        <p style="margin-top: 10px; color: #999;">95 Kerizac, 29870 Landéda</p>
+    </div>
 </div>
 </body>
 </html>

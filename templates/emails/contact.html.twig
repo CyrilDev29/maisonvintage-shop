@@ -3,23 +3,67 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nouveau message de contact</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
     <style>
-        body{font-family:Arial,sans-serif;background:#f9f9f9;color:#222;margin:0;padding:20px}
-        .container{max-width:650px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:20px}
-        .muted{color:#666}
-        .block{white-space:pre-wrap}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+        .logo { max-width: 120px; height: auto; margin-bottom: 15px; }
+        .email-container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header { background: #0d6efd; color: #ffffff; padding: 30px 20px; text-align: center; }
+        .header h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+        .header p { font-size: 14px; color: #cce5ff; }
+        .content { padding: 30px 20px; }
+        .info-box { background: #f8f9fa; border-left: 4px solid #0d6efd; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .info-box h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #1a1a1a; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-box p { font-size: 14px; color: #666; line-height: 1.6; margin: 4px 0; }
+        .message-box { background: #ffffff; border: 1px solid #dee2e6; border-radius: 6px; padding: 20px; margin: 20px 0; }
+        .message-box pre { white-space: pre-wrap; word-wrap: break-word; font-family: inherit; font-size: 14px; color: #333; line-height: 1.6; margin: 0; }
+        .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; }
+        .footer a { color: #1a1a1a; text-decoration: none; margin: 0 8px; }
+        .footer a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
-<div class="container">
-    <h2>Nouveau message depuis le formulaire de contact</h2>
-    <p><strong>Nom :</strong> {{ name }}</p>
-    <p><strong>Email :</strong> {{ from_email }}</p>
-    <p><strong>Sujet :</strong> {{ subject }}</p>
-    <h3>Message :</h3>
-    <p class="block">{{ message }}</p>
+<div class="email-container">
+    <!-- Header with logo -->
+    <div class="header">
+        <img src="{{ absolute_url(asset('images/logo.png')) }}" alt="Maison Vintage" class="logo">
+        <h1>Nouveau message de contact</h1>
+        <p>Formulaire de contact du site</p>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+        <p style="font-size: 16px; margin-bottom: 20px; color: #333;">
+            Un visiteur a rempli le formulaire de contact :
+        </p>
+
+        <!-- Contact info -->
+        <div class="info-box">
+            <h3>👤 Informations de l'expéditeur</h3>
+            <p><strong>Nom :</strong> {{ name }}</p>
+            <p><strong>Email :</strong> <a href="mailto:{{ from_email }}" style="color: #0d6efd; text-decoration: none;">{{ from_email }}</a></p>
+            <p><strong>Sujet :</strong> {{ subject }}</p>
+        </div>
+
+        <!-- Message -->
+        <h3 style="margin: 25px 0 10px; font-size: 16px; color: #1a1a1a;">📄 Message</h3>
+        <div class="message-box">
+            <pre>{{ message }}</pre>
+        </div>
+
+        <p style="margin-top: 20px; font-size: 13px; color: #999; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+            💡 <strong>Astuce :</strong> Vous pouvez répondre directement en cliquant sur l'adresse email ci-dessus.
+        </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p style="margin-bottom: 10px;">&copy; {{ 'now'|date('Y') }} Maison Vintage - Tous droits réservés</p>
+        <p>Notification automatique depuis le formulaire de contact</p>
+        <p style="margin-top: 10px; color: #999;">95 Kerizac, 29870 Landéda</p>
+    </div>
 </div>
 </body>
 </html>
