@@ -38,6 +38,9 @@ class Categorie
     )]
     private ?string $slug = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $image = null;
+
     /** @var Collection<int, Article> */
     #[ORM\OneToMany(targetEntity: Article::class, mappedBy: 'categorie')]
     private Collection $articles;
@@ -47,10 +50,6 @@ class Categorie
         $this->articles = new ArrayCollection();
     }
 
-    /**
-     * Ne calcule le slug automatiquement que s'il est vide.
-     * Cela évite d'écraser un slug saisi manuellement en back-office.
-     */
     #[ORM\PrePersist]
     #[ORM\PreUpdate]
     public function ensureSlug(): void
@@ -98,11 +97,21 @@ class Categorie
         return $this->slug;
     }
 
-
     public function setSlug(?string $slug): static
     {
         $slug = $slug !== null ? trim($slug) : null;
         $this->slug = $slug !== null ? strtolower($slug) : null;
+        return $this;
+    }
+
+    public function getImage(): ?string
+    {
+        return $this->image;
+    }
+
+    public function setImage(?string $image): static
+    {
+        $this->image = $image;
         return $this;
     }
 

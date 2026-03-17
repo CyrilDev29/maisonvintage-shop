@@ -12,18 +12,22 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Routing\Annotation\Route;
+use App\Repository\SiteConfigRepository;
 
 class PagesController extends AbstractController
 {
     #[Route('/', name: 'home')]
-    public function index(ArticleRepository $articleRepository): Response
+    public function index(
+        ArticleRepository $articleRepository,
+        SiteConfigRepository $siteConfigRepository
+    ): Response
     {
-        // On récupère plus large (ex: 30 derniers) pour pouvoir filtrer quantity>0
-        // puis on coupera à 9 dans le template.
         $lastArticles = $articleRepository->findBy([], ['createdAt' => 'DESC'], 30);
+        $siteConfig = $siteConfigRepository->findOneBy([]);
 
         return $this->render('home/index.html.twig', [
-            'articles' => $lastArticles,
+            'articles'   => $lastArticles,
+            'siteConfig' => $siteConfig,
         ]);
     }
 
@@ -117,5 +121,11 @@ class PagesController extends AbstractController
     public function politiqueCookies(): Response
     {
         return $this->render('pages/politique_cookies.html.twig');
+    }
+
+    #[Route('/qui-suis-je', name: 'qui_suis_je')]
+    public function quiSuisJe(): Response
+    {
+        return $this->render('pages/qui_suis_je.html.twig');
     }
 }

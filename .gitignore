@@ -38,3 +38,7 @@ public/styles/
 .vscode/
 *.log
 .DS_Store
+
+###> symfonycasts/sass-bundle ###
+/public/assets/
+###< symfonycasts/sass-bundle ###
