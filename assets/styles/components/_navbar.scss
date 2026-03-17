@@ -1,15 +1,39 @@
-/* Fond & padding */
-nav.navbar.bg-dark {
-    background: var(--mv-primary) !important; /* ex: #646F67 */
-    border-bottom: 1px solid rgba(255, 255, 255, .14);
-    padding: .65rem 0;
+nav.navbar.mv-navbar {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e0d8cc;
+    padding: 1rem 0;
 }
 
-/* Logo rond */
+.mv-brand-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.1;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-weight: 700;
+    font-size: 1.4rem;
+    letter-spacing: .25em;
+    text-transform: uppercase;
+    color: #2c2218;
+}
+
+.mv-brand-text span:first-child {
+    font-size: 2.4rem;
+}
+
+nav.navbar .navbar-brand {
+    color: #2c2218;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 nav.navbar .brand-logo {
-    width: clamp(56px, 8vw, 80px); /* ↑ logo agrandi */
+    width: 95px;
+    aspect-ratio: 1/1;
     border-radius: 50%;
     overflow: hidden;
+    flex-shrink: 0;
 }
 
 nav.navbar .brand-logo img {
@@ -19,48 +43,121 @@ nav.navbar .brand-logo img {
     display: block;
 }
 
-/* Liens */
-nav.navbar .navbar-brand {
-    font-weight: 700;
-    letter-spacing: .02em;
-    color: #fff;
-}
-
-/* Taille du texte "Maison Vintage" */
-nav.navbar .navbar-brand .fw-bold {
-    font-size: clamp(1.15rem, 1.1rem + 0.6vw, 1.55rem);
-    letter-spacing: 0.02em;
-    font-weight: 700;
-}
-
-nav.navbar.navbar-dark .navbar-nav .nav-link {
-    color: #fafafa;
-    opacity: .95;
+nav.navbar .navbar-nav .nav-link {
+    font-family: "Inter", sans-serif;
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #4a3f35;
     padding: .55rem .7rem;
     line-height: 1;
     white-space: nowrap;
-    transition: opacity .18s ease;
+    transition: color .18s ease;
 }
 
-nav.navbar.navbar-dark .navbar-nav .nav-link:hover {
+nav.navbar .navbar-nav .nav-link:hover {
+    color: #2c2218;
+}
+
+nav.navbar .dropdown-menu {
+    border: 1px solid #e0d8cc;
+    border-radius: 4px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.08);
+}
+
+nav.navbar .dropdown-item {
+    font-size: .82rem;
+    letter-spacing: .06em;
+    color: #4a3f35;
+}
+
+nav.navbar .dropdown-item:hover {
+    background: #f2ede6;
+    color: #2c2218;
+}
+
+nav.navbar .badge {
+    background: #3d3228;
+    color: #fff;
+    border: none;
+    font-size: .65rem;
+}
+
+nav.navbar .navbar-toggler {
+    border-color: #e0d8cc;
+}
+
+nav.navbar .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2844%2C34%2C24%2C0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+nav.navbar #mv-search-form .form-control {
+    background: #fff;
+    border-color: #e0d8cc;
+    color: #2c2218;
+    font-size: .82rem;
+    border-radius: 2px;
+}
+
+nav.navbar #mv-search-form .btn {
+    border-color: #e0d8cc;
+    background: #f2ede6;
+    color: #4a3f35;
+    border-radius: 2px;
+}
+
+nav.navbar #mv-search-form .btn:hover {
+    background: #e8e0d8;
+}
+
+nav.navbar .mv-nav-right .nav-link {
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #4a3f35;
+}
+
+nav.navbar .mv-nav-right .nav-link:hover {
+    color: #2c2218;
+}
+
+footer.mv-footer {
+    background: #1e1610;
+    color: #8a7d6e;
+}
+
+footer.mv-footer h5 {
+    color: #d6cfc5;
+    font-size: .78rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    font-family: "Inter", sans-serif;
+    font-weight: 600;
+}
+
+footer.mv-footer a {
+    color: #8a7d6e;
+    text-decoration: none;
+    font-size: .85rem;
+}
+
+footer.mv-footer a:hover {
+    color: #d6cfc5;
+}
+
+footer.mv-footer hr {
+    border-color: #2c2218;
     opacity: 1;
 }
 
-/* Badge panier */
-nav.navbar .badge {
-    background: #fff;
-    color: #222;
-    border: 1px solid rgba(0, 0, 0, .08);
-}
-
-/* --------- Mobile (par défaut) --------- */
-/* La zone pliable est en bloc classique */
+/* Mobile */
 nav.navbar .navbar-collapse.mv-navline {
     display: block !important;
     width: 100%;
 }
 
-/* Milieu : menu + recherche s'empilent */
 nav.navbar .mv-nav-middle {
     display: flex;
     flex-direction: column;
@@ -69,28 +166,12 @@ nav.navbar .mv-nav-middle {
     margin-top: .5rem;
 }
 
-/* Recherche en pleine largeur */
 nav.navbar #mv-search-form {
     width: 100%;
     max-width: 100%;
     min-width: 0;
 }
 
-nav.navbar #mv-search-form .form-control {
-    background: #fff;
-}
-
-nav.navbar #mv-search-form .btn {
-    border-color: #d0d0d0;
-    background: #f6f6f6;
-    color: #444;
-}
-
-nav.navbar #mv-search-form .btn:hover {
-    background: #ececec;
-}
-
-/* Droite : sous le milieu */
 nav.navbar .mv-nav-right {
     display: flex;
     align-items: center;
@@ -98,75 +179,50 @@ nav.navbar .mv-nav-right {
     margin: .5rem 0 0 0;
 }
 
-/* --------- Petites tablettes (≥576px) --------- */
-@media (min-width: 576px) {
-    nav.navbar .mv-nav-middle {
-        gap: .6rem;
-    }
-
-    nav.navbar.navbar-dark .navbar-nav .nav-link {
-        padding: .55rem .8rem;
-    }
-}
-
-/* --------- Tablettes (≥768px) --------- */
+/* Tablettes */
 @media (min-width: 768px) {
     nav.navbar .mv-nav-middle {
         flex-direction: row;
         align-items: center;
         justify-content: center;
     }
-
-    /* La recherche commence à reprendre une largeur contrôlée */
     nav.navbar #mv-search-form {
         width: auto;
-        min-width: clamp(200px, 40vw, 320px);
-        max-width: clamp(220px, 45vw, 360px);
+        min-width: clamp(160px, 30vw, 260px);
+        max-width: clamp(160px, 30vw, 260px);
     }
 }
 
-/* --------- Desktop (≥992px) --------- */
-/* Mise en page en 3 zones : [Brand] | [Milieu] | [Droite] */
+/* Desktop */
 @media (min-width: 992px) {
-    /* La zone pliable passe en GRID à 2 colonnes :
-       col1 (1fr) = MILIEU (menu+recherche), col2 (auto) = DROITE */
     nav.navbar .navbar-collapse.mv-navline {
         display: grid !important;
         grid-template-columns: 1fr auto;
         align-items: center;
         column-gap: 16px;
     }
-
-    /* Milieu centré */
     nav.navbar .mv-nav-middle {
         display: flex;
         flex-direction: row;
         align-items: center;
         justify-content: center;
-        gap: clamp(6px, 1.2vw, 16px);
+        gap: clamp(4px, .8vw, 12px);
         margin-top: 0;
     }
-
     nav.navbar .mv-nav-middle .navbar-nav {
         display: flex;
         align-items: center;
-        gap: clamp(2px, .8vw, 12px);
+        gap: clamp(0px, .4vw, 8px);
     }
-
-    /* Recherche à largeur fluide mais bornée */
     nav.navbar #mv-search-form {
-        min-width: clamp(200px, 28vw, 360px);
-        max-width: clamp(200px, 28vw, 360px);
+        min-width: clamp(160px, 20vw, 280px);
+        max-width: clamp(160px, 20vw, 280px);
     }
-
-    /* Droite collée au bord droit */
     nav.navbar .mv-nav-right {
         margin: 0 0 0 auto;
-        gap: .6rem;
+        gap: .4rem;
     }
-
-    /* Légère respiration globale */
-    nav.navbar.bg-dark {
-        padding: .75rem 0;
+    nav.navbar.mv-navbar {
+        padding: 1rem 0;
     }
 }

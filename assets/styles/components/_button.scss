@@ -1,7 +1,11 @@
 .btn{
-    border-radius:var(--mv-radius-sm);
-    font-weight:600; letter-spacing:.01em;
-    padding:.62rem 1.15rem;
+    border-radius:2px;
+    font-family:var(--mv-font-sans);
+    font-weight:600;
+    font-size:.78rem;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    padding:.7rem 1.4rem;
     transition:transform var(--mv-transition), box-shadow var(--mv-transition), background var(--mv-transition), border-color var(--mv-transition);
 }
 .btn-primary{
@@ -14,6 +18,7 @@
     border-color:var(--mv-primary-hover);
     transform:translateY(-1px);
     box-shadow:var(--mv-shadow);
+    color:#fff;
 }
 .btn-outline-primary{
     color:var(--mv-primary);
@@ -23,4 +28,14 @@
 .btn-outline-primary:hover{
     background:var(--mv-primary);
     color:#fff;
+}
+.btn-outline-light{
+    color:var(--mv-muted);
+    border:1px solid var(--mv-border);
+    background:transparent;
+}
+.btn-outline-light:hover{
+    background:var(--mv-soft);
+    color:var(--mv-contrast);
+    border-color:var(--mv-border);
 }

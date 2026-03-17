@@ -4,175 +4,288 @@
 {% block stylesheets %}
     {{ parent() }}
     <style>
-        :root { --hero-zoom: .90; }
+        /* ===== HERO ===== */
+        .mv-hero {
+            position: relative;
+            min-height: 64vh;
+            overflow: hidden;
+            display: grid;
+            place-items: center;
+            isolation: isolate;
+        }
+        .mv-hero img {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            object-fit: cover; object-position: center;
+            transform: scale(.95);
+        }
+        .mv-hero::after {
+            content: ""; position: absolute; inset: 0;
+            background: linear-gradient(rgba(0,0,0,.3), rgba(0,0,0,.3));
+        }
+        .mv-hero-inner {
+            position: relative; z-index: 1;
+            text-align: left;
+            padding: 0 clamp(24px, 5vw, 60px);
+            width: 100%;
+        }
+        .mv-hero h1 {
+            color: #fff;
+            font-family: "Cormorant Garamond", Georgia, serif;
+            font-weight: 700;
+            line-height: 1.1;
+            margin: 0 0 .5rem;
+            font-size: clamp(2.8rem, 5vw, 4.2rem);
+        }
+        .mv-hero p {
+            color: rgba(255,255,255,.88);
+            margin: 0 0 1.4rem;
+            font-size: clamp(1rem, 1.4vw, 1.2rem);
+        }
+        .mv-hero-eyebrow {
+            display: block;
+            font-size: .82rem;
+            letter-spacing: .22em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,.75);
+            margin-bottom: .6rem;
+            font-family: "Inter", sans-serif;
+        }
+        .mv-cta {
+            display: inline-block;
+            padding: .7rem 1.6rem;
+            border: 1px solid rgba(255,255,255,.7);
+            color: #fff;
+            font-size: .72rem;
+            font-weight: 600;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+            font-family: "Inter", sans-serif;
+            text-decoration: none;
+            transition: background .2s;
+        }
+        .mv-cta:hover { background: rgba(255,255,255,.15); color: #fff; }
 
-        /* Un peu plus d’espace horizontal entre les colonnes */
-        .mv-home-row { --bs-gutter-x: 2.4rem; }
-
-        /* ===== HÉROS (inchangé, sans fond noir) ===== */
-        .mv-hero{
-            position:relative;
-            min-height:64vh;               /* hauteur de référence */
-            border-radius:16px;
-            overflow:hidden;
-            display:grid;
-            place-items:center;
-            box-shadow:var(--mv-shadow,0 10px 26px rgba(0,0,0,.06));
-            isolation:isolate;
+        /* ===== NOUVEAUTÉS ===== */
+        .mv-side-title {
+            font-family: "Inter", sans-serif;
+            font-size: .68rem;
+            font-weight: 600;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            color: #4a3f35;
+            margin-bottom: .75rem;
+            padding-bottom: .75rem;
+            border-bottom: 1px solid #e0d8cc;
         }
-        .mv-hero img{
-            position:absolute; inset:0;
-            width:100%; height:100%;
-            object-fit:cover; object-position:center;
-            transform:scale(var(--hero-zoom));
+        .mv-nouveautes-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            list-style: none;
+            margin: 0; padding: 0;
         }
-        .mv-hero::after{
-            content:""; position:absolute; inset:0;
-            background:linear-gradient(rgba(0,0,0,.28), rgba(0,0,0,.28));
+        .mv-prod-mini { cursor: pointer; }
+        .mv-prod-img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            display: block;
+            background: #f1ede6;
+            margin-bottom: 8px;
         }
-        .mv-hero > .mv-hero-inner{
-            position:relative; z-index:1; text-align:center;
-            padding-inline:clamp(12px,3vw,40px);
+        .mv-prod-name {
+            font-family: "Cormorant Garamond", Georgia, serif;
+            font-size: .95rem;
+            color: #2c2218;
+            margin-bottom: 2px;
+            line-height: 1.2;
         }
-        .mv-hero h1{
-            color:#fff; font-family:var(--mv-font-serif); font-weight:700;
-            line-height:1.12; letter-spacing:.01em; margin:0 0 .4rem;
-            font-size:clamp(2rem,1.2rem + 3vw,3.2rem);
-        }
-        .mv-hero p{ color:#f7f7f7; margin:.5rem 0 0; font-size:clamp(.95rem,.8rem + .4vw,1.1rem); opacity:.95; }
-        .mv-cta{
-            margin-top:1.1rem; display:inline-block; padding:.6rem 1rem; border-radius:12px;
-            background:rgba(255,255,255,.14); color:#fff; border:1px solid rgba(255,255,255,.28);
-            font-weight:600; backdrop-filter:blur(4px); text-decoration:none;
-        }
-        .mv-cta:hover{ background:rgba(255,255,255,.22); }
-
-        /* Décalage très léger du héros à gauche sur grands écrans */
-        @media (min-width: 1200px){
-            .mv-hero { transform: translateX(-6px); }
+        .mv-prod-price {
+            font-size: .82rem;
+            color: #6b5f50;
         }
 
-        /* ===== NOUVEAUTÉS alignées en hauteur sur le héros ===== */
-        .mv-side{
-            display:flex; flex-direction:column; height:100%;
+        /* ===== CATÉGORIES ===== */
+        .mv-section {
+            padding: 56px 0 48px;
+            background: #f9f6f1;
         }
-        .mv-side h3{ font-family:var(--mv-font-serif); margin-bottom:.6rem; }
+        .mv-section-eyebrow {
+            display: block;
+            font-size: .68rem;
+            font-weight: 600;
+            letter-spacing: .22em;
+            text-transform: uppercase;
+            color: #8a7d6e;
+            text-align: center;
+            margin-bottom: .5rem;
+            font-family: "Inter", sans-serif;
+        }
+        .mv-section-title {
+            font-family: "Cormorant Garamond", Georgia, serif;
+            font-size: clamp(1.8rem, 2.5vw, 2.4rem);
+            font-weight: 400;
+            color: #1e1610;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .mv-cats-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .mv-cats-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        .mv-cat-card { text-align: center; cursor: pointer; }
+        .mv-cat-img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            display: block;
+            background: #ddd5c8;
+            margin-bottom: 10px;
+            transition: opacity .2s;
+        }
+        .mv-cat-card:hover .mv-cat-img { opacity: .88; }
+        .mv-cat-label {
+            font-family: "Cormorant Garamond", Georgia, serif;
+            font-size: 1rem;
+            color: #2c2218;
+        }
 
-        .mv-nouveautes{ flex:1 1 auto; display:flex; }
-        .mv-nouveautes .product-grid{
-            height:100%;
-            width:100%;
-            display:grid;
-            grid-template-columns: repeat(3, 1fr);   /* 3 × 3 */
-            grid-template-rows: repeat(3, 1fr);      /* force 3 rangées */
-            gap: 14px;
-            margin: 0; padding: 0; list-style: none;
+        /* ===== BANNIÈRE SOMBRE ===== */
+        .mv-banner {
+            background: #2c2218;
+            color: #f0e8dc;
+            text-align: center;
+            padding: 56px 32px;
         }
-        @media (max-width: 991.98px){
-            .mv-nouveautes .product-grid{
-                grid-template-columns: repeat(2, 1fr);
-                grid-template-rows: repeat(3, 1fr);
-            }
+        .mv-banner-eyebrow {
+            display: block;
+            font-size: .68rem;
+            letter-spacing: .22em;
+            text-transform: uppercase;
+            font-family: "Inter", sans-serif;
+            color: rgba(240,232,220,.6);
+            margin-bottom: .8rem;
         }
-        @media (max-width: 420px){
-            .mv-nouveautes .product-grid{
-                grid-template-columns: 1fr;
-                grid-template-rows: none;
-            }
+        .mv-banner h2 {
+            font-family: "Cormorant Garamond", Georgia, serif;
+            font-size: clamp(1.8rem, 3vw, 2.6rem);
+            font-weight: 400;
+            color: #f0e8dc;
+            margin-bottom: .6rem;
         }
-
-        .mv-nouveautes .product-card{
-            border-radius:12px;
-            box-shadow: var(--mv-shadow);
-            overflow:hidden;
-            border:1px solid var(--mv-border);
-            background: var(--mv-surface);
-            display:flex; flex-direction:column; min-height:0;
+        .mv-banner p {
+            font-size: .9rem;
+            color: rgba(240,232,220,.7);
+            margin-bottom: 1.6rem;
         }
-        .mv-nouveautes .product-media{
-            flex: 0 0 60%;
-            background:#f1ede6;
-            position:relative;
+        .mv-btn-banner {
+            display: inline-block;
+            border: 1px solid rgba(240,232,220,.5);
+            color: #f0e8dc;
+            padding: .75rem 2rem;
+            font-size: .72rem;
+            font-weight: 600;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+            font-family: "Inter", sans-serif;
+            text-decoration: none;
+            transition: background .2s;
         }
-        .mv-nouveautes .product-media a,
-        .mv-nouveautes .product-media img{
-            position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
-            display:block;
-        }
-        .mv-nouveautes .product-body{
-            flex:1 1 auto;
-            padding:.55rem .6rem .7rem;
-            display:flex; flex-direction:column; justify-content:space-between;
-            min-height:0;
-        }
-        .mv-nouveautes .product-title{
-            font-size:.95rem; line-height:1.25; margin:.2rem 0 .2rem;
-        }
-        .mv-nouveautes .product-price{
-            font-size:.95rem; font-weight:700;
+        .mv-btn-banner:hover {
+            background: rgba(240,232,220,.1);
+            color: #f0e8dc;
         }
     </style>
 {% endblock %}
 
 {% block body %}
+
+    {# ===== HERO + NOUVEAUTÉS ===== #}
     <div class="container-xxl py-4">
-        <div class="row mv-home-row align-items-stretch">
-            <!-- Héros -->
-            <div class="col-12 col-lg-8 mb-4 mb-lg-0">
-                <section class="mv-hero">
-                    <img src="{{ asset('images/hero-accueil.jpg') }}" alt="">
+        <div class="row align-items-stretch g-4">
+
+            {# Hero #}
+            <div class="col-12 col-lg-8">
+                <div class="mv-hero h-100">
+                    {% if siteConfig and siteConfig.heroImage %}
+                        <img src="{{ asset('uploads/hero/' ~ siteConfig.heroImage) }}" alt="">
+                    {% else %}
+                        <img src="{{ asset('images/hero-accueil.jpg') }}" alt="">
+                    {% endif %}
                     <div class="mv-hero-inner">
-                        <h1>
-                            <span class="d-block small" style="color:#e9e9e9;font-weight:600;letter-spacing:.18em;">MAISON VINTAGE</span>
-                            Chinez votre nouvelle pépite
-                        </h1>
+                        <span class="mv-hero-eyebrow">Maison Vintage</span>
+                        <h1>Chinez votre<br>nouvelle pépite</h1>
                         <p>Dans une sélection de pièces uniques au charme authentique.</p>
                         <a href="{{ path('catalogue') }}" class="mv-cta">Découvrir le catalogue</a>
                     </div>
-                </section>
+                </div>
             </div>
 
-            <!-- Nouveautés : 9 derniers disponibles (3×3), alignés en hauteur avec le héros -->
-            <aside class="col-12 col-lg-4 mv-side">
-                <h3>Nouveautés</h3>
-
+            {# Nouveautés #}
+            <div class="col-12 col-lg-4">
+                <p class="mv-side-title">Nouveautés</p>
                 {% if articles is not empty %}
                     {% set visibles = articles|filter(a => a.quantity > 0)|slice(0, 9) %}
-                    <section class="mv-nouveautes">
-                        {% if visibles is not empty %}
-                            <ul class="product-grid">
-                                {% for a in visibles %}
-                                    <li class="product-card">
-                                        <div class="product-media">
-                                            <a href="{{ path('article_show', { id: a.id, slug: a.slug }) }}">
-                                                {% if a.image %}
-                                                    <img src="{{ asset('uploads/articles/' ~ a.image) }}" alt="{{ a.titre }}">
-                                                {% endif %}
-                                            </a>
-                                        </div>
-                                        <div class="product-body">
-                                            <h2 class="product-title">
-                                                <a href="{{ path('article_show', { id: a.id, slug: a.slug }) }}" class="text-reset">
-                                                    {{ a.titre }}
-                                                </a>
-                                            </h2>
-                                            {% if a.prix is not null %}
-                                                <div class="product-price">
-                                                    {{ a.prix|number_format(2, ',', ' ') }} €
-                                                </div>
-                                            {% endif %}
-                                        </div>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% else %}
-                            <p class="text-muted">Aucun article disponible pour le moment.</p>
-                        {% endif %}
-                    </section>
+                    {% if visibles is not empty %}
+                        <ul class="mv-nouveautes-grid">
+                            {% for a in visibles %}
+                                <li class="mv-prod-mini">
+                                    <a href="{{ path('article_show', { id: a.id, slug: a.slug }) }}">
+                                        {% if a.image %}
+                                            <img class="mv-prod-img" src="{{ asset('uploads/articles/' ~ a.image) }}" alt="{{ a.titre }}">
+                                        {% else %}
+                                            <div class="mv-prod-img"></div>
+                                        {% endif %}
+                                    </a>
+                                    <div class="mv-prod-name">{{ a.titre }}</div>
+                                    {% if a.prix is not null %}
+                                        <div class="mv-prod-price">{{ a.prix|number_format(2, ',', ' ') }} €</div>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
                 {% else %}
                     <p class="text-muted">Aucun article pour le moment.</p>
                 {% endif %}
-            </aside>
+            </div>
+
         </div>
     </div>
+
+    {# ===== CATÉGORIES ===== #}
+    <section class="mv-section mt-4">
+        <div class="container">
+            <span class="mv-section-eyebrow">Parcourir par univers</span>
+            <h2 class="mv-section-title">Nos catégories</h2>
+            <div class="mv-cats-grid">
+                {% for cat in categories() %}
+                    <a href="{{ path('categorie_show', { slug: cat.slug }) }}" class="mv-cat-card text-decoration-none">
+                        {% if cat.image is defined and cat.image %}
+                            <img class="mv-cat-img" src="{{ asset('uploads/categories/' ~ cat.image) }}" alt="{{ cat.nom }}">
+                        {% else %}
+                            <div class="mv-cat-img"></div>
+                        {% endif %}
+                        <span class="mv-cat-label">{{ cat.nom }}</span>
+                    </a>
+                {% else %}
+                    <p class="text-muted">Aucune catégorie.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    {# ===== BANNIÈRE SOMBRE ===== #}
+    <section class="mv-banner">
+        <span class="mv-banner-eyebrow">L'authenticité avant tout</span>
+        <h2>Chaque pièce a son histoire</h2>
+        <p>Des objets chinés avec soin, sélectionnés pour leur caractère unique.</p>
+        <a href="{{ path('catalogue') }}" class="mv-btn-banner">Voir tous les articles</a>
+    </section>
+
 {% endblock %}

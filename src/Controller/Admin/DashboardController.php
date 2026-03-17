@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Entity\Article;
 use App\Entity\Categorie;
 use App\Entity\Order;
+use App\Entity\SiteConfig;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
@@ -19,7 +20,6 @@ class DashboardController extends AbstractDashboardController
     #[Route('/admin', name: 'admin')]
     public function index(): Response
     {
-        // Redirection par défaut vers la liste des utilisateurs
         $url = $this->container->get(AdminUrlGenerator::class)
             ->setController(UserCrudController::class)
             ->generateUrl();
@@ -40,11 +40,12 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::linkToCrud('Articles', 'fa fa-box', Article::class);
         yield MenuItem::linkToCrud('Catégories', 'fa fa-tags', Categorie::class);
         yield MenuItem::linkToCrud('Commandes', 'fas fa-shopping-cart', Order::class);
+        yield MenuItem::section('Paramètres');
+        yield MenuItem::linkToCrud('Configuration du site', 'fa fa-cog', SiteConfig::class);
     }
 
     public function configureAssets(): Assets
     {
-
         return Assets::new()
             ->addCssFile('/assets/styles/admin.css');
     }

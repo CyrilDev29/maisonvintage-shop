@@ -1,0 +1,158 @@
+{% extends 'base.html.twig' %}
+{% block title %}Qui suis-je – Maison Vintage{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .qs-header {
+            text-align: center;
+            padding: 48px 0 40px;
+        }
+        .qs-eyebrow {
+            display: block;
+            font-size: .68rem;
+            font-weight: 600;
+            letter-spacing: .22em;
+            text-transform: uppercase;
+            color: #8a7d6e;
+            font-family: "Inter", sans-serif;
+            margin-bottom: .6rem;
+        }
+        .qs-title {
+            font-family: "Cormorant Garamond", Georgia, serif;
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 400;
+            color: #1e1610;
+            margin-bottom: 1rem;
+        }
+        .qs-divider {
+            width: 40px;
+            height: 1px;
+            background: #e0d8cc;
+            margin: 0 auto;
+        }
+        .qs-content {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 56px;
+            align-items: start;
+            padding-bottom: 64px;
+        }
+        @media (max-width: 768px) {
+            .qs-content {
+                grid-template-columns: 1fr;
+                gap: 32px;
+            }
+        }
+        .qs-photo {
+            width: 100%;
+            aspect-ratio: 3/4;
+            object-fit: cover;
+            object-position: center top;
+            display: block;
+            border-radius: 2px;
+        }
+        .qs-photo-caption {
+            margin-top: 10px;
+            font-size: .78rem;
+            color: #8a7d6e;
+            font-family: "Inter", sans-serif;
+            text-align: center;
+            font-style: italic;
+        }
+        .qs-intro {
+            font-family: "Cormorant Garamond", Georgia, serif;
+            font-size: 1.4rem;
+            font-weight: 400;
+            color: #1e1610;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+        .qs-body p {
+            font-family: "Inter", sans-serif;
+            font-size: .92rem;
+            line-height: 1.9;
+            color: #3d3228;
+            margin-bottom: 1.2rem;
+        }
+        .qs-signature {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e0d8cc;
+        }
+        .qs-sig-name {
+            font-family: "Cormorant Garamond", Georgia, serif;
+            font-size: 1.5rem;
+            color: #1e1610;
+            font-style: italic;
+        }
+        .qs-sig-sub {
+            font-size: .68rem;
+            color: #8a7d6e;
+            font-family: "Inter", sans-serif;
+            letter-spacing: .18em;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+        .qs-cta {
+            display: inline-block;
+            margin-top: 2rem;
+            border: 1px solid #3d3228;
+            color: #3d3228;
+            padding: .75rem 2rem;
+            font-size: .72rem;
+            font-weight: 600;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+            font-family: "Inter", sans-serif;
+            text-decoration: none;
+            transition: background .2s, color .2s;
+        }
+        .qs-cta:hover {
+            background: #3d3228;
+            color: #fff;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="container" style="max-width: 900px;">
+
+        <div class="qs-header">
+            <span class="qs-eyebrow">Mon univers</span>
+            <h1 class="qs-title">Qui suis-je ?</h1>
+            <div class="qs-divider"></div>
+        </div>
+
+        <div class="qs-content">
+
+            <div>
+                <img class="qs-photo" src="{{ asset('images/Francoise.jpeg') }}" alt="Françoise — Maison Vintage">
+                <p class="qs-photo-caption">Françoise — Fondatrice de Maison Vintage</p>
+            </div>
+
+            <div>
+                <p class="qs-intro">Bienvenue dans mon univers, je m'appelle Françoise.</p>
+
+                <div class="qs-body">
+                    <p>Depuis plus de 25 ans, je parcours brocantes, marchés et greniers, à la recherche d'objets qui racontent une histoire. Ce qui m'anime, ce n'est ni la mode ni les tendances, mais cette étincelle qui se déclenche quand un meuble, une lampe ou une pièce ancienne réveille un souvenir, éveille une émotion, ou simplement attire le regard par son charme unique. Chaque objet trouvé devient pour moi un trésor, porteur d'âme et capable d'apporter chaleur, caractère et authenticité à un intérieur.</p>
+
+                    <p>La chine est pour moi un véritable voyage dans le temps : chaque découverte me relie à des époques, des mains et des histoires qui me fascinent. C'est cette magie du passé que j'aime partager, en espérant qu'elle trouve sa place dans vos maisons et devienne partie intégrante de vos propres souvenirs.</p>
+
+                    <p>À la tête d'une grande famille, je partage mon quotidien entre mes proches et ma passion, en alliant créativité, plaisir et simplicité. Mon regard sur la décoration est nourri à la fois par mes racines bretonnes et par les petits instants de la vie de famille, ces moments qui donnent du sens et de la couleur à chaque choix.</p>
+
+                    <p>Sur ce site, je vous ouvre mon univers et vous propose des pépites soigneusement choisies, pour que chaque objet puisse raconter sa propre histoire dans votre intérieur. Que ce soit un meuble ancien, une décoration originale ou un petit détail plein de charme, chaque pièce est unique et mérite d'être aimée. Je vous invite à explorer, rêver et trouver ici ces trésors qui feront vibrer votre maison et votre quotidien.</p>
+                </div>
+
+                <div class="qs-signature">
+                    <div class="qs-sig-name">Françoise</div>
+                    <div class="qs-sig-sub">Fondatrice · Maison Vintage</div>
+                </div>
+
+                <a href="{{ path('catalogue') }}" class="qs-cta">Découvrir mes pépites</a>
+            </div>
+
+        </div>
+
+    </div>
+{% endblock %}

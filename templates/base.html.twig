@@ -5,49 +5,39 @@
     <title>{% block title %}Maison Vintage{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
-
-    {# Désactive les visites Turbo -> rechargement complet #}
     <meta name="turbo-visit-control" content="reload">
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    {# Polices #}
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    {# CSS compilé (depuis Sass) #}
-    <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/app.scss') }}">
     {% block stylesheets %}{% endblock %}
 </head>
-<body class="bg-light d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100">
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-expand-lg navbar-light mv-navbar">
     <div class="container-fluid align-items-center px-3 px-lg-4">
 
-        {# GAUCHE : Brand #}
         <a class="navbar-brand d-flex align-items-center" href="{{ path('home') }}">
-            <span class="brand-logo me-2">
-                <img src="{{ asset('images/logo.png') }}" alt="Maison Vintage">
-            </span>
-            <span class="fw-bold">Maison Vintage</span>
+    <span class="brand-logo me-2">
+        <img src="{{ asset('images/logo.png') }}" alt="Maison Vintage">
+    </span>
+            <span class="mv-brand-text">
+        <span>Maison</span>
+        <span>Vintage</span>
+    </span>
         </a>
 
-        {# Burger #}
         <button class="navbar-toggler ms-auto" type="button"
                 data-bs-toggle="collapse" data-bs-target="#mainNav"
                 aria-controls="mainNav" aria-expanded="false" aria-label="Basculer la navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        {# CONTENU PLIABLE #}
         <div class="collapse navbar-collapse w-100 mv-navline" id="mainNav">
 
-            {# MILIEU : Menu + Recherche (centrés) #}
             <div class="mv-nav-middle">
-
                 <ul class="navbar-nav justify-content-center">
                     <li class="nav-item"><a class="nav-link" href="{{ path('home') }}">Accueil</a></li>
-
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" id="navCategories" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             Catégories
@@ -60,58 +50,45 @@
                             {% endfor %}
                         </ul>
                     </li>
-
                     <li class="nav-item"><a class="nav-link" href="{{ path('victime_succes') }}">Victime de son succès</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ path('nouveau_cocon') }}">Nouveau Cocon</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ path('contact') }}">Contact</a></li>
                 </ul>
 
-                <form
-                    class="d-flex position-relative mx-lg-2"
-                    role="search"
-                    action="{{ path('search') }}"
-                    method="get"
-                    autocomplete="off"
-                    aria-label="Recherche d'articles"
-                    id="mv-search-form"
-                >
+                <form class="d-flex position-relative mx-lg-2" role="search"
+                      action="{{ path('search') }}" method="get" autocomplete="off"
+                      aria-label="Recherche d'articles" id="mv-search-form">
                     <label for="q" class="visually-hidden">Rechercher un article</label>
                     <div class="input-group input-group-sm w-100">
-                        <input
-                            id="q" name="q" type="search" class="form-control"
-                            placeholder="Rechercher un article (ex. chaise)…"
-                            value="{{ app.request.get('q') }}"
-                            aria-autocomplete="list" aria-controls="mv-suggest"
-                            aria-expanded="false" aria-haspopup="listbox"
-                            autocapitalize="off" autocorrect="off" spellcheck="false"
-                            autocomplete="off" inputmode="search"
-                        >
-                        <button class="btn btn-outline-light" type="submit" aria-label="Lancer la recherche">🔎</button>
+                        <input id="q" name="q" type="search" class="form-control"
+                               placeholder="Rechercher un article (ex. chaise)…"
+                               value="{{ app.request.get('q') }}"
+                               aria-autocomplete="list" aria-controls="mv-suggest"
+                               aria-expanded="false" aria-haspopup="listbox"
+                               autocapitalize="off" autocorrect="off" spellcheck="false"
+                               autocomplete="off" inputmode="search">
+                        <button class="btn" type="submit" aria-label="Lancer la recherche">🔎</button>
                     </div>
-
                     <div id="mv-suggest" class="list-group position-absolute shadow"
                          role="listbox" aria-label="Suggestions de recherche"
                          style="top:100%;left:0;right:0;z-index:1050;display:none;max-height:260px;overflow:auto;"></div>
                 </form>
             </div>
 
-            {# DROITE : Panier + Compte #}
             <ul class="navbar-nav mv-nav-right">
                 {% set _cart = app.session.get('cart') ?? {} %}
                 {% set _count = 0 %}
                 {% for _id, _qty in _cart %}{% set _count = _count + _qty %}{% endfor %}
-
                 <li class="nav-item me-2">
                     <a class="nav-link position-relative" href="{{ path('cart_show') }}">
                         🛒 Panier
                         <span id="cart-count"
-                              class="badge bg-light text-dark ms-1{% if _count == 0 %} d-none{% endif %}"
+                              class="badge ms-1{% if _count == 0 %} d-none{% endif %}"
                               data-count="{{ _count|default(0) }}">
                             {{ _count|default(0) }}
                         </span>
                     </a>
                 </li>
-
                 {% if app.user %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" id="navAccount" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -135,7 +112,6 @@
     </div>
 </nav>
 
-{# FLASHES #}
 <div class="container mt-3" style="max-width:1100px;">
     {% for type, messages in app.flashes %}
         {% for message in messages %}
@@ -151,47 +127,39 @@
     {% block body %}{% endblock %}
 </main>
 
-<footer class="bg-dark text-white-50 py-4 mt-auto">
+<footer class="mv-footer py-4 mt-auto">
     <div class="container">
         <div class="row">
-            {# Colonne 1 : À propos #}
             <div class="col-md-4 mb-3 mb-md-0">
-                <h5 class="text-white mb-3">Maison Vintage</h5>
-                <p class="small">
-                    Découvrez notre sélection unique d'objets et de meubles vintage soigneusement chinés.
-                </p>
+                <h5>Maison Vintage</h5>
+                <p class="small">Découvrez notre sélection unique d'objets et de meubles vintage soigneusement chinés.</p>
                 <p class="small mb-0">
                     <strong>Contact :</strong><br>
                     <em>[contact@nomdedomaine.fr - À CONFIGURER]</em><br>
                     <em>[TÉLÉPHONE À CONFIGURER]</em>
                 </p>
             </div>
-
-            {# Colonne 2 : Navigation #}
             <div class="col-md-4 mb-3 mb-md-0">
-                <h5 class="text-white mb-3">Navigation</h5>
+                <h5>Navigation</h5>
                 <ul class="list-unstyled small">
-                    <li class="mb-2"><a href="{{ path('home') }}" class="text-white-50 text-decoration-none">Accueil</a></li>
-                    <li class="mb-2"><a href="{{ path('catalogue') }}" class="text-white-50 text-decoration-none">Catalogue</a></li>
-                    <li class="mb-2"><a href="{{ path('victime_succes') }}" class="text-white-50 text-decoration-none">Victime de son succès</a></li>
-                    <li class="mb-2"><a href="{{ path('contact') }}" class="text-white-50 text-decoration-none">Contact</a></li>
+                    <li class="mb-2"><a href="{{ path('home') }}">Accueil</a></li>
+                    <li class="mb-2"><a href="{{ path('catalogue') }}">Catalogue</a></li>
+                    <li class="mb-2"><a href="{{ path('victime_succes') }}">Victime de son succès</a></li>
+                    <li class="mb-2"><a href="{{ path('contact') }}">Contact</a></li>
+                    <li class="mb-2"><a href="{{ path('qui_suis_je') }}">Qui suis-je ?</a></li>
                 </ul>
             </div>
-
-            {# Colonne 3 : Informations légales #}
             <div class="col-md-4">
-                <h5 class="text-white mb-3">Informations légales</h5>
+                <h5>Informations légales</h5>
                 <ul class="list-unstyled small">
-                    <li class="mb-2"><a href="{{ path('cgv') }}" class="text-white-50 text-decoration-none">Conditions Générales de Vente</a></li>
-                    <li class="mb-2"><a href="{{ path('mentions_legales') }}" class="text-white-50 text-decoration-none">Mentions légales</a></li>
-                    <li class="mb-2"><a href="{{ path('politique_confidentialite') }}" class="text-white-50 text-decoration-none">Politique de confidentialité</a></li>
-                    <li class="mb-2"><a href="{{ path('politique_cookies') }}" class="text-white-50 text-decoration-none">Politique des cookies</a></li>
+                    <li class="mb-2"><a href="{{ path('cgv') }}">Conditions Générales de Vente</a></li>
+                    <li class="mb-2"><a href="{{ path('mentions_legales') }}">Mentions légales</a></li>
+                    <li class="mb-2"><a href="{{ path('politique_confidentialite') }}">Politique de confidentialité</a></li>
+                    <li class="mb-2"><a href="{{ path('politique_cookies') }}">Politique des cookies</a></li>
                 </ul>
             </div>
         </div>
-
-        {# Bas du footer #}
-        <hr class="border-secondary my-3">
+        <hr>
         <div class="d-flex justify-content-between align-items-center small">
             <span>&copy; {{ "now"|date("Y") }} Maison Vintage - Tous droits réservés</span>
             <span>Fait avec ❤️ et Symfony</span>
@@ -204,165 +172,89 @@
 {% block javascripts %}
     {% block importmap %}{{ importmap('app') }}{% endblock %}
 
-    {# Autocomplete — liens au format canonique id-slug (FIX) #}
     <script>
         (function () {
             const form = document.getElementById('mv-search-form');
             const input = document.getElementById('q');
             const box = document.getElementById('mv-suggest');
             if (!form || !input || !box) return;
-
             let t = null, controller = null, activeIndex = -1;
-
             function hideBox(){ box.style.display='none'; box.innerHTML=''; input.setAttribute('aria-expanded','false'); activeIndex=-1; }
             function showBox(){ box.style.display='block'; input.setAttribute('aria-expanded','true'); }
-
             const CANONICAL_STUB = "{{ path('article_show', { id: 0, slug: 'PLACEHOLDER' }) }}";
-            function buildCanonicalHref(id, slug){
-                const repl = String(id) + '-' + encodeURIComponent(slug || '');
-                return CANONICAL_STUB.replace('/0-PLACEHOLDER', '/' + repl);
-            }
-
-            const BYID_STUB = "{{ path('article_show_by_id', { id: 0 }) }}";
-            function buildByIdHref(id){ return BYID_STUB.replace('/0', '/' + String(id)); }
-
-            const LEGACY_STUB = "{{ path('article_show_legacy', { slug: 'PLACEHOLDER' }) }}";
-            function buildLegacyHref(slug){ return LEGACY_STUB.replace('PLACEHOLDER', encodeURIComponent(slug || '')); }
-
-            function hrefFor(item){
-                if (item && item.id != null) return buildCanonicalHref(item.id, item.slug);
-                if (item && item.id != null) return buildByIdHref(item.id);
-                return buildLegacyHref(item?.slug);
-            }
-
+            function buildCanonicalHref(id, slug){ return CANONICAL_STUB.replace('/0-PLACEHOLDER', '/' + String(id) + '-' + encodeURIComponent(slug || '')); }
+            function hrefFor(item){ return buildCanonicalHref(item.id, item.slug); }
             function buildItemHtml(item, selected){
                 const cls='list-group-item list-group-item-action d-flex justify-content-between align-items-center'+(selected?' active':'');
-                const href = hrefFor(item);
-                return `<a role="option" class="${cls}" href="${href}" aria-selected="${selected?'true':'false'}">
-                          <span>${item.titre ?? ''}</span>
-                          <small class="text-muted ms-2">${item.cat ?? ''}</small>
-                        </a>`;
+                return `<a role="option" class="${cls}" href="${hrefFor(item)}" aria-selected="${selected?'true':'false'}"><span>${item.titre??''}</span><small class="text-muted ms-2">${item.cat??''}</small></a>`;
             }
-            function renderList(items){
-                if(!Array.isArray(items)||items.length===0){ hideBox(); return; }
-                box.innerHTML = items.map((it,i)=>buildItemHtml(it,i===activeIndex)).join('');
-                showBox();
-            }
+            function renderList(items){ if(!Array.isArray(items)||items.length===0){ hideBox(); return; } box.innerHTML=items.map((it,i)=>buildItemHtml(it,i===activeIndex)).join(''); showBox(); }
             function debounceFetch(q){
                 if(t) clearTimeout(t);
                 t=setTimeout(async ()=>{
                     if(controller) controller.abort();
-                    controller = new AbortController();
+                    controller=new AbortController();
                     try{
-                        const url = `{{ path('search_autocomplete') }}?q=`+encodeURIComponent(q);
-                        const resp = await fetch(url, { signal: controller.signal, headers:{'Accept':'application/json'}});
+                        const resp=await fetch(`{{ path('search_autocomplete') }}?q=`+encodeURIComponent(q),{signal:controller.signal,headers:{'Accept':'application/json'}});
                         if(!resp.ok){ hideBox(); return; }
-                        const data = await resp.json();
-                        renderList(data);
+                        renderList(await resp.json());
                     }catch(e){ hideBox(); }
                 },150);
             }
-            input.addEventListener('input', ()=>{
-                const q=input.value.trim();
-                if(q.length<2){ hideBox(); return; }
-                debounceFetch(q);
-            });
+            input.addEventListener('input',()=>{ const q=input.value.trim(); if(q.length<2){ hideBox(); return; } debounceFetch(q); });
             input.addEventListener('keydown',(e)=>{
                 const items=box.querySelectorAll('[role="option"]');
                 if(box.style.display!=='block'||items.length===0) return;
                 if(e.key==='ArrowDown'){ e.preventDefault(); activeIndex=(activeIndex+1)%items.length; }
                 else if(e.key==='ArrowUp'){ e.preventDefault(); activeIndex=(activeIndex-1+items.length)%items.length; }
-                else if(e.key==='Enter'){ if(activeIndex>=0&&activeIndex<items.length){ e.preventDefault(); window.location.href=items[activeIndex].getAttribute('href'); } }
+                else if(e.key==='Enter'){ if(activeIndex>=0){ e.preventDefault(); window.location.href=items[activeIndex].getAttribute('href'); } }
                 else if(e.key==='Escape'){ hideBox(); }
+                renderList(Array.from(items).map(i=>({titre:i.querySelector('span')?.textContent,cat:i.querySelector('small')?.textContent,id:null,slug:null})));
+                box.querySelectorAll('[role="option"]').forEach((el,i)=>{ el.classList.toggle('active',i===activeIndex); el.setAttribute('aria-selected',i===activeIndex?'true':'false'); });
             });
             document.addEventListener('click',(e)=>{ if(!box.contains(e.target)&&e.target!==input){ hideBox(); }});
-            window.addEventListener('resize', hideBox);
+            window.addEventListener('resize',hideBox);
             input.addEventListener('blur',()=>setTimeout(hideBox,120));
             form.addEventListener('submit',(e)=>{ if(input.value.trim()===''){ e.preventDefault(); hideBox(); }});
         })();
     </script>
 
-    {# Badge Panier réactif #}
     <script>
         (function () {
             const el = document.getElementById('cart-count');
             if (!el) return;
-
             function render(count) {
                 const n = Math.max(0, parseInt(count || 0, 10) || 0);
-                el.textContent = n;
-                el.dataset.count = String(n);
-                if (n > 0) {
-                    el.classList.remove('d-none');
-                } else {
-                    el.classList.add('d-none');
-                }
+                el.textContent = n; el.dataset.count = String(n);
+                n > 0 ? el.classList.remove('d-none') : el.classList.add('d-none');
             }
-
             render(el.dataset.count);
-
-            document.addEventListener('cart:updated', (e) => {
-                const next = e?.detail?.count ?? 0;
-                render(next);
-                try { localStorage.setItem('mv-cart-count', String(next)); } catch (_) {}
-            });
-
+            document.addEventListener('cart:updated', (e) => { const next = e?.detail?.count ?? 0; render(next); try { localStorage.setItem('mv-cart-count', String(next)); } catch (_) {} });
             try {
                 const cached = localStorage.getItem('mv-cart-count');
                 if (cached !== null) { render(cached); }
-                window.addEventListener('storage', (e) => {
-                    if (e.key === 'mv-cart-count') {
-                        render(e.newValue ?? 0);
-                    }
-                });
+                window.addEventListener('storage', (e) => { if (e.key === 'mv-cart-count') { render(e.newValue ?? 0); } });
             } catch (_) {}
         })();
     </script>
 
-    {# Bannière cookies #}
     <script>
         (function() {
             'use strict';
             const COOKIE_NAME = 'mv_cookies_accepted';
-            const COOKIE_DURATION = 365;
-
-            function hasAccepted() {
-                return document.cookie.split('; ').find(row => row.startsWith(COOKIE_NAME + '=')) !== undefined;
-            }
-
+            function hasAccepted() { return document.cookie.split('; ').find(row => row.startsWith(COOKIE_NAME + '=')) !== undefined; }
             function acceptCookies() {
                 const date = new Date();
-                date.setTime(date.getTime() + (COOKIE_DURATION * 24 * 60 * 60 * 1000));
+                date.setTime(date.getTime() + (365 * 24 * 60 * 60 * 1000));
                 document.cookie = COOKIE_NAME + '=1; expires=' + date.toUTCString() + '; path=/; SameSite=Lax';
             }
-
             function showBanner() {
                 if (hasAccepted()) return;
-
                 const banner = document.createElement('div');
                 banner.id = 'cookie-banner';
-                banner.innerHTML = `
-                <div class="container d-flex justify-content-between align-items-center flex-wrap">
-                    <div class="cookie-banner-text">
-                        <span class="me-2">🍪</span>
-                        <span>Ce site utilise uniquement des cookies essentiels pour son fonctionnement (panier, connexion).</span>
-                    </div>
-                    <div class="cookie-banner-actions">
-                        <a href="{{ path('politique_cookies') }}" class="btn btn-sm btn-outline-light me-2">En savoir plus</a>
-                        <button id="cookie-accept" class="btn btn-sm btn-light">J'ai compris</button>
-                    </div>
-                </div>
-            `;
-
-                banner.style.cssText = `
-                position: fixed; bottom: 0; left: 0; right: 0;
-                background: rgba(33, 37, 41, 0.95); color: white;
-                padding: 1rem 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-                z-index: 9999; font-size: 0.9rem;
-            `;
-
+                banner.innerHTML = `<div class="container d-flex justify-content-between align-items-center flex-wrap"><div class="cookie-banner-text"><span class="me-2">🍪</span><span>Ce site utilise uniquement des cookies essentiels pour son fonctionnement (panier, connexion).</span></div><div class="cookie-banner-actions"><a href="{{ path('politique_cookies') }}" class="btn btn-sm btn-outline-light me-2">En savoir plus</a><button id="cookie-accept" class="btn btn-sm btn-light">J'ai compris</button></div></div>`;
+                banner.style.cssText = `position:fixed;bottom:0;left:0;right:0;background:rgba(33,37,41,0.95);color:white;padding:1rem 0;box-shadow:0 -2px 10px rgba(0,0,0,0.1);z-index:9999;font-size:0.9rem;`;
                 document.body.appendChild(banner);
-
                 document.getElementById('cookie-accept').addEventListener('click', function() {
                     acceptCookies();
                     banner.style.transition = 'opacity 0.3s ease';
@@ -370,12 +262,7 @@
                     setTimeout(() => banner.remove(), 300);
                 });
             }
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', showBanner);
-            } else {
-                showBanner();
-            }
+            document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', showBanner) : showBanner();
         })();
     </script>
 {% endblock %}

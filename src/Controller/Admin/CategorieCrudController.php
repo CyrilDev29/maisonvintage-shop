@@ -9,6 +9,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextareaField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\ImageField;
 
 class CategorieCrudController extends AbstractCrudController
 {
@@ -43,6 +44,11 @@ class CategorieCrudController extends AbstractCrudController
         return [
             TextField::new('nom', 'Nom'),
             TextareaField::new('description', 'Description')->hideOnIndex(),
+            ImageField::new('image', 'Image')
+                ->setBasePath('uploads/categories')
+                ->setUploadDir('public/uploads/categories')
+                ->setUploadedFileNamePattern('[name].[extension]')
+                ->setRequired(false)
         ];
     }
 }
