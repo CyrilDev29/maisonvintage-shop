@@ -7,42 +7,114 @@
     <title>Confirmez votre e-mail</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 20px; }
-        .email-container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .header { background: #1a1a1a; color: #ffffff; padding: 40px 20px; text-align: center; }
-        .logo { max-width: 120px; height: auto; margin-bottom: 15px; }
-        .header h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
-        .header p { font-size: 14px; color: #cccccc; }
-        .content { padding: 40px 30px; text-align: center; }
-        .greeting { font-size: 18px; margin-bottom: 20px; color: #333; font-weight: 600; }
-        .button { display: inline-block; background: #1a1a1a; color: #ffffff !important; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; margin: 20px 0; transition: background 0.3s; }
-        .button:hover { background: #333333; }
-        .info-box { background: #f8f9fa; border-left: 4px solid #1a1a1a; padding: 15px; margin: 25px 0; border-radius: 4px; text-align: left; }
-        .info-box p { font-size: 13px; color: #666; line-height: 1.6; margin: 4px 0; }
-        .footer { background: #f8f9fa; padding: 25px 20px; text-align: center; font-size: 12px; color: #666; }
-        .footer a { color: #1a1a1a; text-decoration: none; margin: 0 8px; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f9f6f1;
+            padding: 40px 20px;
+            color: #262626;
+            line-height: 1.6;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            overflow: hidden;
+        }
+        .header {
+            background: #ffffff;
+            padding: 40px 30px 30px;
+            text-align: center;
+            border-bottom: 1px solid #EAE4DB;
+        }
+        .logo-text {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 28px;
+            font-weight: 600;
+            color: #0E0E0E;
+            letter-spacing: 0.1em;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            font-size: 13px;
+            color: #787878;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+        .content {
+            padding: 40px 30px;
+            background: #ffffff;
+            text-align: center;
+        }
+        .greeting {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #0E0E0E;
+        }
+        .button {
+            display: inline-block;
+            background: #646F67;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 16px 40px;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin: 25px 0;
+            transition: background 0.2s;
+        }
+        .button:hover { background: #4f5952; }
+        .info-box {
+            background: #F6F3EF;
+            border-left: 3px solid #C28A32;
+            padding: 15px;
+            margin: 25px 0;
+            text-align: left;
+        }
+        .info-box p {
+            font-size: 13px;
+            color: #262626;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .footer {
+            background: #F6F3EF;
+            padding: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #787878;
+            border-top: 1px solid #EAE4DB;
+        }
+        .footer a {
+            color: #646F67;
+            text-decoration: none;
+            margin: 0 8px;
+        }
         .footer a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
 <div class="email-container">
-    <!-- Header with logo -->
+
+    <!-- Header -->
     <div class="header">
-        <img src="{{ absolute_url(asset('images/logo.png')) }}" alt="Maison Vintage" class="logo">
-        <h1>Bienvenue chez Maison Vintage</h1>
-        <p>Dernière étape pour activer votre compte</p>
+        <div class="logo-text">MAISON VINTAGE</div>
+        <div class="subtitle">Bienvenue</div>
     </div>
 
     <!-- Content -->
     <div class="content">
-        <p class="greeting">Bonjour {{ user.email }} !</p>
+        <p class="greeting">Bienvenue {{ user.email }} !</p>
 
-        <p style="font-size: 15px; color: #666; margin-bottom: 20px; line-height: 1.6;">
-            Merci pour votre inscription sur Maison Vintage, votre boutique de meubles et objets vintage soigneusement chinés.
+        <p style="font-size: 14px; color: #787878; margin-bottom: 20px;">
+            Merci pour votre inscription sur Maison Vintage,<br>
+            votre boutique de meubles et objets vintage soigneusement chinés.
         </p>
 
-        <p style="font-size: 14px; color: #333; margin-bottom: 10px;">
-            Pour activer votre compte et commencer vos achats, veuillez confirmer votre adresse email :
+        <p style="font-size: 14px; color: #262626; margin-bottom: 10px;">
+            Pour activer votre compte et commencer vos achats,<br>
+            veuillez confirmer votre adresse email :
         </p>
 
         <a href="{{ signedUrl }}" class="button">Confirmer mon e-mail</a>
@@ -50,31 +122,32 @@
         {% if expiresAtMessageKey is defined %}
             <div class="info-box">
                 <p>
-                    <strong>⏰ Important :</strong> {{ expiresAtMessageKey|trans(expiresAtMessageData, 'VerifyEmailBundle') }}.
+                    <strong>Important :</strong> {{ expiresAtMessageKey|trans(expiresAtMessageData, 'VerifyEmailBundle') }}.
                 </p>
             </div>
         {% endif %}
 
-        <p style="font-size: 13px; color: #999; margin-top: 30px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+        <p style="font-size: 13px; color: #787878; margin-top: 30px; padding: 15px; background: #F6F3EF;">
             Si vous n'avez pas créé de compte sur Maison Vintage, vous pouvez ignorer cet email.
         </p>
 
-        <p style="margin-top: 30px; font-size: 14px; color: #666;">
+        <p style="margin-top: 35px; font-size: 14px; color: #787878;">
             À très bientôt,<br>
-            <strong>L'équipe Maison Vintage</strong>
+            <strong style="color: #262626;">L'équipe Maison Vintage</strong>
         </p>
     </div>
 
     <!-- Footer -->
     <div class="footer">
-        <p style="margin-bottom: 10px; font-weight: 600;">&copy; {{ 'now'|date('Y') }} Maison Vintage - Tous droits réservés</p>
+        <p style="margin-bottom: 12px; font-weight: 600; color: #262626;">&copy; {{ 'now'|date('Y') }} Maison Vintage</p>
         <p>
             <a href="{{ url('cgv') }}">CGV</a> •
             <a href="{{ url('mentions_legales') }}">Mentions légales</a> •
             <a href="{{ url('politique_confidentialite') }}">Confidentialité</a>
         </p>
-        <p style="margin-top: 10px; color: #999;">95 Kerizac, 29870 Landéda</p>
+        <p style="margin-top: 12px;">95 Kerizac, 29870 Landéda</p>
     </div>
+
 </div>
 </body>
 </html>
