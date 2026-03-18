@@ -4,42 +4,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mise à jour de votre commande</title>
+    <title>Mise à jour de commande</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 20px; }
-        .logo { max-width: 120px; height: auto; margin-bottom: 15px; }
-        .email-container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .header { background: #1a1a1a; color: #ffffff; padding: 30px 20px; text-align: center; }
-        .header h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
-        .header p { font-size: 14px; color: #cccccc; }
-        .content { padding: 30px 20px; }
-        .greeting { font-size: 16px; margin-bottom: 20px; color: #333; }
-        .info-box { background: #f8f9fa; border-left: 4px solid #1a1a1a; padding: 15px; margin: 20px 0; border-radius: 4px; }
-        .info-box h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #1a1a1a; text-transform: uppercase; letter-spacing: 0.5px; }
-        .info-box p { font-size: 14px; color: #666; line-height: 1.6; margin: 4px 0; }
-        .status-big { background: #1a1a1a; color: #ffffff; padding: 20px; text-align: center; margin: 20px 0; border-radius: 6px; font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
-        .details-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eeeeee; font-size: 14px; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f9f6f1;
+            padding: 40px 20px;
+            color: #262626;
+            line-height: 1.6;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            overflow: hidden;
+        }
+        .header {
+            background: #ffffff;
+            padding: 40px 30px 30px;
+            text-align: center;
+            border-bottom: 1px solid #EAE4DB;
+        }
+        .logo-text {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 28px;
+            font-weight: 600;
+            color: #0E0E0E;
+            letter-spacing: 0.1em;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            font-size: 13px;
+            color: #787878;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+        .content {
+            padding: 40px 30px;
+            background: #ffffff;
+        }
+        .greeting {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: #0E0E0E;
+        }
+        .status-box {
+            background: #646F67;
+            color: #ffffff;
+            padding: 25px;
+            text-align: center;
+            margin: 30px 0;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+        .details-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #EAE4DB;
+            font-size: 14px;
+        }
         .details-row:last-child { border-bottom: none; }
-        .details-row .label { color: #666; }
-        .details-row .value { font-weight: 600; color: #1a1a1a; }
-        .button { display: inline-block; background: #1a1a1a; color: #ffffff !important; text-decoration: none; padding: 14px 28px; border-radius: 6px; font-weight: 600; font-size: 14px; margin: 10px 5px; }
-        .button:hover { background: #333333; }
-        ul { margin: 10px 0; padding-left: 20px; }
-        ul li { margin: 8px 0; font-size: 14px; color: #333; }
-        .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; }
-        .footer a { color: #1a1a1a; text-decoration: none; margin: 0 8px; }
+        .details-row .label { color: #787878; }
+        .details-row .value { font-weight: 600; color: #262626; }
+        .info-box {
+            background: #F6F3EF;
+            border-left: 3px solid #646F67;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .info-box h3 {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #646F67;
+        }
+        .info-box p {
+            font-size: 13px;
+            color: #262626;
+            margin: 4px 0;
+        }
+        ul { margin: 15px 0; padding-left: 20px; }
+        ul li { margin: 8px 0; font-size: 14px; color: #262626; }
+        .button {
+            display: inline-block;
+            background: #646F67;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 14px 30px;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin: 10px 5px;
+        }
+        .button:hover { background: #4f5952; }
+        .footer {
+            background: #F6F3EF;
+            padding: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #787878;
+            border-top: 1px solid #EAE4DB;
+        }
+        .footer a {
+            color: #646F67;
+            text-decoration: none;
+            margin: 0 8px;
+        }
         .footer a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
 <div class="email-container">
-    <!-- Header with logo -->
+
+    <!-- Header -->
     <div class="header">
-        <img src="{{ absolute_url(asset('images/logo.png')) }}" alt="Maison Vintage" class="logo">
-        <h1>Mise à jour de commande</h1>
-        <p>Référence : {{ order.reference }}</p>
-    </div> </div>
+        <div class="logo-text">MAISON VINTAGE</div>
+        <div class="subtitle">Mise à jour de commande</div>
+    </div>
 
     <!-- Content -->
     <div class="content">
@@ -47,24 +135,24 @@
         {% set _customer_fallback = (order.prenom|default('') ~ ' ' ~ order.nom|default(''))|trim ?: ((user.prenom|default('') ~ ' ' ~ user.nom|default(''))|trim ?: (order.user.email|default('Client'))) %}
         {% set customer_name = (_ship and _ship.fullName is defined and _ship.fullName) ? _ship.fullName : _customer_fallback %}
 
-        <p class="greeting">Bonjour <strong>{{ customer_name }}</strong>,</p>
+        <p class="greeting">Bonjour {{ customer_name }},</p>
 
         <!-- Status -->
         {% set _status = order.status ? (attribute(order.status,'value') is defined ? order.status.value : (attribute(order.status,'name') is defined ? order.status.name : order.status)) : 'Indéfini' %}
         {% set _norm = _status|upper|replace({' ':'_','-':'_'}) %}
 
-        <p style="font-size: 14px; color: #666; margin-bottom: 20px;">
-            Le statut de votre commande a été mis à jour :
+        <p style="font-size: 14px; color: #787878; margin-bottom: 25px;">
+            Le statut de votre commande <strong style="color: #262626;">{{ order.reference }}</strong> a été mis à jour :
         </p>
 
-        <div class="status-big">{{ _status }}</div>
+        <div class="status-box">{{ _status }}</div>
 
         <!-- Totals -->
         {% set total_articles = (order.total|default(0)) + 0 %}
         {% set total_port = (order.shippingAmountCents is defined ? (order.shippingAmountCents / 100) : 0) + 0 %}
         {% set total_ttc = total_articles + total_port %}
 
-        <div style="margin: 20px 0;">
+        <div style="margin: 25px 0;">
             <div class="details-row">
                 <span class="label">Total TTC</span>
                 <span class="value">{{ total_ttc|number_format(2, ',', ' ') }} €</span>
@@ -82,9 +170,9 @@
         </div>
 
         <!-- Shipping info -->
-        {% if order.shippingCarrier or order.shippingMethod or total_port > 0 %}
+        {% if order.shippingCarrier or order.shippingMethod %}
             <div class="info-box">
-                <h3>🚚 Informations d'expédition</h3>
+                <h3>Informations d'expédition</h3>
                 {% if order.shippingCarrier %}<p><strong>Transporteur :</strong> {{ order.shippingCarrier }}</p>{% endif %}
                 {% if order.shippingMethod %}<p><strong>Service :</strong> {{ order.shippingMethod }}</p>{% endif %}
                 {% if order.shippingRelayId is defined and order.shippingRelayId %}<p><strong>Point relais :</strong> {{ order.shippingRelayId }}</p>{% endif %}
@@ -92,7 +180,7 @@
         {% endif %}
 
         <!-- Items summary -->
-        <h3 style="margin: 25px 0 10px; font-size: 16px; color: #1a1a1a;">Récapitulatif</h3>
+        <h3 style="margin: 25px 0 10px; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 18px; color: #0E0E0E;">Récapitulatif</h3>
         <ul>
             {% for it in order.items %}
                 {% set unit = (it.unitPrice|default(0)|replace({',':'.'})) + 0 %}
@@ -105,44 +193,39 @@
         <!-- Bank transfer info if needed -->
         {% if _norm starts with 'EN_ATTENTE' %}
             <div class="info-box">
-                <h3>💳 Informations pour le virement</h3>
-                <p><strong>Titulaire :</strong> {{ bank_holder|default('MME CAVAREC FRANCOISE') }}</p>
-                <p><strong>Banque :</strong> {{ bank_bankname|default('Crédit Agricole Finistère - Agence Lannilis') }}</p>
-                <p><strong>IBAN :</strong> <code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px;">{{ bank_iban|default('FR76 1290 6000 2757 6578 7677 978') }}</code></p>
-                <p><strong>BIC :</strong> <code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px;">{{ bank_bic|default('AGRIFRPP829') }}</code></p>
-                <p style="margin-top: 10px; font-size: 13px; color: #856404;">
-                    ⚠️ Merci d'indiquer la référence <strong>{{ order.reference }}</strong> dans le libellé du virement.
+                <h3>Informations pour le virement</h3>
+                <p><strong>Titulaire :</strong> MME CAVAREC FRANCOISE</p>
+                <p><strong>Banque :</strong> Crédit Agricole Finistère - Agence Lannilis</p>
+                <p><strong>IBAN :</strong> FR76 1290 6000 2757 6578 7677 978</p>
+                <p><strong>BIC :</strong> AGRIFRPP829</p>
+                <p style="margin-top: 10px; font-size: 12px; color: #C28A32;">
+                    Merci d'indiquer la référence <strong>{{ order.reference }}</strong> dans le libellé du virement.
                 </p>
             </div>
         {% endif %}
 
         <!-- Action buttons -->
-        <div style="text-align: center; margin: 30px 0;">
+        <div style="text-align: center; margin: 35px 0;">
             <a href="{{ url('app_account_order_show', { id: order.id }) }}" class="button">Voir ma commande</a>
-
-            {% set paid_norms = ['EN_COURS','EN_PREPARATION','EXPEDIEE','LIVREE'] %}
-            {% set has_invoice_flag = (order.invoiceSent is defined and order.invoiceSent) %}
-            {% if _norm in paid_norms or has_invoice_flag %}
-                <a href="{{ url('account_order_invoice', { id: order.id }) }}" class="button">Télécharger ma facture</a>
-            {% endif %}
         </div>
 
-        <p style="margin-top: 30px; font-size: 14px; color: #666;">
+        <p style="margin-top: 35px; font-size: 14px; color: #787878; text-align: center;">
             À très bientôt,<br>
-            <strong>L'équipe Maison Vintage</strong>
+            <strong style="color: #262626;">L'équipe Maison Vintage</strong>
         </p>
     </div>
 
     <!-- Footer -->
     <div class="footer">
-        <p style="margin-bottom: 10px;">&copy; {{ 'now'|date('Y') }} Maison Vintage - Tous droits réservés</p>
+        <p style="margin-bottom: 12px; font-weight: 600; color: #262626;">&copy; {{ 'now'|date('Y') }} Maison Vintage</p>
         <p>
             <a href="{{ url('cgv') }}">CGV</a> •
             <a href="{{ url('mentions_legales') }}">Mentions légales</a> •
             <a href="{{ url('politique_confidentialite') }}">Confidentialité</a>
         </p>
-        <p style="margin-top: 10px; color: #999;">95 Kerizac, 29870 Landéda</p>
+        <p style="margin-top: 12px;">95 Kerizac, 29870 Landéda</p>
     </div>
+
 </div>
 </body>
 </html>

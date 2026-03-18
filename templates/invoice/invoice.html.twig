@@ -8,23 +8,26 @@
         @page { margin: 40px 50px; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: Arial, Helvetica, sans-serif;
+            font-family: 'Inter', Arial, Helvetica, sans-serif;
             font-size: 11px;
-            color: #000;
-            line-height: 1.4;
+            color: #262626;
+            line-height: 1.5;
+            background: #ffffff;
         }
 
         /* Header */
         .header {
             display: table;
             width: 100%;
-            padding-top: 10px;
-            padding-bottom: 15px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #EAE4DB;
         }
         .header-left {
             display: table-cell;
             width: 50%;
             vertical-align: middle;
+            text-align: center;
             padding-left: 40px;
         }
         .header-right {
@@ -33,25 +36,30 @@
             text-align: right;
             vertical-align: middle;
         }
-        .logo {
-            max-width: 140px;
-            height: auto;
+        .logo-text {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 24px;
+            font-weight: 600;
+            color: #0E0E0E;
+            letter-spacing: 0.15em;
         }
         .invoice-number {
-            border: 2px solid #000;
-            padding: 8px 15px;
+            border: 2px solid #646F67;
+            padding: 10px 20px;
             display: inline-block;
             font-size: 13px;
             font-weight: bold;
+            color: #0E0E0E;
         }
 
         /* Date line */
         .date-line {
-            border-top: 1px solid #000;
-            border-bottom: 1px solid #000;
-            padding: 8px 0;
-            margin-bottom: 20px;
+            border-top: 1px solid #EAE4DB;
+            border-bottom: 1px solid #EAE4DB;
+            padding: 10px 0;
+            margin-bottom: 25px;
             font-size: 11px;
+            color: #262626;
         }
 
         /* Addresses */
@@ -63,46 +71,54 @@
         .address-box {
             display: table-cell;
             width: 48%;
-            border: 1px solid #000;
-            padding: 12px;
+            border: 1px solid #EAE4DB;
+            padding: 15px;
             vertical-align: top;
+            background: #F6F3EF;
         }
         .address-box:first-child {
             margin-right: 4%;
         }
         .address-box h3 {
-            font-size: 12px;
-            font-weight: bold;
-            margin-bottom: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #0E0E0E;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         .address-box p {
-            font-size: 11px;
-            line-height: 1.5;
+            font-size: 10px;
+            line-height: 1.6;
+            color: #262626;
         }
 
         /* Reference line */
         .reference-line {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             font-size: 11px;
             font-weight: bold;
+            color: #0E0E0E;
         }
 
         /* Table */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
         thead {
-            background: #fff;
-            border-bottom: 1px solid #000;
+            background: #F6F3EF;
+            border-bottom: 2px solid #646F67;
         }
         th {
-            padding: 8px;
+            padding: 10px 12px;
             text-align: left;
-            font-size: 11px;
-            font-weight: bold;
-            border: 1px solid #000;
+            font-size: 10px;
+            font-weight: 700;
+            color: #0E0E0E;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         th.center {
             text-align: center;
@@ -111,10 +127,11 @@
             text-align: right;
         }
         td {
-            padding: 8px;
-            font-size: 11px;
-            border-left: 1px solid #000;
-            border-right: 1px solid #000;
+            padding: 10px 12px;
+            font-size: 10px;
+            border-left: 1px solid #EAE4DB;
+            border-right: 1px solid #EAE4DB;
+            color: #262626;
         }
         td.center {
             text-align: center;
@@ -123,14 +140,16 @@
             text-align: right;
         }
         tbody tr:last-child td {
-            border-bottom: 1px solid #000;
+            border-bottom: 1px solid #EAE4DB;
         }
 
         /* Notes */
         .notes {
-            font-size: 10px;
+            font-size: 9px;
             margin-bottom: 15px;
-            line-height: 1.4;
+            line-height: 1.5;
+            color: #787878;
+            font-style: italic;
         }
 
         /* Totals */
@@ -140,22 +159,26 @@
             border-collapse: collapse;
         }
         .totals-table td {
-            border: 1px solid #000;
-            padding: 6px 10px;
+            border: 1px solid #EAE4DB;
+            padding: 8px 12px;
             font-size: 11px;
         }
         .totals-table td.label {
-            font-weight: bold;
+            font-weight: 600;
             text-align: left;
-            background: #fff;
+            background: #F6F3EF;
+            color: #262626;
         }
         .totals-table td.value {
             text-align: right;
-            font-weight: bold;
+            font-weight: 700;
+            color: #0E0E0E;
         }
         .totals-table tr.final td {
-            background: #fff;
+            background: #646F67;
+            color: #ffffff;
             font-size: 12px;
+            font-weight: 700;
         }
 
         /* Clear float */
@@ -165,28 +188,39 @@
 
         /* Shipping info */
         .shipping-info {
-            margin-top: 20px;
-            border: 1px solid #000;
-            padding: 12px;
-            background: #f9f9f9;
+            margin-top: 25px;
+            border: 1px solid #EAE4DB;
+            padding: 15px;
+            background: #F6F3EF;
         }
         .shipping-info h3 {
-            font-size: 12px;
-            font-weight: bold;
-            margin-bottom: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #0E0E0E;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         .shipping-info p {
-            font-size: 11px;
-            line-height: 1.5;
+            font-size: 10px;
+            line-height: 1.6;
+            color: #262626;
         }
 
         /* Footer */
         footer {
             margin-top: 30px;
             padding-top: 15px;
-            border-top: 1px solid #000;
+            border-top: 2px solid #EAE4DB;
             font-size: 9px;
-            line-height: 1.5;
+            line-height: 1.6;
+            color: #787878;
+        }
+        footer p {
+            margin: 3px 0;
+        }
+        footer strong {
+            color: #0E0E0E;
         }
 
         /* Ribbon for seller copy */
@@ -196,12 +230,13 @@
             right: -70px;
             transform: rotate(45deg);
             padding: 8px 80px;
-            background: #f0f0f0;
-            border: 1px solid #000;
-            color: #000;
+            background: #F6F3EF;
+            border: 1px solid #646F67;
+            color: #0E0E0E;
             text-transform: uppercase;
             font-size: 10px;
             font-weight: bold;
+            letter-spacing: 0.1em;
         }
     </style>
 </head>
@@ -214,7 +249,7 @@
 <!-- Header -->
 <div class="header">
     <div class="header-left">
-        <img src="{{ absolute_url(asset('images/logo.png')) }}" alt="Maison Vintage" class="logo">
+        <div class="logo-text">MAISON VINTAGE</div>
     </div>
     <div class="header-right">
         <div class="invoice-number">Facture n° {{ order.reference }}</div>
@@ -358,7 +393,7 @@
     <p><strong>Pénalités de retard :</strong> Taux légal en vigueur (3 fois le taux d'intérêt légal)</p>
     <p><strong>Indemnité forfaitaire pour frais de recouvrement :</strong> 40 euros</p>
     <p><strong>Escompte :</strong> Aucun escompte pour paiement anticipé</p>
-    <p style="margin-top: 8px;">
+    <p style="margin-top: 10px;">
         <strong>Maison Vintage - EI</strong> - 95 Kerizac, 29870 Landéda<br>
         SIRET 752 102 897 00036 - TVA FR45752102897 - RCS Brest 752 102 897<br>
         Facture émise le {{ 'now'|date('d/m/Y à H:i') }}
@@ -367,3 +402,4 @@
 
 </body>
 </html>
+

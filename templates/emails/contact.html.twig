@@ -7,63 +7,127 @@
     <title>Nouveau message de contact</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 20px; }
-        .logo { max-width: 120px; height: auto; margin-bottom: 15px; }
-        .email-container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .header { background: #0d6efd; color: #ffffff; padding: 30px 20px; text-align: center; }
-        .header h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
-        .header p { font-size: 14px; color: #cce5ff; }
-        .content { padding: 30px 20px; }
-        .info-box { background: #f8f9fa; border-left: 4px solid #0d6efd; padding: 15px; margin: 20px 0; border-radius: 4px; }
-        .info-box h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #1a1a1a; text-transform: uppercase; letter-spacing: 0.5px; }
-        .info-box p { font-size: 14px; color: #666; line-height: 1.6; margin: 4px 0; }
-        .message-box { background: #ffffff; border: 1px solid #dee2e6; border-radius: 6px; padding: 20px; margin: 20px 0; }
-        .message-box pre { white-space: pre-wrap; word-wrap: break-word; font-family: inherit; font-size: 14px; color: #333; line-height: 1.6; margin: 0; }
-        .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; }
-        .footer a { color: #1a1a1a; text-decoration: none; margin: 0 8px; }
-        .footer a:hover { text-decoration: underline; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f9f6f1;
+            padding: 40px 20px;
+            color: #262626;
+            line-height: 1.6;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            overflow: hidden;
+        }
+        .header {
+            background: #ffffff;
+            padding: 40px 30px 30px;
+            text-align: center;
+            border-bottom: 1px solid #EAE4DB;
+        }
+        .logo-text {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 28px;
+            font-weight: 600;
+            color: #0E0E0E;
+            letter-spacing: 0.1em;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            font-size: 13px;
+            color: #787878;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+        .content {
+            padding: 40px 30px;
+            background: #ffffff;
+        }
+        .info-box {
+            background: #F6F3EF;
+            border-left: 3px solid #646F67;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .info-box h3 {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #646F67;
+        }
+        .info-box p {
+            font-size: 13px;
+            color: #262626;
+            margin: 4px 0;
+        }
+        .message-box {
+            background: #ffffff;
+            border: 1px solid #EAE4DB;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        .message-box pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: inherit;
+            font-size: 14px;
+            color: #262626;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .footer {
+            background: #F6F3EF;
+            padding: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #787878;
+            border-top: 1px solid #EAE4DB;
+        }
     </style>
 </head>
 <body>
 <div class="email-container">
-    <!-- Header with logo -->
+
+    <!-- Header -->
     <div class="header">
-        <img src="{{ absolute_url(asset('images/logo.png')) }}" alt="Maison Vintage" class="logo">
-        <h1>Nouveau message de contact</h1>
-        <p>Formulaire de contact du site</p>
+        <div class="logo-text">MAISON VINTAGE</div>
+        <div class="subtitle">Nouveau message de contact</div>
     </div>
 
     <!-- Content -->
     <div class="content">
-        <p style="font-size: 16px; margin-bottom: 20px; color: #333;">
+        <p style="font-size: 14px; margin-bottom: 25px; color: #262626;">
             Un visiteur a rempli le formulaire de contact :
         </p>
 
         <!-- Contact info -->
         <div class="info-box">
-            <h3>👤 Informations de l'expéditeur</h3>
+            <h3>Informations de l'expéditeur</h3>
             <p><strong>Nom :</strong> {{ name }}</p>
-            <p><strong>Email :</strong> <a href="mailto:{{ from_email }}" style="color: #0d6efd; text-decoration: none;">{{ from_email }}</a></p>
+            <p><strong>Email :</strong> <a href="mailto:{{ from_email }}" style="color: #646F67; text-decoration: none;">{{ from_email }}</a></p>
             <p><strong>Sujet :</strong> {{ subject }}</p>
         </div>
 
         <!-- Message -->
-        <h3 style="margin: 25px 0 10px; font-size: 16px; color: #1a1a1a;">📄 Message</h3>
+        <h3 style="margin: 25px 0 10px; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 18px; color: #0E0E0E;">Message</h3>
         <div class="message-box">
             <pre>{{ message }}</pre>
         </div>
 
-        <p style="margin-top: 20px; font-size: 13px; color: #999; padding: 15px; background: #f8f9fa; border-radius: 4px;">
-            💡 <strong>Astuce :</strong> Vous pouvez répondre directement en cliquant sur l'adresse email ci-dessus.
+        <p style="margin-top: 20px; font-size: 13px; color: #787878; padding: 15px; background: #F6F3EF;">
+            <strong>Astuce :</strong> Vous pouvez répondre directement en cliquant sur l'adresse email ci-dessus.
         </p>
     </div>
 
     <!-- Footer -->
     <div class="footer">
-        <p style="margin-bottom: 10px;">&copy; {{ 'now'|date('Y') }} Maison Vintage - Tous droits réservés</p>
+        <p style="margin-bottom: 12px; font-weight: 600; color: #262626;">&copy; {{ 'now'|date('Y') }} Maison Vintage</p>
         <p>Notification automatique depuis le formulaire de contact</p>
-        <p style="margin-top: 10px; color: #999;">95 Kerizac, 29870 Landéda</p>
+        <p style="margin-top: 12px;">95 Kerizac, 29870 Landéda</p>
     </div>
+
 </div>
 </body>
 </html>
