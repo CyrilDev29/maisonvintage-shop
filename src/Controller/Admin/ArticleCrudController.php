@@ -11,8 +11,8 @@ use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\CollectionField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
-// use EasyCorp\Bundle\EasyAdminBundle\Field\ImageField; // (remplacé par un template Twig)
 use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\MoneyField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
@@ -37,7 +37,7 @@ class ArticleCrudController extends AbstractCrudController
             ->setPageTitle(Crud::PAGE_INDEX, 'Liste des articles')
             ->setPageTitle(Crud::PAGE_NEW, 'Ajouter un article')
             ->setPageTitle(Crud::PAGE_EDIT, 'Modifier un article')
-            ->setPageTitle(Crud::PAGE_DETAIL, 'Détail de l’article');
+            ->setPageTitle(Crud::PAGE_DETAIL, 'Détail de l\'article');
     }
 
     public function configureActions(Actions $actions): Actions
@@ -53,10 +53,11 @@ class ArticleCrudController extends AbstractCrudController
     {
         yield IdField::new('id')->onlyOnIndex();
 
-        // Aperçu image via template Twig (évite "Inaccessible" selon la source d'image)
         yield Field::new('id', 'Aperçu')
             ->setTemplatePath('admin/fields/article_thumbnail.html.twig')
             ->onlyOnIndex();
+
+        yield FormField::addPanel('Informations générales');
 
         yield TextField::new('titre', 'Titre');
         yield TextField::new('slug', 'Slug')->onlyOnIndex();
@@ -69,38 +70,48 @@ class ArticleCrudController extends AbstractCrudController
 
         yield AssociationField::new('categorie', 'Catégorie');
 
-        yield IntegerField::new('quantity', 'Quantité')->setFormTypeOption('attr', ['min' => 0]);
+        yield IntegerField::new('quantity', 'Quantité')
+            ->setFormTypeOption('attr', ['min' => 0]);
 
-        yield NumberField::new('weightKg', 'Poids (kg)')
+        yield FormField::addPanel('📦 Expédition — À REMPLIR OBLIGATOIREMENT')
+            ->setHelp('⚠️ Ces informations sont indispensables pour calculer les frais de port. Sans le poids, un tarif par défaut incorrect sera appliqué. Pour un petit objet (bougie, vase) : quelques centaines de grammes. Pour un meuble : plusieurs kilogrammes.');
+
+        yield NumberField::new('weightKg', 'Poids (kg) *')
             ->setNumDecimals(2)
-            ->setFormTypeOption('attr', ['step' => '0.01'])
+            ->setFormTypeOption('attr', ['step' => '0.01', 'placeholder' => 'Ex: 0.5 pour 500g, 15 pour un meuble'])
+            ->setHelp('Poids en kilogrammes. Exemples : bougie = 0.3, vase = 0.8, fauteuil = 12, buffet = 35')
             ->hideOnIndex();
 
         yield NumberField::new('lengthCm', 'Longueur (cm)')
             ->setNumDecimals(2)
-            ->setFormTypeOption('attr', ['step' => '0.1'])
+            ->setFormTypeOption('attr', ['step' => '0.1', 'placeholder' => 'Ex: 80'])
+            ->setHelp('Longueur en centimètres')
             ->hideOnIndex();
 
         yield NumberField::new('widthCm', 'Largeur (cm)')
             ->setNumDecimals(2)
-            ->setFormTypeOption('attr', ['step' => '0.1'])
+            ->setFormTypeOption('attr', ['step' => '0.1', 'placeholder' => 'Ex: 40'])
+            ->setHelp('Largeur en centimètres')
             ->hideOnIndex();
 
         yield NumberField::new('heightCm', 'Hauteur (cm)')
             ->setNumDecimals(2)
-            ->setFormTypeOption('attr', ['step' => '0.1'])
+            ->setFormTypeOption('attr', ['step' => '0.1', 'placeholder' => 'Ex: 60'])
+            ->setHelp('Hauteur en centimètres')
             ->hideOnIndex();
 
-        // Champ Vich pour uploader l'image principale (formulaire uniquement)
+        yield FormField::addPanel('Images');
+
         yield TextField::new('imageFile', 'Image principale')
             ->setFormType(VichImageType::class)
             ->onlyOnForms();
 
-        // Galerie d’images (formulaire uniquement)
         yield CollectionField::new('images', 'Galerie (max 10)')
             ->setEntryType(ArticleImageType::class)
             ->setFormTypeOption('by_reference', false)
             ->onlyOnForms();
+
+        yield FormField::addPanel('Métadonnées');
 
         yield DateTimeField::new('createdAt', 'Créé le')->onlyOnIndex();
         yield DateTimeField::new('updatedAt', 'Mis à jour le')->onlyOnIndex();

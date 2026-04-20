@@ -241,10 +241,9 @@
                 btnPay.disabled = !ok;
                 btnPay.classList.toggle('disabled', !ok);
                 if (ok) {
-                    if (navbarBg) {
-                        btnPay.style.backgroundColor = navbarBg;
-                        btnPay.style.borderColor = navbarBg;
-                    }
+                    btnPay.style.backgroundColor = '#3d3228';
+                    btnPay.style.borderColor = '#3d3228';
+                    btnPay.style.color = '#fff';
                     btnPay.classList.remove('btn-danger');
                 } else {
                     btnPay.style.backgroundColor = '';

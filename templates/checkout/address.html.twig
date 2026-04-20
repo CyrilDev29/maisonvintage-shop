@@ -34,9 +34,11 @@
                                             {{ a.postalCode }} {{ a.city }} — {{ a.country }}
                                         </span>
                                         </label>
-                                        <div class="mt-1 ms-4 small">
-                                            <a href="{{ path('account_address_edit', {id: a.id, back: 'checkout'}) }}">modifier</a>
-                                            {# supprimer: on le fait depuis la page d'édition pour éviter les formulaires imbriqués #}
+                                        <div class="mt-1 ms-4">
+                                            <a href="{{ path('account_address_edit', {id: a.id, back: 'checkout'}) }}"
+                                               style="font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#8a7d6e;font-family:'Inter',sans-serif;text-decoration:none;border-bottom:1px solid #e0d8cc;padding-bottom:1px;">
+                                                Modifier
+                                            </a>
                                         </div>
                                     {% endfor %}
                                 </div>
