@@ -247,9 +247,18 @@
 {% endif %}
 
 <!-- Header -->
-<div class="header">
-    <div class="header-left">
-        <div class="logo-text">MAISON VINTAGE</div>
+<<div class="header">
+    <div class="header-left" style="display:table-cell;vertical-align:middle;text-align:left;padding-left:0;">
+        <table style="border:none;margin:0;padding:0;width:auto;">
+            <tr>
+                <td style="border:none;padding:0;vertical-align:middle;width:70px;">
+                    <img src="{{ absolute_url(asset('images/logo.png')) }}" alt="Maison Vintage" style="width:60px;height:60px;border-radius:50%;object-fit:cover;display:block;">
+                </td>
+                <td style="border:none;padding:0 0 0 12px;vertical-align:middle;">
+                    <div class="logo-text">MAISON VINTAGE</div>
+                </td>
+            </tr>
+        </table>
     </div>
     <div class="header-right">
         <div class="invoice-number">Facture n° {{ order.reference }}</div>
