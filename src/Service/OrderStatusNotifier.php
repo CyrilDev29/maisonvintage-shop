@@ -22,7 +22,7 @@ use Symfony\Component\Mime\Address;
 final class OrderStatusNotifier
 {
     private string $fromEmail;
-    private string $fromName = 'MaisonVintage';
+    private string $fromName = 'Maison Vintage';
 
     public function __construct(
         private readonly MailerInterface $mailer,

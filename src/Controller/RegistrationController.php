@@ -42,7 +42,7 @@ class RegistrationController extends AbstractController
 
             // Envoi de l’e-mail de confirmation
             $email = (new TemplatedEmail())
-                ->from(new Address($_ENV['CONTACT_FROM'] ?? 'no-reply@maisonvintage.test', 'MaisonVintage'))
+                ->from(new Address($_ENV['CONTACT_FROM'] ?? 'no-reply@maisonvintage.test', 'Maison Vintage'))
                 ->to($user->getEmail())
                 ->subject('Confirmez votre adresse e-mail')
                 ->htmlTemplate('registration/confirmation_email.html.twig');
@@ -126,7 +126,7 @@ class RegistrationController extends AbstractController
 
         // Renvoi de l’e-mail de vérification
         $mail = (new TemplatedEmail())
-            ->from(new Address($_ENV['CONTACT_FROM'] ?? 'no-reply@maisonvintage.test', 'MaisonVintage'))
+            ->from(new Address($_ENV['CONTACT_FROM'] ?? 'no-reply@maisonvintage.test', 'Maison Vintage'))
             ->to($user->getEmail())
             ->subject('Confirmez votre adresse e-mail')
             ->htmlTemplate('registration/confirmation_email.html.twig');

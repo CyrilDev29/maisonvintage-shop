@@ -25,7 +25,7 @@ class InvoiceService
             'isSellerCopy' => $isSellerCopy,
             'invoice'      => [
                 'seller' => [
-                    'name'    => 'MaisonVintage',
+                    'name'    => 'Maison Vintage',
                     'address' => '95 Kerizac, 29870 LANDEDA',
                     'siret'   => '752 102 897 00036',
                     'tvaMode' => 'FRANCHISE_293B',
