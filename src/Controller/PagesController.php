@@ -41,11 +41,13 @@ class PagesController extends AbstractController
         ]);
     }
 
-    #[Route('/nouveau-cocon', name: 'nouveau_cocon')]
-    public function nouveauCocon(): Response
-    {
-        return $this->render('pages/nouveau_cocon.html.twig');
-    }
+    /*
+  #[Route('/nouveau-cocon', name: 'nouveau_cocon')]
+  public function nouveauCocon(): Response
+  {
+      return $this->render('pages/nouveau_cocon.html.twig');
+  }
+  */
 
     #[Route('/victime-de-son-succes', name: 'victime_succes')]
     public function victimeSucces(ArticleRepository $articleRepository): Response
