@@ -214,7 +214,7 @@ class OrderController extends AbstractController
 
         // Email d’alerte à la vendeuse (post-commit)
         try {
-            $from      = (string) ($params->get('app.contact_from') ?? 'no-reply@maisonvintage.test');
+            $from      = (string) ($params->get('app.contact_from') ?? 'no-reply@Maison Vintage.test');
             $sellerTo  = (string) ($params->get('app.seller_email') ?? $from);
 
             $email = (new TemplatedEmail())
