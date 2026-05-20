@@ -12,7 +12,7 @@
             {% endfor %}
         {% endfor %}
 
-        <form method="post" action="{{ path('app_login') }}" style="margin-bottom:1rem;">
+        <form method="post" action="{{ path('app_login') }}" data-turbo="false" style="margin-bottom:1rem;">
             {% if error %}
                 <div class="alert alert-danger" role="alert">
                     {{ error.messageKey|trans(error.messageData, 'security') }}
