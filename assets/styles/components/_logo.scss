@@ -1,15 +1,16 @@
-.brand-logo{
-    width:60px;
-    aspect-ratio:1/1;
-    display:grid;
-    place-items:center;
-    border-radius:50%;
-    overflow:hidden;
-    flex-shrink:0;
+.brand-logo {
+    width: 60px;
+    height: 60px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
 }
-.brand-logo img{
-    width:120%;
-    height:120%;
-    object-fit:cover;
-    display:block;
+
+.brand-logo img {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    display: block;
 }

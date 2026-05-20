@@ -9,6 +9,8 @@
 /var/
 /vendor/
 /.env.dev
+/.claude/
+CLAUDE.md
 ###< symfony/framework-bundle ###
 
 ###> phpunit/phpunit ###

@@ -30,6 +30,7 @@ nav.navbar .navbar-brand {
 
 nav.navbar .brand-logo {
     width: 95px;
+    height: 95px;
     aspect-ratio: 1/1;
     border-radius: 50%;
     overflow: hidden;
@@ -37,8 +38,8 @@ nav.navbar .brand-logo {
 }
 
 nav.navbar .brand-logo img {
-    width: 120%;
-    height: 120%;
+    width: 114px;
+    height: 114px;
     object-fit: cover;
     display: block;
 }
