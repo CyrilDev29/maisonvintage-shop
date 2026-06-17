@@ -28,8 +28,8 @@ framework:
             messenger.bus.default: []
 
         routing:
-            # En prod : on garde l'envoi des mails en asynchrone
-            Symfony\Component\Mailer\Messenger\SendEmailMessage: async
+            # Envoi des mails en synchrone : immédiat, pas de worker requis
+            # Symfony\Component\Mailer\Messenger\SendEmailMessage: async  # Desactive : envoi synchrone immediat
             Symfony\Component\Notifier\Message\ChatMessage: async
             Symfony\Component\Notifier\Message\SmsMessage: async
             # App\Message\YourMessage: async
