@@ -7,17 +7,23 @@ use App\Entity\Article;
 use App\Entity\Categorie;
 use App\Entity\Order;
 use App\Entity\SiteConfig;
+use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminDashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
 
+// L'attribut #[AdminDashboard] remplace l'ancien #[Route].
+// Il se pose sur la classe (et plus sur la methode index), et indique
+// a EasyAdmin le chemin et le nom de la route du dashboard.
+#[AdminDashboard(routePath: '/admin', routeName: 'admin')]
 class DashboardController extends AbstractDashboardController
 {
-    #[Route('/admin', name: 'admin')]
+    // Methode appelee quand on visite /admin.
+    // Elle ne reste pas affichee : elle redirige directement
+    // vers la liste des utilisateurs.
     public function index(): Response
     {
         $url = $this->container->get(AdminUrlGenerator::class)
@@ -27,12 +33,14 @@ class DashboardController extends AbstractDashboardController
         return $this->redirect($url);
     }
 
+    // Configuration generale du dashboard (titre affiche en haut).
     public function configureDashboard(): Dashboard
     {
         return Dashboard::new()
             ->setTitle('Maison Vintage');
     }
 
+    // Construction du menu lateral de l'admin.
     public function configureMenuItems(): iterable
     {
         yield MenuItem::linkToDashboard('Dashboard', 'fa fa-home');
@@ -44,6 +52,7 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::linkToCrud('Configuration du site', 'fa fa-cog', SiteConfig::class);
     }
 
+    // Chargement du CSS specifique a l'admin.
     public function configureAssets(): Assets
     {
         return Assets::new()
