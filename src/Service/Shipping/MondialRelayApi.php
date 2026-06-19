@@ -68,7 +68,7 @@ final class MondialRelayApi
                 'POINT_RELAIS',
                 'Mondial Relay — Point Relais',
                 $cents,
-                ['requires_relay' => true]
+                ['needRelaySelection' => true]
             );
 
             return new ShippingQuote([$opt]);
@@ -106,8 +106,8 @@ final class MondialRelayApi
             'Mondial Relay — Point Relais',
             $cents,
             [
-                'source' => 'fallback',
-                'requires_relay' => true
+                'source'             => 'fallback',
+                'needRelaySelection' => true,  // cle correcte lue par le template Twig
             ]
         );
 

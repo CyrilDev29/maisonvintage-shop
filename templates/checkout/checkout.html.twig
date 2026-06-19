@@ -101,7 +101,7 @@
             <div class="card mb-3">
                 <div class="card-body">
                     <h2 class="h6 mb-3">Expédition <span style="color:#dc3545;">(obligatoire)</span></h2>
-                    <p class="text-muted" style="margin-top:-.25rem">Choisissez une option d’expédition. Les frais de port s’ajouteront au paiement.</p>
+                    <p class="text-muted" style="margin-top:-.25rem">Choisissez une option d'expédition. Les frais de port s'ajouteront au paiement.</p>
 
                     <div class="list-group">
                         {% for opt in shippingOptions %}
@@ -115,18 +115,25 @@
                                        value="{{ opt.carrier }}::{{ opt.code }}::{{ opt.amount_cents }}"
                                        {% if checked %}checked{% endif %}>
                                 <span>
-                {{ opt.label }}
-                <span class="text-muted">— {{ (opt.amount_cents / 100)|number_format(2, ',', ' ') }} €</span>
-              </span>
+                                    {{ opt.label }}
+                                    <span class="text-muted">— {{ (opt.amount_cents / 100)|number_format(2, ',', ' ') }} €</span>
+                                </span>
                             </label>
                         {% endfor %}
                     </div>
 
-                    {# Champ point relais (affiché seulement si l’option le demande) #}
-                    <div id="relay-wrap" class="mt-3" style="display:none;">
-                        <label for="relay-input" class="form-label">Point relais (identifiant)</label>
-                        <input id="relay-input" type="text" class="form-control" placeholder="Ex. FR12345" value="{{ chosen.relay_id ?? '' }}">
-                        <div class="form-text">Obligatoire pour les livraisons en point relais.</div>
+                    {# Champ point relais - affiché uniquement pour Mondial Relay #}
+                    <div id="relay-wrap" class="mt-3 p-3" style="display:none;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;">
+                        <p class="mb-2" style="font-size:.9rem;color:#5d4037;">
+                            <strong>⚠️ Point relais obligatoire</strong><br>
+                            Saisissez l'identifiant du point relais Mondial Relay de votre choix.<br>
+                            <a href="https://www.mondialrelay.fr/trouver-un-point-relais/" target="_blank" rel="noopener" style="font-size:.85rem;">
+                                → Trouver un point relais près de chez moi
+                            </a>
+                        </p>
+                        <label for="relay-input" class="form-label mb-1">Identifiant du point relais</label>
+                        <input id="relay-input" type="text" class="form-control" placeholder="Ex. FR-12345" value="{{ chosen.relay_id ?? '' }}">
+                        <div class="form-text">Le bouton "Payer" s'activera une fois l'identifiant saisi.</div>
                     </div>
 
                     <div class="mt-3 small">
@@ -142,10 +149,11 @@
             <div class="card-body">
                 <h2 class="h6 mb-3">Moyen de paiement</h2>
 
-                <form id="payment-choice" method="post" action="{{ path('checkout_confirm') }}" target="_blank" rel="noopener">
+                {# Correction : suppression de target="_blank" qui bloquait l'ouverture de Stripe #}
+                <form id="payment-choice" method="post" action="{{ path('checkout_confirm') }}">
                     <input type="hidden" name="_token" value="{{ csrf_token('checkout_confirm') }}">
 
-                    {# champs remplis par JS quand on choisit l’expédition #}
+                    {# Champs remplis par JS quand on choisit l'expédition #}
                     <input type="hidden" name="shipping_carrier" id="shipping_carrier" value="{{ chosen.carrier ?? '' }}">
                     <input type="hidden" name="shipping_method" id="shipping_method" value="{{ chosen.method ?? '' }}">
                     <input type="hidden" name="shipping_amount_cents" id="shipping_amount_cents" value="{{ chosen.amount_cents ?? '' }}">
@@ -163,7 +171,7 @@
                             <div class="p-3" style="background:#f8fbff;border:1px solid #e0edf9;border-radius:6px;">
                                 Effectuez le paiement directement depuis votre compte bancaire.
                                 Utilisez la <strong>référence de commande</strong> comme libellé du virement.
-                                Votre commande ne sera préparée qu’après réception des fonds.
+                                Votre commande ne sera préparée qu'après réception des fonds.
                             </div>
                         </div>
                     </div>
@@ -172,7 +180,6 @@
                         <a href="{{ path('cart_show') }}" class="btn btn-outline-secondary">← Retour au panier</a>
 
                         {% if canConfirm %}
-                            {# Rouge + disabled tant qu’aucune expédition valide ; passe à la couleur navbar après sélection #}
                             <button id="pay-submit" type="submit" class="btn btn-danger btn-lg disabled" disabled>
                                 Payer ma commande
                             </button>
@@ -212,16 +219,12 @@
             var fAmount  = document.getElementById('shipping_amount_cents');
             var fRelay   = document.getElementById('shipping_relay_id');
 
-            var relayWrap = document.getElementById('relay-wrap');
-            var relayInput= document.getElementById('relay-input');
+            var relayWrap  = document.getElementById('relay-wrap');
+            var relayInput = document.getElementById('relay-input');
 
             var estShip  = document.getElementById('ship-est');
             var estGrand = document.getElementById('grand-est');
             var btnPay   = document.getElementById('pay-submit');
-
-            // couleur de la navbar pour le bouton validé
-            var nav = document.querySelector('nav.navbar, .navbar, header .navbar, header.navbar');
-            var navbarBg = nav ? getComputedStyle(nav).backgroundColor : null;
 
             var baseTotal = {{ total|default(0)|json_encode|raw }};
 
@@ -260,9 +263,10 @@
 
             function onShipChange(e){
                 if (!e || !e.target || !e.target.value) return;
-                var parts = String(e.target.value).split('::'); // carrier::code::amount_cents
+                var parts = String(e.target.value).split('::');
                 if (parts.length !== 3) return;
-                var carrier = parts[0], code = parts[1], cents = parseInt(parts[2] || '0', 10); if (isNaN(cents)) cents = 0;
+                var carrier = parts[0], code = parts[1], cents = parseInt(parts[2] || '0', 10);
+                if (isNaN(cents)) cents = 0;
 
                 if (fCarrier) fCarrier.value = carrier;
                 if (fMethod)  fMethod.value  = code;
@@ -270,7 +274,7 @@
 
                 var needRelay = (e.target.getAttribute('data-need-relay') === '1');
                 if (relayWrap) relayWrap.style.display = needRelay ? 'block' : 'none';
-                if (!needRelay && fRelay) { fRelay.value = ''; } // nettoie si on bascule vers domicile
+                if (!needRelay && fRelay) { fRelay.value = ''; }
 
                 var eurosShip = cents / 100;
                 var grand     = baseTotal + eurosShip;
@@ -287,7 +291,7 @@
                 });
             }
 
-            // init
+            // init - bouton désactivé au chargement
             setPayEnabled(false);
 
             if (radios && radios.length) {
