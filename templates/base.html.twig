@@ -2,7 +2,29 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %}Maison Vintage{% endblock %}</title>
+
+    {# Titre de la page - surchargeable par chaque template enfant #}
+    <title>{% block title %}Maison Vintage{% endblock %} — Meubles & objets vintage</title>
+
+    {# Meta description - surchargeable par chaque template enfant #}
+    {% block meta_description %}
+        <meta name="description" content="Maison Vintage - Découvrez notre sélection unique de meubles et objets vintage soigneusement chinés par Françoise Cavarec en Bretagne.">
+    {% endblock %}
+
+    {# URL canonique - evite le contenu duplique pour Google #}
+    <link rel="canonical" href="{{ app.request.schemeAndHttpHost ~ app.request.pathInfo }}">
+
+    {# Balises Open Graph - pour le partage sur reseaux sociaux (Facebook, WhatsApp...) #}
+    {% block og_tags %}
+        <meta property="og:type" content="website">
+        <meta property="og:site_name" content="Maison Vintage">
+        <meta property="og:title" content="{% block og_title %}Maison Vintage — Meubles & objets vintage{% endblock %}">
+        <meta property="og:description" content="{% block og_description %}Découvrez notre sélection unique de meubles et objets vintage soigneusement chinés en Bretagne.{% endblock %}">
+        <meta property="og:url" content="{{ app.request.uri }}">
+        <meta property="og:image" content="{{ app.request.schemeAndHttpHost ~ asset('images/logo.png') }}">
+        <meta property="og:locale" content="fr_FR">
+    {% endblock %}
+
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
     <meta name="turbo-visit-control" content="reload">
