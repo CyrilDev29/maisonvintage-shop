@@ -101,14 +101,15 @@ class OrderCrudController extends AbstractCrudController
             ->setCurrency('EUR')
             ->setStoredAsCents(false);
 
-        // ✅ Colonne "Réservée jusqu’au" pour suivi TTL
-        yield DateTimeField::new('reservedUntil', 'Réservée jusqu’au')
+        yield DateTimeField::new('reservedUntil', 'Réservée jusqu\'au')
             ->setFormat('short', 'short')
             ->hideOnForm()
             ->onlyOnIndex();
 
         yield DateTimeField::new('createdAt', 'Créée le')->hideOnForm();
         yield DateTimeField::new('updatedAt', 'Mise à jour le')->hideOnForm();
+
+        // ===== VUE DÉTAIL =====
 
         yield FormField::addPanel('Coordonnées du client')->onlyOnDetail();
         yield TextField::new('prenom', 'Prénom')->onlyOnDetail();
@@ -124,11 +125,43 @@ class OrderCrudController extends AbstractCrudController
         yield CollectionField::new('items', '')->onlyOnDetail()
             ->setTemplatePath('admin/order/_items.html.twig');
 
+        // Panneau expédition : transporteur, méthode, frais de port, point relais
+        yield FormField::addPanel('Expédition')->onlyOnDetail();
+        yield TextField::new('shippingCarrier', 'Transporteur')
+            ->formatValue(function ($value) {
+                return match (strtoupper((string) $value)) {
+                    'COLISSIMO'     => 'Colissimo',
+                    'MONDIAL_RELAY' => 'Mondial Relay',
+                    'COCOLIS'       => 'Cocolis',
+                    null, ''        => '—',
+                    default         => (string) $value,
+                };
+            })
+            ->onlyOnDetail();
+        yield TextField::new('shippingMethod', 'Méthode')
+            ->formatValue(function ($value) {
+                return match (strtoupper((string) $value)) {
+                    'DOMICILE'      => 'Livraison à domicile',
+                    'POINT_RELAIS'  => 'Point relais',
+                    'RETRAIT_BUREAU'=> 'Retrait bureau de poste',
+                    null, ''        => '—',
+                    default         => (string) $value,
+                };
+            })
+            ->onlyOnDetail();
+        yield MoneyField::new('shippingAmountCents', 'Frais de port')
+            ->setCurrency('EUR')
+            ->setStoredAsCents(true)
+            ->onlyOnDetail();
+        yield TextField::new('shippingRelayId', 'Point relais (ID)')
+            ->formatValue(fn($v) => $v ?: '—')
+            ->onlyOnDetail();
+
         yield FormField::addPanel('Paiement / Stripe')->onlyOnDetail();
         yield TextField::new('stripePaymentIntentId', 'PaymentIntent')->onlyOnDetail();
         yield TextField::new('stripeSessionId', 'Checkout Session')->onlyOnDetail();
         yield TextField::new('stripeRefundId', 'Refund ID')->onlyOnDetail();
-        yield DateTimeField::new('reservedUntil', 'Réservée jusqu’au')->onlyOnDetail();
+        yield DateTimeField::new('reservedUntil', 'Réservée jusqu\'au')->onlyOnDetail();
         yield DateTimeField::new('canceledAt', 'Annulée le')->onlyOnDetail();
         yield DateTimeField::new('refundedAt', 'Remboursée le')->onlyOnDetail();
     }
