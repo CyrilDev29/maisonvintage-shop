@@ -2,6 +2,20 @@
 
 {% block title %}Catalogue — Maison Vintage{% endblock %}
 
+{% block meta_description %}
+    <meta name="description" content="Catalogue Maison Vintage — Parcourez notre sélection de meubles et objets vintage uniques, soigneusement chinés en Bretagne. Chaque pièce a son histoire.">
+{% endblock %}
+
+{% block og_tags %}
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Maison Vintage">
+    <meta property="og:title" content="Catalogue — Maison Vintage">
+    <meta property="og:description" content="Parcourez notre sélection de meubles et objets vintage uniques, soigneusement chinés en Bretagne.">
+    <meta property="og:url" content="{{ app.request.uri }}">
+    <meta property="og:image" content="{{ app.request.schemeAndHttpHost ~ asset('images/logo.png') }}">
+    <meta property="og:locale" content="fr_FR">
+{% endblock %}
+
 {% block body %}
     <section class="container" style="max-width:1100px;margin:2rem auto;padding:0 1rem;">
         <header class="d-flex justify-content-between align-items-end gap-3 mb-3">

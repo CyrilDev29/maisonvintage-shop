@@ -1,8 +1,59 @@
 {% extends 'base.html.twig' %}
 
+{# On calcule l'URL absolue de l'image ici, accessible dans tous les blocs #}
+{% set articleImage = vich_uploader_asset(article, 'imageFile') %}
+{% set articleImageAbsolute = articleImage ? app.request.schemeAndHttpHost ~ articleImage : app.request.schemeAndHttpHost ~ asset('images/logo.png') %}
+
+{# Titre de l'onglet navigateur #}
 {% block title %}{{ article.titre }} — Maison Vintage{% endblock %}
 
+{# Meta description : on tronque la description a 160 caracteres max pour Google #}
+{% block meta_description %}
+    <meta name="description" content="{{ article.description ? article.description|striptags|slice(0, 160) : 'Découvrez ' ~ article.titre ~ ' sur Maison Vintage, sélection unique de meubles et objets vintage en Bretagne.' }}">
+{% endblock %}
+
+{# Balises Open Graph specifiques a la fiche produit #}
+{% block og_tags %}
+    <meta property="og:type" content="product">
+    <meta property="og:site_name" content="Maison Vintage">
+    <meta property="og:title" content="{{ article.titre }} — Maison Vintage">
+    <meta property="og:description" content="{{ article.description ? article.description|striptags|slice(0, 200) : 'Découvrez ' ~ article.titre ~ ' sur Maison Vintage.' }}">
+    <meta property="og:url" content="{{ app.request.uri }}">
+    <meta property="og:image" content="{{ articleImageAbsolute }}">
+    <meta property="og:locale" content="fr_FR">
+    {% if article.prix is not null %}
+        <meta property="product:price:amount" content="{{ article.prix }}">
+        <meta property="product:price:currency" content="EUR">
+    {% endif %}
+{% endblock %}
+
 {% block body %}
+    {# Schema JSON-LD : permet a Google d'afficher le prix et la disponibilite dans ses resultats #}
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org/",
+            "@type": "Product",
+            "name": {{ article.titre|json_encode|raw }},
+        "description": {{ (article.description ? article.description|striptags : '')|json_encode|raw }},
+        "image": {{ articleImageAbsolute|json_encode|raw }},
+        "brand": {
+            "@type": "Brand",
+            "name": "Maison Vintage"
+        },
+        "offers": {
+            "@type": "Offer",
+            "url": {{ app.request.uri|json_encode|raw }},
+            "priceCurrency": "EUR",
+            "price": {{ article.prix is not null ? article.prix : '0' }},
+            "availability": "{% if article.quantity is defined and article.quantity > 0 %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}",
+            "seller": {
+                "@type": "Organization",
+                "name": "Maison Vintage"
+            }
+        }
+    }
+    </script>
+
     <section class="container" style="max-width:1100px;margin:2rem auto;padding:0 1rem;">
         {# Fil d'Ariane (breadcrumb) pour la navigation #}
         <nav style="margin-bottom:1rem;font-size:.95rem;">
