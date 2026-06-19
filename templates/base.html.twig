@@ -182,7 +182,15 @@
         </div>
         <hr>
         <div class="d-flex justify-content-between align-items-center small">
-            <span>&copy; {{ "now"|date("Y") }} Maison Vintage - Tous droits réservés</span>
+            <span>
+                &copy; {{ "now"|date("Y") }} Maison Vintage - Tous droits réservés
+                {# Lien admin discret - visible uniquement pour les admins connectes #}
+                {% if is_granted('ROLE_ADMIN') %}
+                    <a href="{{ path('admin') }}"
+                       style="color:rgba(255,255,255,.15);margin-left:.5rem;text-decoration:none;font-size:.65rem;"
+                       title="Administration">⚙</a>
+                {% endif %}
+            </span>
             <span>Fait avec ❤️ et Symfony</span>
         </div>
     </div>
