@@ -106,7 +106,7 @@ class CheckoutController extends AbstractController
 
         $canConfirm = (bool) $selectedAddress && ($billingSame || (bool) $selectedBilling);
 
-        // Devis multi-transporteurs (stub)
+        // Devis multi-transporteurs
         $shippingOptions = [];
         $shippingSelection = (array) $request->getSession()->get('checkout.shipping', []);
         if ($selectedAddress) {
@@ -114,7 +114,6 @@ class CheckoutController extends AbstractController
             foreach ($items as $it) {
                 $a = $it['article'];
                 $qty = (int) $it['qty'];
-                // On tente de lire le poids (kg) et le convertir en grammes
                 $gr = 0;
                 if (\method_exists($a, 'getWeightKg') && $a->getWeightKg() !== null) {
                     $kg = (float) $a->getWeightKg();
@@ -123,7 +122,7 @@ class CheckoutController extends AbstractController
                     }
                 }
                 $cartLines[] = [
-                    'qty' => $qty,
+                    'qty'       => $qty,
                     'weight_gr' => $gr > 0 ? $gr : null,
                 ];
             }
@@ -217,10 +216,12 @@ class CheckoutController extends AbstractController
         $postedMethod      = (string) ($request->request->get('shipping_method') ?? '');
         $postedAmountCents = $request->request->get('shipping_amount_cents');
         $postedRelayId     = (string) ($request->request->get('shipping_relay_id') ?? '');
+        // Label complet du point relais (nom + adresse) pour affichage dans l'admin
+        $postedRelayLabel  = (string) ($request->request->get('shipping_relay_label') ?? '');
 
-        // manquant ?
+        // Manquant ?
         if ($postedCarrier === '' || $postedMethod === '' || $postedAmountCents === null) {
-            $this->addFlash('danger', 'Veuillez sélectionner un mode d’expédition.');
+            $this->addFlash('danger', 'Veuillez sélectionner un mode d\'expédition.');
             return $this->redirectToRoute('checkout');
         }
 
@@ -262,7 +263,7 @@ class CheckoutController extends AbstractController
                 $bankHours  = (int) ($this->getParameter('maisonvintage.ttl.bank_transfer_hours') ?? 72);
                 $cardMin    = (int) ($this->getParameter('maisonvintage.ttl.card_minutes') ?? 30);
                 $ttlMinutes = ($paymentMethod === 'bank_transfer') ? ($bankHours * 60) : $cardMin;
-                $order->setReservedUntil( (new \DateTimeImmutable())->modify(sprintf('+%d minutes', max(1, $ttlMinutes))) );
+                $order->setReservedUntil((new \DateTimeImmutable())->modify(sprintf('+%d minutes', max(1, $ttlMinutes))));
             }
 
             // Snapshots adresses
@@ -288,32 +289,31 @@ class CheckoutController extends AbstractController
                 'phone'      => $billing->getPhone(),
             ]);
 
-            // Enregistre le choix expédition (et session)
+            // Enregistre le choix expédition en session
             $shippingSelection = [
                 'carrier'      => $postedCarrier,
                 'method'       => $postedMethod,
                 'amount_cents' => $shippingAmountCents,
                 'relay_id'     => $postedRelayId ?: null,
+                'relay_label'  => $postedRelayLabel ?: null,
             ];
             $request->getSession()->set('checkout.shipping', $shippingSelection);
 
-            if (method_exists($order, 'setShippingCarrier'))       { $order->setShippingCarrier($postedCarrier); }
-            if (method_exists($order, 'setShippingMethod'))        { $order->setShippingMethod($postedMethod); }
-            if (method_exists($order, 'setShippingAmountCents'))   { $order->setShippingAmountCents($shippingAmountCents); }
-            if (method_exists($order, 'setShippingRelayId'))       { $order->setShippingRelayId($postedRelayId ?: null); }
+            // Sauvegarde expédition sur la commande
+            if (method_exists($order, 'setShippingCarrier'))     { $order->setShippingCarrier($postedCarrier); }
+            if (method_exists($order, 'setShippingMethod'))      { $order->setShippingMethod($postedMethod); }
+            if (method_exists($order, 'setShippingAmountCents')) { $order->setShippingAmountCents($shippingAmountCents); }
+            if (method_exists($order, 'setShippingRelayId'))     { $order->setShippingRelayId($postedRelayId ?: null); }
+            // Sauvegarde le label complet du point relais pour l'affichage admin
+            if (method_exists($order, 'setShippingRelayLabel'))  { $order->setShippingRelayLabel($postedRelayLabel ?: null); }
 
-            // Lignes
+            // Lignes de commande
             foreach ($articles as $article) {
                 $qty = max(0, (int)($cart[$article->getId()] ?? 0));
                 if ($qty === 0) continue;
 
-                $price    = (float) $article->getPrix();
-
-                // Validation du prix (sécurité anti-fraude)
-                if ($price <= 0) {
-                    // Prix invalide, on ignore cet article
-                    continue;
-                }
+                $price = (float) $article->getPrix();
+                if ($price <= 0) continue;
 
                 $subtotal = $price * $qty;
                 $total   += $subtotal;
@@ -326,7 +326,6 @@ class CheckoutController extends AbstractController
                 $item->setUnitPrice(number_format($price, 2, '.', ''));
                 $item->setQuantity($qty);
 
-                // Image produit (version simplifiée)
                 $img = null;
                 if ($article->getImage()) {
                     $img = '/uploads/articles/' . ltrim($article->getImage(), '/');
@@ -344,11 +343,8 @@ class CheckoutController extends AbstractController
                 return $this->redirectToRoute('cart_show');
             }
 
-            // On conserve getTotal() pour les articles ; le port est séparé
             $order->setTotal(number_format($total, 2, '.', ''));
             $order->setReference('MV-' . date('Y') . '-' . str_pad((string) random_int(1, 999999), 6, '0', STR_PAD_LEFT));
-
-
 
             $em->persist($order);
             $em->flush();
@@ -397,13 +393,13 @@ class CheckoutController extends AbstractController
                 ]);
             }
 
-            // CB/PayPal : Stripe + frais de port en line item
+            // CB/PayPal : Stripe
             $conn->commit();
 
             $lineItems = [];
             foreach ($order->getItems() as $it) {
-                $unitCents = (int) \round((float) $it->getUnitPrice() * 100);
-                $qty       = max(1, (int) $it->getQuantity());
+                $unitCents   = (int) \round((float) $it->getUnitPrice() * 100);
+                $qty         = max(1, (int) $it->getQuantity());
                 $lineItems[] = [
                     'name'        => $it->getProductName(),
                     'unit_amount' => $unitCents,
@@ -415,11 +411,7 @@ class CheckoutController extends AbstractController
 
             $opts = [
                 'shipping_amount_cents' => $shippingAmountCents,
-                'shipping_label' => sprintf(
-                    'Frais de port — %s %s',
-                    $postedCarrier,
-                    $postedMethod
-                ),
+                'shipping_label'        => sprintf('Frais de port — %s %s', $postedCarrier, $postedMethod),
             ];
 
             $sessionStripe = $stripe->createCheckoutSession(

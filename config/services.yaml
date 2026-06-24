@@ -11,17 +11,18 @@ parameters:
     bank.bic:      '%env(string:BANK_BIC)%'
 
     # Durées de réservation (checkout)
-    maisonvintage.ttl.bank_transfer_hours: 72   # virement : 72h
-    maisonvintage.ttl.card_minutes: 30          # CB/PayPal : 30 min
+    maisonvintage.ttl.bank_transfer_hours: 72
+    maisonvintage.ttl.card_minutes: 30
 
     # --- Colissimo (devis) ---
     colissimo.api_base: '%env(string:COLISSIMO_API_BASE)%'
     colissimo.api_key:  '%env(string:COLISSIMO_API_KEY)%'
     shipping.colissimo_live: '%env(bool:SHIPPING_COLISSIMO_LIVE)%'
 
-    # --- Mondial Relay (devis) ---
-    mondialrelay.api_key:    '%env(string:MONDIALRELAY_API_KEY)%'
-    mondialrelay.api_secret: '%env(string:MONDIALRELAY_API_SECRET)%'
+    # --- Mondial Relay ---
+    mondialrelay.api_key:     '%env(string:MONDIALRELAY_API_KEY)%'
+    mondialrelay.api_secret:  '%env(string:MONDIALRELAY_API_SECRET)%'
+    mondialrelay.code_marque: '%env(string:MONDIALRELAY_CODE_MARQUE)%'
     shipping.mondialrelay_live: '%env(bool:SHIPPING_MONDIALRELAY_LIVE)%'
 
     # --- Cocolis (devis) ---
@@ -49,12 +50,12 @@ services:
 
     App\Service\StripePaymentService:
         arguments:
-            $publicKey:   '%env(string:STRIPE_PUBLIC_KEY)%'
-            $secretKey:   '%env(string:STRIPE_SECRET_KEY)%'
-            $successUrl:  '%env(string:PAYMENT_SUCCESS_URL)%'
-            $cancelUrl:   '%env(string:PAYMENT_CANCEL_URL)%'
-            $currency:    '%env(string:PAYMENT_CURRENCY)%'
-            $enablePaypal: true
+            $publicKey:     '%env(string:STRIPE_PUBLIC_KEY)%'
+            $secretKey:     '%env(string:STRIPE_SECRET_KEY)%'
+            $successUrl:    '%env(string:PAYMENT_SUCCESS_URL)%'
+            $cancelUrl:     '%env(string:PAYMENT_CANCEL_URL)%'
+            $currency:      '%env(string:PAYMENT_CURRENCY)%'
+            $enablePaypal:  true
             $webhookSecret: '%env(string:STRIPE_WEBHOOK_SECRET)%'
 
     App\Service\OrderStatusNotifier: ~
@@ -76,22 +77,13 @@ services:
             $apiKey:  '%colissimo.api_key%'
             $enabled: '%shipping.colissimo_live%'
 
-    # -------- Mondial Relay API client + service --------
-    mondialrelay.client:
-        class: Symfony\Contracts\HttpClient\HttpClientInterface
-        factory: ['@http_client', 'withOptions']
-        arguments:
-            - {
-                base_uri: 'https://api.mondialrelay.com',
-                timeout: 6.0
-            }
-
+    # -------- Mondial Relay API service (SOAP natif, pas de HTTP client) --------
     App\Service\Shipping\MondialRelayApi:
         arguments:
-            $http:      '@mondialrelay.client'
-            $apiKey:    '%mondialrelay.api_key%'
-            $apiSecret: '%mondialrelay.api_secret%'
-            $enabled:   '%shipping.mondialrelay_live%'
+            $enseigne:   '%mondialrelay.api_key%'
+            $clePrivee:  '%mondialrelay.api_secret%'
+            $codeMarque: '%mondialrelay.code_marque%'
+            $enabled:    '%shipping.mondialrelay_live%'
 
     # -------- Cocolis API client + service --------
     cocolis.client:

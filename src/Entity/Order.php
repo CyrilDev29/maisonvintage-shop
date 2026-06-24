@@ -22,7 +22,7 @@ class Order
     #[ORM\Column]
     private ?int $id = null;
 
-    /** Référence lisible par l’utilisateur (ex: MV-2025-000123) */
+    /** Référence lisible par l'utilisateur (ex: MV-2025-000123) */
     #[ORM\Column(length: 32, unique: true)]
     #[Assert\NotBlank]
     private ?string $reference = null;
@@ -33,7 +33,7 @@ class Order
 
     /**
      * Statut stocké comme backed enum (string).
-     * Valeur par défaut = EN_ATTENTE_PAIEMENT : la promotion se fait par webhook (CB/PayPal) ou traitement virement.
+     * Valeur par défaut = EN_ATTENTE_PAIEMENT.
      */
     #[ORM\Column(type: Types::STRING, enumType: OrderStatus::class, length: 32)]
     private OrderStatus $status = OrderStatus::EN_ATTENTE_PAIEMENT;
@@ -55,7 +55,6 @@ class Order
 
     /**
      * --- SNAPSHOT HISTORIQUE (compat) ---
-     * Conservés pour compatibilité avec PDFs / vues existantes.
      */
     #[ORM\Column(length: 100)]
     private string $prenom;
@@ -79,7 +78,7 @@ class Order
     private string $pays;
 
     /**
-     * Snapshots d’adresses structurés (JSON) — utilisés au checkout.
+     * Snapshots d'adresses structurés (JSON).
      */
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $shippingSnapshot = null;
@@ -91,7 +90,7 @@ class Order
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
     private bool $invoiceSent = false;
 
-    /* ---------- Champs Stripe / annulation / remboursement (ajouts existants) ---------- */
+    /* ---------- Champs Stripe / annulation / remboursement ---------- */
 
     #[ORM\Column(length: 64, nullable: true)]
     private ?string $stripePaymentIntentId = null;
@@ -108,49 +107,35 @@ class Order
     #[ORM\Column(length: 64, nullable: true)]
     private ?string $stripeRefundId = null;
 
-    /* ---------- Nouveaux champs NON cassants (expédition + réservation) ---------- */
+    /* ---------- Expédition + réservation ---------- */
 
-    /**
-     * Transporteur sélectionné (ex: COLISSIMO, MONDIAL_RELAY, COCOLIS).
-     * Stocké en string pour rester indépendant de l’implémentation.
-     */
     #[ORM\Column(length: 32, nullable: true)]
     private ?string $shippingCarrier = null;
 
-    /**
-     * Méthode/service chez le transporteur (ex: DOMICILE, RELAIS...).
-     */
     #[ORM\Column(length: 32, nullable: true)]
     private ?string $shippingMethod = null;
 
-    /**
-     * Montant TTC des frais de port **en centimes** (EUR).
-     * 0 par défaut pour ne pas impacter les totaux existants.
-     */
     #[ORM\Column(type: Types::INTEGER, options: ['default' => 0])]
     private int $shippingAmountCents = 0;
 
-    /**
-     * Moyen de paiement choisi par l’utilisateur au checkout.
-     * Valeurs attendues : 'bank_transfer' | 'card' | 'paypal' (ou autre si nécessaire).
-     */
     #[ORM\Column(length: 32, nullable: true)]
     private ?string $paymentMethod = null;
 
-    /**
-     * Date/heure limite de réservation de la commande avant libération automatique.
-     * - Virement : now + 72h
-     * - CB/PayPal : now + 30min (par défaut)
-     */
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $reservedUntil = null;
 
     /**
-     * Identifiant du point relais si livraison en relais (ex: Mondial Relay, Relais Colis).
-     * NULL si livraison à domicile.
+     * Identifiant du point relais (ex: 021254).
      */
     #[ORM\Column(length: 64, nullable: true)]
     private ?string $shippingRelayId = null;
+
+    /**
+     * Label complet du point relais pour affichage dans l'admin.
+     * Ex: "LOCKER 24/7 SUPER U PLOUGASTEL — 64 AVENUE CHARLES DE GAULLE 29470 PLOUGASTEL DAOULAS"
+     */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $shippingRelayLabel = null;
 
     public function __construct()
     {
@@ -255,7 +240,7 @@ class Order
     public function getStripeRefundId(): ?string { return $this->stripeRefundId; }
     public function setStripeRefundId(?string $id): self { $this->stripeRefundId = $id; return $this; }
 
-    // Nouveaux champs — expédition
+    // Expédition
     public function getShippingCarrier(): ?string { return $this->shippingCarrier; }
     public function setShippingCarrier(?string $carrier): self
     {
@@ -277,29 +262,14 @@ class Order
         return $this;
     }
 
-    // Paiement choisi + réservation
+    // Paiement + réservation
     public function getPaymentMethod(): ?string { return $this->paymentMethod; }
     public function setPaymentMethod(?string $method): self { $this->paymentMethod = $method ? \trim($method) : null; return $this; }
 
     public function getReservedUntil(): ?\DateTimeImmutable { return $this->reservedUntil; }
     public function setReservedUntil(?\DateTimeImmutable $dt): self { $this->reservedUntil = $dt; return $this; }
 
-    /* ===================== Helpers sûrs (non utilisés ailleurs) ===================== */
-
-    /** Total TTC actuel en centimes (conversion sûre) */
-    public function getTotalCents(): int
-    {
-        // Conversion string "123.45" -> 12345 (arrondi propre)
-        return (int) \round((float) str_replace(',', '.', $this->total) * 100);
-    }
-
-    /** Grand total (articles + port) **en centimes** */
-    public function getGrandTotalCents(): int
-    {
-        return $this->getTotalCents() + $this->shippingAmountCents;
-    }
-
-    // Relay point ID
+    // Point relais ID
     public function getShippingRelayId(): ?string { return $this->shippingRelayId; }
     public function setShippingRelayId(?string $id): self
     {
@@ -307,10 +277,26 @@ class Order
         return $this;
     }
 
-    /**
-     * Grand total (articles + port) au format "EUR" string "0.00".
-     * Méthode ADDITIVE : rien ne remplace getTotal(), c’est juste une option.
-     */
+    // Point relais label complet (nom + adresse) pour affichage admin
+    public function getShippingRelayLabel(): ?string { return $this->shippingRelayLabel; }
+    public function setShippingRelayLabel(?string $label): self
+    {
+        $this->shippingRelayLabel = $label ? \trim($label) : null;
+        return $this;
+    }
+
+    /* ===================== Helpers ===================== */
+
+    public function getTotalCents(): int
+    {
+        return (int) \round((float) str_replace(',', '.', $this->total) * 100);
+    }
+
+    public function getGrandTotalCents(): int
+    {
+        return $this->getTotalCents() + $this->shippingAmountCents;
+    }
+
     public function getTotalWithShipping(): string
     {
         $euros = $this->getGrandTotalCents() / 100;
