@@ -1,0 +1,170 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{# Page d'accueil du dashboard admin Maison Vintage.
+   Affiche le logo, un message de bienvenue, des raccourcis vers les sections principales,
+   la date du jour et une horloge en temps reel.
+   Responsive : optimise pour desktop et mobile (iPhone). #}
+
+{% block content %}
+
+    <style>
+        .mv-dash {
+            padding: 2rem 1rem;
+            text-align: center;
+        }
+        .mv-logo {
+            max-width: 180px;
+            margin: 0 auto 0.5rem;
+            display: block;
+            border-radius: 50%;
+            mix-blend-mode: lighten;
+        }
+        .mv-welcome {
+            font-size: 18px;
+            color: #888;
+            margin-bottom: 2rem;
+        }
+        .mv-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            max-width: 640px;
+            margin: 0 auto 1.5rem;
+        }
+        .mv-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.25rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            text-decoration: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .mv-card:hover {
+            border-color: #aaa;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            text-decoration: none;
+        }
+        .mv-card i {
+            font-size: 28px;
+            color: #6b7280;
+        }
+        .mv-card span {
+            font-size: 13px;
+            font-weight: 500;
+            color: #111827;
+        }
+        .mv-date {
+            font-size: 15px;
+            color: #9ca3af;
+            margin-top: 1rem;
+        }
+        .mv-time {
+            font-size: 32px;
+            font-weight: 500;
+            color: #9ca3af;
+            margin-top: 0.25rem;
+            letter-spacing: 2px;
+        }
+
+        /* Mobile : iPhone et petits ecrans */
+        @media (max-width: 480px) {
+            .mv-dash {
+                padding: 1.5rem 0.75rem;
+            }
+            .mv-logo {
+                max-width: 130px;
+                border-radius: 50%;
+            }
+            .mv-welcome {
+                font-size: 15px;
+                margin-bottom: 1.5rem;
+            }
+            .mv-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            .mv-card {
+                padding: 1rem 0.75rem;
+            }
+            .mv-card i {
+                font-size: 24px;
+            }
+            .mv-card span {
+                font-size: 12px;
+            }
+            .mv-time {
+                font-size: 26px;
+            }
+        }
+    </style>
+
+    <div class="mv-dash">
+
+        {# Logo Maison Vintage #}
+        <img
+            class="mv-logo"
+            src="{{ asset('images/logo.png') }}"
+            alt="Maison Vintage"
+        />
+
+        {# Message de bienvenue #}
+        <p class="mv-welcome">Bienvenue Françoise — que souhaitez-vous gérer aujourd'hui ?</p>
+
+        {# Tuiles raccourcis vers les sections principales #}
+        <div class="mv-grid">
+
+            <a class="mv-card" href="{{ ea_url().setController('App\\Controller\\Admin\\ArticleCrudController').setAction('index').generateUrl() }}">
+                <i class="fa fa-box"></i>
+                <span>Articles</span>
+            </a>
+
+            <a class="mv-card" href="{{ ea_url().setController('App\\Controller\\Admin\\OrderCrudController').setAction('index').generateUrl() }}">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Commandes</span>
+            </a>
+
+            <a class="mv-card" href="{{ ea_url().setController('App\\Controller\\Admin\\CategorieCrudController').setAction('index').generateUrl() }}">
+                <i class="fa fa-tags"></i>
+                <span>Catégories</span>
+            </a>
+
+            <a class="mv-card" href="{{ ea_url().setController('App\\Controller\\Admin\\SiteConfigCrudController').setAction('index').generateUrl() }}">
+                <i class="fa fa-cog"></i>
+                <span>Configuration</span>
+            </a>
+
+        </div>
+
+        {# Date du jour en francais #}
+        <p class="mv-date" id="mv-date"></p>
+
+        {# Horloge en temps reel #}
+        <p class="mv-time" id="mv-time"></p>
+
+    </div>
+
+    <script>
+        // Affichage de la date du jour en français
+        const d = new Date();
+        const opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+        document.getElementById('mv-date').textContent = d.toLocaleDateString('fr-FR', opts);
+
+        // Horloge en temps reel, mise a jour chaque seconde
+        function updateTime() {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('mv-time').textContent = h + ':' + m + ':' + s;
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+    </script>
+
+{% endblock %}

@@ -12,7 +12,6 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController;
-use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use Symfony\Component\HttpFoundation\Response;
 
 // L'attribut #[AdminDashboard] remplace l'ancien #[Route].
@@ -22,15 +21,10 @@ use Symfony\Component\HttpFoundation\Response;
 class DashboardController extends AbstractDashboardController
 {
     // Methode appelee quand on visite /admin.
-    // Elle ne reste pas affichee : elle redirige directement
-    // vers la liste des utilisateurs.
+    // Elle rend une page d'accueil vierge pour eviter tout missclick.
     public function index(): Response
     {
-        $url = $this->container->get(AdminUrlGenerator::class)
-            ->setController(UserCrudController::class)
-            ->generateUrl();
-
-        return $this->redirect($url);
+        return $this->render('admin/dashboard.html.twig');
     }
 
     // Configuration generale du dashboard (titre affiche en haut).
@@ -50,6 +44,8 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::linkToCrud('Commandes', 'fas fa-shopping-cart', Order::class);
         yield MenuItem::section('Paramètres');
         yield MenuItem::linkToCrud('Configuration du site', 'fa fa-cog', SiteConfig::class);
+        yield MenuItem::section('');
+        yield MenuItem::linkToUrl('Revenir au site', 'fa fa-house', 'https://maisonvintage.fr');
     }
 
     // Chargement du CSS specifique a l'admin.
