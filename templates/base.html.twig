@@ -21,9 +21,17 @@
         <meta property="og:title" content="{% block og_title %}Maison Vintage — Meubles & objets vintage{% endblock %}">
         <meta property="og:description" content="{% block og_description %}Découvrez notre sélection unique de meubles et objets vintage soigneusement chinés en Bretagne.{% endblock %}">
         <meta property="og:url" content="{{ app.request.uri }}">
-        <meta property="og:image" content="{{ app.request.schemeAndHttpHost ~ asset('images/logo.png') }}">
+        <meta property="og:image" content="{{ app.request.schemeAndHttpHost ~ asset('images/hero-accueil.jpg') }}">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
         <meta property="og:locale" content="fr_FR">
     {% endblock %}
+
+    {# Balises Twitter Card - pour le partage sur X/Twitter, iMessage, Telegram, LinkedIn #}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Maison Vintage — Meubles & objets vintage">
+    <meta name="twitter:description" content="Découvrez notre sélection unique de meubles et objets vintage soigneusement chinés en Bretagne.">
+    <meta name="twitter:image" content="{{ app.request.schemeAndHttpHost ~ asset('images/hero-accueil.jpg') }}">
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
