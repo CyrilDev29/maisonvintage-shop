@@ -54,15 +54,36 @@
     }
     </script>
 
-    {# Lightbox : overlay plein ecran pour zoomer sur les photos sur mobile #}
+    {# Lightbox : overlay plein ecran avec navigation entre les photos #}
     <div id="mv-lightbox"
-         style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:9999;align-items:center;justify-content:center;touch-action:pinch-zoom;">
+         style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:9999;align-items:center;justify-content:center;touch-action:pan-y;">
+
+        {# Bouton fermer #}
         <button id="mv-lightbox-close"
                 style="-webkit-appearance:none;appearance:none;position:absolute;top:1rem;right:1rem;background:none;border:none;color:#fff;font-size:2rem;cursor:pointer;z-index:10000;padding:.5rem;touch-action:manipulation;">✕</button>
+
+        {# Fleche precedente dans la lightbox #}
+        <button id="mv-lightbox-prev"
+                style="-webkit-appearance:none;appearance:none;position:absolute;left:1rem;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:3rem;height:3rem;font-size:1.5rem;color:#fff;cursor:pointer;z-index:10000;touch-action:manipulation;line-height:1;">
+            ‹
+        </button>
+
+        {# Image affichee dans la lightbox #}
         <img id="mv-lightbox-img"
              src=""
              alt=""
-             style="max-width:95vw;max-height:90vh;object-fit:contain;touch-action:pinch-zoom;">
+             style="max-width:90vw;max-height:88vh;object-fit:contain;touch-action:pan-y;">
+
+        {# Fleche suivante dans la lightbox #}
+        <button id="mv-lightbox-next"
+                style="-webkit-appearance:none;appearance:none;position:absolute;right:1rem;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:3rem;height:3rem;font-size:1.5rem;color:#fff;cursor:pointer;z-index:10000;touch-action:manipulation;line-height:1;">
+            ›
+        </button>
+
+        {# Compteur ex: "3 / 11" #}
+        <div id="mv-lightbox-counter"
+             style="position:absolute;bottom:1rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.6);font-size:.85rem;">
+        </div>
     </div>
 
     <section class="container" style="max-width:1100px;margin:2rem auto;padding:0 1rem;">
@@ -84,32 +105,19 @@
 
             {# Bloc de gauche : image principale et miniatures #}
             <div>
-                {# Conteneur du carousel : position relative pour placer les fleches par-dessus #}
-                <div id="product-main-wrap" style="width:100%;border:1px solid #eee;border-radius:8px;background:#fff;overflow:visible;cursor:zoom-in;position:relative;user-select:none;">
+                {# Image principale cliquable pour ouvrir la lightbox #}
+                <div id="product-main-wrap"
+                     style="width:100%;border:1px solid #eee;border-radius:8px;background:#fff;overflow:visible;cursor:zoom-in;">
                     <img id="product-main"
                          src="{{ mainSrc }}"
                          alt="{{ article.titre }}"
-                         style="width:100%;height:auto;display:block;max-height:520px;object-fit:contain;border-radius:8px;pointer-events:none;"
+                         style="width:100%;height:auto;display:block;max-height:520px;object-fit:contain;border-radius:8px;"
                          loading="eager">
-
-                    {# Fleche precedente : visible uniquement s'il y a plusieurs images #}
-                    <button id="carousel-prev"
-                            type="button"
-                            style="display:none;-webkit-appearance:none;appearance:none;position:absolute;top:50%;left:.5rem;transform:translateY(-50%);background:rgba(255,255,255,.85);border:1px solid #ddd;border-radius:50%;width:2.2rem;height:2.2rem;font-size:1.1rem;cursor:pointer;z-index:10;touch-action:manipulation;line-height:1;">
-                        ‹
-                    </button>
-
-                    {# Fleche suivante : visible uniquement s'il y a plusieurs images #}
-                    <button id="carousel-next"
-                            type="button"
-                            style="display:none;-webkit-appearance:none;appearance:none;position:absolute;top:50%;right:.5rem;transform:translateY(-50%);background:rgba(255,255,255,.85);border:1px solid #ddd;border-radius:50%;width:2.2rem;height:2.2rem;font-size:1.1rem;cursor:pointer;z-index:10;touch-action:manipulation;line-height:1;">
-                        ›
-                    </button>
                 </div>
 
                 {# Indication tactile pour mobile #}
                 <p style="font-size:.75rem;color:#999;text-align:center;margin-top:.4rem;">
-                    Appuyez sur l'image pour agrandir · Glissez pour naviguer
+                    Appuyez sur l'image pour agrandir
                 </p>
 
                 {# Construction du tableau de miniatures (image principale + galerie) #}
@@ -225,153 +233,126 @@
             const lightbox = document.getElementById('mv-lightbox');
             const lightboxImg = document.getElementById('mv-lightbox-img');
             const lightboxClose = document.getElementById('mv-lightbox-close');
-            const btnPrev = document.getElementById('carousel-prev');
-            const btnNext = document.getElementById('carousel-next');
+            const lightboxPrev = document.getElementById('mv-lightbox-prev');
+            const lightboxNext = document.getElementById('mv-lightbox-next');
+            const lightboxCounter = document.getElementById('mv-lightbox-counter');
 
-            // Construction du tableau de toutes les sources d'images
-            // a partir des boutons miniatures deja presents dans le DOM
+            // Tableau de toutes les sources construit depuis les miniatures du DOM
             const thumbBtns = Array.from(document.querySelectorAll('.thumb-btn'));
             const srcs = thumbBtns.map(function (btn) { return btn.getAttribute('data-src'); });
 
-            // Index de l'image actuellement affichee
+            // Index de la photo actuellement affichee dans la lightbox
             let currentIndex = 0;
 
-            // On affiche les fleches uniquement s'il y a au moins 2 images
-            if (srcs.length > 1) {
-                btnPrev.style.display = 'block';
-                btnNext.style.display = 'block';
+            // On masque les fleches s'il n'y a qu'une seule image
+            if (srcs.length <= 1) {
+                lightboxPrev.style.display = 'none';
+                lightboxNext.style.display = 'none';
+                lightboxCounter.style.display = 'none';
             }
 
-            // Fonction centrale : affiche l'image a l'index donne
-            // et met a jour la bordure de la miniature active
-            function goTo(index) {
-                // Boucle circulaire : apres la derniere on revient a la premiere
-                if (index < 0) index = srcs.length - 1;
-                if (index >= srcs.length) index = 0;
-
+            // Ouvre la lightbox sur la photo a l'index donne
+            function openLightbox(index) {
                 currentIndex = index;
-                const src = srcs[currentIndex];
-
-                // Transition visuelle : fondu rapide
-                mainImg.style.opacity = '0.2';
-                const img = new Image();
-                img.onload = function () {
-                    mainImg.src = src;
-                    mainImg.style.opacity = '1';
-                };
-                img.src = src;
-
-                // Met en evidence la miniature correspondante
-                thumbBtns.forEach(function (btn, i) {
-                    btn.style.outline = (i === currentIndex) ? '2px solid #C5A07B' : 'none';
-                });
-            }
-
-            // Fleche precedente
-            btnPrev.addEventListener('click', function (e) {
-                // On stoppe la propagation pour ne pas declencher la lightbox
-                e.stopPropagation();
-                goTo(currentIndex - 1);
-            });
-
-            // Fleche suivante
-            btnNext.addEventListener('click', function (e) {
-                e.stopPropagation();
-                goTo(currentIndex + 1);
-            });
-
-            // --- Swipe tactile (mobile) ---
-            let touchStartX = 0;
-            let touchStartY = 0;
-
-            mainWrap.addEventListener('touchstart', function (e) {
-                touchStartX = e.changedTouches[0].clientX;
-                touchStartY = e.changedTouches[0].clientY;
-            }, { passive: true });
-
-            mainWrap.addEventListener('touchend', function (e) {
-                const deltaX = e.changedTouches[0].clientX - touchStartX;
-                const deltaY = e.changedTouches[0].clientY - touchStartY;
-
-                // On ne swipe que si le mouvement est principalement horizontal
-                // et depasse 50px (evite les faux positifs au scroll vertical)
-                if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
-                    if (deltaX < 0) {
-                        // Swipe vers la gauche = image suivante
-                        goTo(currentIndex + 1);
-                    } else {
-                        // Swipe vers la droite = image precedente
-                        goTo(currentIndex - 1);
-                    }
-                }
-            }, { passive: true });
-
-            // --- Swipe souris (desktop) ---
-            let mouseStartX = 0;
-            let isDragging = false;
-
-            mainWrap.addEventListener('mousedown', function (e) {
-                mouseStartX = e.clientX;
-                isDragging = true;
-            });
-
-            mainWrap.addEventListener('mouseup', function (e) {
-                if (!isDragging) return;
-                isDragging = false;
-
-                const deltaX = e.clientX - mouseStartX;
-
-                // Meme seuil de 50px que pour le tactile
-                if (Math.abs(deltaX) > 50) {
-                    if (deltaX < 0) {
-                        goTo(currentIndex + 1);
-                    } else {
-                        goTo(currentIndex - 1);
-                    }
-                } else {
-                    // Mouvement trop court = c'est un clic simple -> ouvre la lightbox
-                    openLightbox(mainImg.src);
-                }
-            });
-
-            // Annule le drag si la souris quitte le conteneur
-            mainWrap.addEventListener('mouseleave', function () {
-                isDragging = false;
-            });
-
-            // --- Lightbox ---
-            function openLightbox(src) {
-                lightboxImg.src = src;
+                lightboxImg.src = srcs[currentIndex];
                 lightbox.style.display = 'flex';
                 document.body.style.overflow = 'hidden';
+                updateCounter();
             }
 
+            // Ferme la lightbox
             function closeLightbox() {
                 lightbox.style.display = 'none';
                 document.body.style.overflow = '';
             }
 
-            if (lightboxClose) {
-                lightboxClose.addEventListener('click', closeLightbox);
+            // Navigue vers l'index donne avec boucle circulaire
+            function goTo(index) {
+                if (index < 0) index = srcs.length - 1;
+                if (index >= srcs.length) index = 0;
+                currentIndex = index;
+
+                // Fondu rapide pour eviter le flash entre les images
+                lightboxImg.style.opacity = '0.2';
+                const img = new Image();
+                img.onload = function () {
+                    lightboxImg.src = srcs[currentIndex];
+                    lightboxImg.style.opacity = '1';
+                };
+                img.src = srcs[currentIndex];
+
+                updateCounter();
             }
 
-            if (lightbox) {
-                lightbox.addEventListener('click', function (e) {
-                    if (e.target === lightbox) closeLightbox();
+            // Met a jour le compteur "2 / 11"
+            function updateCounter() {
+                lightboxCounter.textContent = (currentIndex + 1) + ' / ' + srcs.length;
+            }
+
+            // Clic sur l'image principale -> ouvre la lightbox sur la photo 0
+            if (mainWrap) {
+                mainWrap.addEventListener('click', function () {
+                    openLightbox(0);
                 });
             }
 
-            // --- Miniatures cliquables ---
+            // Clic sur une miniature -> ouvre la lightbox sur la photo correspondante
             thumbBtns.forEach(function (btn, i) {
                 btn.addEventListener('click', function () {
-                    goTo(i);
+                    openLightbox(i);
                 });
             });
 
-            // Initialisation : met en evidence la premiere miniature au chargement
-            if (thumbBtns.length > 0) {
-                thumbBtns[0].style.outline = '2px solid #C5A07B';
-            }
+            // Fleche precedente
+            lightboxPrev.addEventListener('click', function (e) {
+                e.stopPropagation();
+                goTo(currentIndex - 1);
+            });
+
+            // Fleche suivante
+            lightboxNext.addEventListener('click', function (e) {
+                e.stopPropagation();
+                goTo(currentIndex + 1);
+            });
+
+            // Fermeture via le bouton X
+            lightboxClose.addEventListener('click', closeLightbox);
+
+            // Fermeture en cliquant sur le fond noir
+            lightbox.addEventListener('click', function (e) {
+                if (e.target === lightbox) closeLightbox();
+            });
+
+            // Navigation au clavier : fleches gauche/droite et Echap
+            document.addEventListener('keydown', function (e) {
+                if (lightbox.style.display === 'none') return;
+                if (e.key === 'ArrowLeft')  goTo(currentIndex - 1);
+                if (e.key === 'ArrowRight') goTo(currentIndex + 1);
+                if (e.key === 'Escape')     closeLightbox();
+            });
+
+            // Swipe tactile dans la lightbox
+            let touchStartX = 0;
+            let touchStartY = 0;
+
+            lightbox.addEventListener('touchstart', function (e) {
+                touchStartX = e.changedTouches[0].clientX;
+                touchStartY = e.changedTouches[0].clientY;
+            }, { passive: true });
+
+            lightbox.addEventListener('touchend', function (e) {
+                const deltaX = e.changedTouches[0].clientX - touchStartX;
+                const deltaY = e.changedTouches[0].clientY - touchStartY;
+
+                // Swipe horizontal uniquement (evite les faux positifs au scroll)
+                if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
+                    if (deltaX < 0) {
+                        goTo(currentIndex + 1); // swipe gauche = suivant
+                    } else {
+                        goTo(currentIndex - 1); // swipe droite = precedent
+                    }
+                }
+            }, { passive: true });
         });
     </script>
 {% endblock %}
