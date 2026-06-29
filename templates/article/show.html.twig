@@ -84,17 +84,32 @@
 
             {# Bloc de gauche : image principale et miniatures #}
             <div>
-                {# overflow:visible permet le pinch-to-zoom sur Safari iOS #}
-                <div id="product-main-wrap" style="width:100%;border:1px solid #eee;border-radius:8px;background:#fff;overflow:visible;cursor:zoom-in;">
+                {# Conteneur du carousel : position relative pour placer les fleches par-dessus #}
+                <div id="product-main-wrap" style="width:100%;border:1px solid #eee;border-radius:8px;background:#fff;overflow:visible;cursor:zoom-in;position:relative;user-select:none;">
                     <img id="product-main"
                          src="{{ mainSrc }}"
                          alt="{{ article.titre }}"
-                         style="width:100%;height:auto;display:block;max-height:520px;object-fit:contain;border-radius:8px;"
+                         style="width:100%;height:auto;display:block;max-height:520px;object-fit:contain;border-radius:8px;pointer-events:none;"
                          loading="eager">
+
+                    {# Fleche precedente : visible uniquement s'il y a plusieurs images #}
+                    <button id="carousel-prev"
+                            type="button"
+                            style="display:none;-webkit-appearance:none;appearance:none;position:absolute;top:50%;left:.5rem;transform:translateY(-50%);background:rgba(255,255,255,.85);border:1px solid #ddd;border-radius:50%;width:2.2rem;height:2.2rem;font-size:1.1rem;cursor:pointer;z-index:10;touch-action:manipulation;line-height:1;">
+                        ‹
+                    </button>
+
+                    {# Fleche suivante : visible uniquement s'il y a plusieurs images #}
+                    <button id="carousel-next"
+                            type="button"
+                            style="display:none;-webkit-appearance:none;appearance:none;position:absolute;top:50%;right:.5rem;transform:translateY(-50%);background:rgba(255,255,255,.85);border:1px solid #ddd;border-radius:50%;width:2.2rem;height:2.2rem;font-size:1.1rem;cursor:pointer;z-index:10;touch-action:manipulation;line-height:1;">
+                        ›
+                    </button>
                 </div>
+
                 {# Indication tactile pour mobile #}
                 <p style="font-size:.75rem;color:#999;text-align:center;margin-top:.4rem;">
-                    Appuyez sur l'image pour agrandir
+                    Appuyez sur l'image pour agrandir · Glissez pour naviguer
                 </p>
 
                 {# Construction du tableau de miniatures (image principale + galerie) #}
@@ -114,6 +129,7 @@
                                 <button class="thumb-btn"
                                         type="button"
                                         data-src="{{ src }}"
+                                        data-index="{{ loop.index0 }}"
                                         style="-webkit-appearance:none;appearance:none;border:1px solid #e5e5e5;border-radius:6px;background:#fff;padding:0;cursor:pointer;touch-action:manipulation;">
                                     <img src="{{ src }}"
                                          alt="Aperçu {{ loop.index }}"
@@ -209,54 +225,153 @@
             const lightbox = document.getElementById('mv-lightbox');
             const lightboxImg = document.getElementById('mv-lightbox-img');
             const lightboxClose = document.getElementById('mv-lightbox-close');
+            const btnPrev = document.getElementById('carousel-prev');
+            const btnNext = document.getElementById('carousel-next');
 
-            // Ouverture de la lightbox au clic sur l'image principale
+            // Construction du tableau de toutes les sources d'images
+            // a partir des boutons miniatures deja presents dans le DOM
+            const thumbBtns = Array.from(document.querySelectorAll('.thumb-btn'));
+            const srcs = thumbBtns.map(function (btn) { return btn.getAttribute('data-src'); });
+
+            // Index de l'image actuellement affichee
+            let currentIndex = 0;
+
+            // On affiche les fleches uniquement s'il y a au moins 2 images
+            if (srcs.length > 1) {
+                btnPrev.style.display = 'block';
+                btnNext.style.display = 'block';
+            }
+
+            // Fonction centrale : affiche l'image a l'index donne
+            // et met a jour la bordure de la miniature active
+            function goTo(index) {
+                // Boucle circulaire : apres la derniere on revient a la premiere
+                if (index < 0) index = srcs.length - 1;
+                if (index >= srcs.length) index = 0;
+
+                currentIndex = index;
+                const src = srcs[currentIndex];
+
+                // Transition visuelle : fondu rapide
+                mainImg.style.opacity = '0.2';
+                const img = new Image();
+                img.onload = function () {
+                    mainImg.src = src;
+                    mainImg.style.opacity = '1';
+                };
+                img.src = src;
+
+                // Met en evidence la miniature correspondante
+                thumbBtns.forEach(function (btn, i) {
+                    btn.style.outline = (i === currentIndex) ? '2px solid #C5A07B' : 'none';
+                });
+            }
+
+            // Fleche precedente
+            btnPrev.addEventListener('click', function (e) {
+                // On stoppe la propagation pour ne pas declencher la lightbox
+                e.stopPropagation();
+                goTo(currentIndex - 1);
+            });
+
+            // Fleche suivante
+            btnNext.addEventListener('click', function (e) {
+                e.stopPropagation();
+                goTo(currentIndex + 1);
+            });
+
+            // --- Swipe tactile (mobile) ---
+            let touchStartX = 0;
+            let touchStartY = 0;
+
+            mainWrap.addEventListener('touchstart', function (e) {
+                touchStartX = e.changedTouches[0].clientX;
+                touchStartY = e.changedTouches[0].clientY;
+            }, { passive: true });
+
+            mainWrap.addEventListener('touchend', function (e) {
+                const deltaX = e.changedTouches[0].clientX - touchStartX;
+                const deltaY = e.changedTouches[0].clientY - touchStartY;
+
+                // On ne swipe que si le mouvement est principalement horizontal
+                // et depasse 50px (evite les faux positifs au scroll vertical)
+                if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
+                    if (deltaX < 0) {
+                        // Swipe vers la gauche = image suivante
+                        goTo(currentIndex + 1);
+                    } else {
+                        // Swipe vers la droite = image precedente
+                        goTo(currentIndex - 1);
+                    }
+                }
+            }, { passive: true });
+
+            // --- Swipe souris (desktop) ---
+            let mouseStartX = 0;
+            let isDragging = false;
+
+            mainWrap.addEventListener('mousedown', function (e) {
+                mouseStartX = e.clientX;
+                isDragging = true;
+            });
+
+            mainWrap.addEventListener('mouseup', function (e) {
+                if (!isDragging) return;
+                isDragging = false;
+
+                const deltaX = e.clientX - mouseStartX;
+
+                // Meme seuil de 50px que pour le tactile
+                if (Math.abs(deltaX) > 50) {
+                    if (deltaX < 0) {
+                        goTo(currentIndex + 1);
+                    } else {
+                        goTo(currentIndex - 1);
+                    }
+                } else {
+                    // Mouvement trop court = c'est un clic simple -> ouvre la lightbox
+                    openLightbox(mainImg.src);
+                }
+            });
+
+            // Annule le drag si la souris quitte le conteneur
+            mainWrap.addEventListener('mouseleave', function () {
+                isDragging = false;
+            });
+
+            // --- Lightbox ---
             function openLightbox(src) {
                 lightboxImg.src = src;
                 lightbox.style.display = 'flex';
                 document.body.style.overflow = 'hidden';
             }
 
-            // Fermeture de la lightbox
             function closeLightbox() {
                 lightbox.style.display = 'none';
                 document.body.style.overflow = '';
             }
 
-            // Clic sur l'image principale -> ouvre la lightbox
-            if (mainWrap) {
-                mainWrap.addEventListener('click', function () {
-                    openLightbox(mainImg.src);
-                });
-            }
-
-            // Clic sur le bouton fermer
             if (lightboxClose) {
                 lightboxClose.addEventListener('click', closeLightbox);
             }
 
-            // Clic sur le fond de la lightbox pour fermer
             if (lightbox) {
                 lightbox.addEventListener('click', function (e) {
                     if (e.target === lightbox) closeLightbox();
                 });
             }
 
-            // Changement d'image au clic sur les miniatures
-            document.querySelectorAll('.thumb-btn').forEach(function (btn) {
+            // --- Miniatures cliquables ---
+            thumbBtns.forEach(function (btn, i) {
                 btn.addEventListener('click', function () {
-                    const src = this.getAttribute('data-src');
-                    if (!src || !mainImg) return;
-                    // Transition visuelle lors du changement d'image
-                    mainImg.style.opacity = '0.2';
-                    const img = new Image();
-                    img.onload = function () {
-                        mainImg.src = src;
-                        mainImg.style.opacity = '1';
-                    };
-                    img.src = src;
+                    goTo(i);
                 });
             });
+
+            // Initialisation : met en evidence la premiere miniature au chargement
+            if (thumbBtns.length > 0) {
+                thumbBtns[0].style.outline = '2px solid #C5A07B';
+            }
         });
     </script>
 {% endblock %}
