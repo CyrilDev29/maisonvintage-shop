@@ -54,6 +54,17 @@
     }
     </script>
 
+    {# Lightbox : overlay plein ecran pour zoomer sur les photos sur mobile #}
+    <div id="mv-lightbox"
+         style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:9999;align-items:center;justify-content:center;touch-action:pinch-zoom;">
+        <button id="mv-lightbox-close"
+                style="-webkit-appearance:none;appearance:none;position:absolute;top:1rem;right:1rem;background:none;border:none;color:#fff;font-size:2rem;cursor:pointer;z-index:10000;padding:.5rem;touch-action:manipulation;">✕</button>
+        <img id="mv-lightbox-img"
+             src=""
+             alt=""
+             style="max-width:95vw;max-height:90vh;object-fit:contain;touch-action:pinch-zoom;">
+    </div>
+
     <section class="container" style="max-width:1100px;margin:2rem auto;padding:0 1rem;">
         {# Fil d'Ariane (breadcrumb) pour la navigation #}
         <nav style="margin-bottom:1rem;font-size:.95rem;">
@@ -73,13 +84,18 @@
 
             {# Bloc de gauche : image principale et miniatures #}
             <div>
-                <div id="product-main-wrap" style="width:100%;border:1px solid #eee;border-radius:8px;background:#fff;overflow:hidden;">
+                {# overflow:visible permet le pinch-to-zoom sur Safari iOS #}
+                <div id="product-main-wrap" style="width:100%;border:1px solid #eee;border-radius:8px;background:#fff;overflow:visible;cursor:zoom-in;">
                     <img id="product-main"
                          src="{{ mainSrc }}"
                          alt="{{ article.titre }}"
-                         style="width:100%;height:auto;display:block;max-height:520px;object-fit:contain;"
+                         style="width:100%;height:auto;display:block;max-height:520px;object-fit:contain;border-radius:8px;"
                          loading="eager">
                 </div>
+                {# Indication tactile pour mobile #}
+                <p style="font-size:.75rem;color:#999;text-align:center;margin-top:.4rem;">
+                    Appuyez sur l'image pour agrandir
+                </p>
 
                 {# Construction du tableau de miniatures (image principale + galerie) #}
                 {% set thumbs = [] %}
@@ -98,7 +114,7 @@
                                 <button class="thumb-btn"
                                         type="button"
                                         data-src="{{ src }}"
-                                        style="border:1px solid #e5e5e5;border-radius:6px;background:#fff;padding:0;cursor:pointer;">
+                                        style="-webkit-appearance:none;appearance:none;border:1px solid #e5e5e5;border-radius:6px;background:#fff;padding:0;cursor:pointer;touch-action:manipulation;">
                                     <img src="{{ src }}"
                                          alt="Aperçu {{ loop.index }}"
                                          style="width:86px;height:86px;object-fit:cover;display:block;border-radius:6px;"
@@ -167,7 +183,7 @@
                         {% endif %}
 
                         <button type="submit"
-                                style="padding:.6rem 1rem;border:1px solid #222;border-radius:8px;background:#222;color:#fff;">
+                                style="-webkit-appearance:none;appearance:none;padding:.6rem 1rem;border:1px solid #222;border-radius:8px;background:#222;color:#fff;cursor:pointer;touch-action:manipulation;">
                             Ajouter au panier
                         </button>
                     </form>
@@ -186,10 +202,47 @@
         </div>
     </section>
 
-    {# Script JavaScript pour le changement d'image au clic sur les miniatures #}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const mainImg = document.getElementById('product-main');
+            const mainWrap = document.getElementById('product-main-wrap');
+            const lightbox = document.getElementById('mv-lightbox');
+            const lightboxImg = document.getElementById('mv-lightbox-img');
+            const lightboxClose = document.getElementById('mv-lightbox-close');
+
+            // Ouverture de la lightbox au clic sur l'image principale
+            function openLightbox(src) {
+                lightboxImg.src = src;
+                lightbox.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+
+            // Fermeture de la lightbox
+            function closeLightbox() {
+                lightbox.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+
+            // Clic sur l'image principale -> ouvre la lightbox
+            if (mainWrap) {
+                mainWrap.addEventListener('click', function () {
+                    openLightbox(mainImg.src);
+                });
+            }
+
+            // Clic sur le bouton fermer
+            if (lightboxClose) {
+                lightboxClose.addEventListener('click', closeLightbox);
+            }
+
+            // Clic sur le fond de la lightbox pour fermer
+            if (lightbox) {
+                lightbox.addEventListener('click', function (e) {
+                    if (e.target === lightbox) closeLightbox();
+                });
+            }
+
+            // Changement d'image au clic sur les miniatures
             document.querySelectorAll('.thumb-btn').forEach(function (btn) {
                 btn.addEventListener('click', function () {
                     const src = this.getAttribute('data-src');
