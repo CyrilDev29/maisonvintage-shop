@@ -108,8 +108,8 @@
         {% set mainSrc = vich_uploader_asset(article, 'imageFile')
             ?? (article.images|length > 0 ? vich_uploader_asset(article.images|first, 'file') : asset('images/placeholder.png')) %}
 
-        {# Grille responsive : image à gauche, infos à droite #}
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        {# Grille responsive : image à gauche, infos à droite (desktop) / empilé (mobile, via .product-layout) #}
+        <div class="product-layout">
 
             {# Bloc de gauche : image principale et miniatures #}
             <div>

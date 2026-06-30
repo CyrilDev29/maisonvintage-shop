@@ -1,0 +1,17 @@
+/* Page fiche produit (article/show.html.twig) */
+
+.product-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+/* Sur mobile/tablette : une seule colonne pleine largeur,
+   l'image passe au-dessus du texte pour reduire le scroll avant d'atteindre
+   le bouton "Ajouter au panier" */
+@media (max-width: 991.98px) {
+    .product-layout {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}

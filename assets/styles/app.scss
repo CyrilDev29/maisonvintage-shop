@@ -18,6 +18,9 @@
 /* Navbar en DERNIER pour écraser le reste */
 @import "components/_navbar.scss";
 
+/* Pages */
+@import "pages/_article-show.scss";
+
 /* Utils */
 @import "_utilities.scss";
 
