@@ -54,9 +54,9 @@
     }
     </script>
 
-    {# Lightbox : overlay plein ecran avec navigation entre les photos #}
+    {# Lightbox : overlay plein ecran avec navigation entre les photos + zoom #}
     <div id="mv-lightbox"
-         style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:9999;align-items:center;justify-content:center;touch-action:pan-y;">
+         style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:9999;align-items:center;justify-content:center;touch-action:none;overflow:hidden;">
 
         {# Bouton fermer #}
         <button id="mv-lightbox-close"
@@ -68,11 +68,13 @@
             ‹
         </button>
 
-        {# Image affichee dans la lightbox #}
-        <img id="mv-lightbox-img"
-             src=""
-             alt=""
-             style="max-width:90vw;max-height:88vh;object-fit:contain;touch-action:pan-y;">
+        {# Conteneur de l'image, qui recoit la transformation de zoom/deplacement #}
+        <div id="mv-lightbox-imgwrap" style="overflow:hidden;width:90vw;height:88vh;display:flex;align-items:center;justify-content:center;">
+            <img id="mv-lightbox-img"
+                 src=""
+                 alt=""
+                 style="max-width:90vw;max-height:88vh;object-fit:contain;user-select:none;-webkit-user-drag:none;transform-origin:center center;transition:transform .08s ease-out;cursor:zoom-in;">
+        </div>
 
         {# Fleche suivante dans la lightbox #}
         <button id="mv-lightbox-next"
@@ -83,6 +85,12 @@
         {# Compteur ex: "3 / 11" #}
         <div id="mv-lightbox-counter"
              style="position:absolute;bottom:1rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.6);font-size:.85rem;">
+        </div>
+
+        {# Indication de zoom, visible uniquement sur desktop #}
+        <div id="mv-lightbox-zoomhint"
+             style="position:absolute;bottom:1rem;right:1rem;color:rgba(255,255,255,.5);font-size:.75rem;">
+            Molette pour zoomer
         </div>
     </div>
 
@@ -117,7 +125,7 @@
 
                 {# Indication tactile pour mobile #}
                 <p style="font-size:.75rem;color:#999;text-align:center;margin-top:.4rem;">
-                    Appuyez sur l'image pour agrandir
+                    Appuyez sur l'image pour agrandir et zoomer
                 </p>
 
                 {# Construction du tableau de miniatures (image principale + galerie) #}
@@ -256,7 +264,28 @@
             // Index de la photo actuellement affichee dans la lightbox
             let currentIndex = 0;
 
-            // On masque les fleches s'il n'y a qu'une seule image
+            // --- Etat du zoom ---
+            let scale = 1;
+            let translateX = 0;
+            let translateY = 0;
+            const MIN_SCALE = 1;
+            const MAX_SCALE = 4;
+
+            // Applique la transformation CSS courante (zoom + position)
+            function applyTransform() {
+                lightboxImg.style.transform = 'translate(' + translateX + 'px, ' + translateY + 'px) scale(' + scale + ')';
+                lightboxImg.style.cursor = scale > 1 ? 'grab' : 'zoom-in';
+            }
+
+            // Remet le zoom a zero (appele a chaque changement de photo ou fermeture)
+            function resetZoom() {
+                scale = 1;
+                translateX = 0;
+                translateY = 0;
+                applyTransform();
+            }
+
+            // On affiche les fleches uniquement s'il y a au moins 2 images
             if (srcs.length <= 1) {
                 lightboxPrev.style.display = 'none';
                 lightboxNext.style.display = 'none';
@@ -269,6 +298,7 @@
                 lightboxImg.src = srcs[currentIndex];
                 lightbox.style.display = 'flex';
                 document.body.style.overflow = 'hidden';
+                resetZoom();
                 updateCounter();
             }
 
@@ -276,6 +306,7 @@
             function closeLightbox() {
                 lightbox.style.display = 'none';
                 document.body.style.overflow = '';
+                resetZoom();
             }
 
             // Navigue vers l'index donne avec boucle circulaire
@@ -293,6 +324,7 @@
                 };
                 img.src = srcs[currentIndex];
 
+                resetZoom();
                 updateCounter();
             }
 
@@ -330,41 +362,195 @@
             // Fermeture via le bouton X
             lightboxClose.addEventListener('click', closeLightbox);
 
-            // Fermeture en cliquant sur le fond noir
+            // Fermeture en cliquant sur le fond noir (seulement si pas zoome, sinon ca genere des fermetures accidentelles)
             lightbox.addEventListener('click', function (e) {
-                if (e.target === lightbox) closeLightbox();
+                if (e.target === lightbox && scale === 1) closeLightbox();
             });
 
-            // Navigation au clavier : fleches gauche/droite et Echap
+            // Navigation au clavier : fleches gauche/droite, Echap, +/- pour zoom
             document.addEventListener('keydown', function (e) {
                 if (lightbox.style.display === 'none') return;
-                if (e.key === 'ArrowLeft')  goTo(currentIndex - 1);
-                if (e.key === 'ArrowRight') goTo(currentIndex + 1);
+                if (e.key === 'ArrowLeft' && scale === 1)  goTo(currentIndex - 1);
+                if (e.key === 'ArrowRight' && scale === 1) goTo(currentIndex + 1);
                 if (e.key === 'Escape')     closeLightbox();
+                if (e.key === '+' || e.key === '=') zoomBy(0.3, null, null);
+                if (e.key === '-') zoomBy(-0.3, null, null);
             });
 
-            // Swipe tactile dans la lightbox
+            // --- ZOOM DESKTOP : molette de souris ---
+            // Centre le zoom sur la position du curseur pour un rendu naturel
+            function zoomBy(delta, clientX, clientY) {
+                const wrap = document.getElementById('mv-lightbox-imgwrap');
+                const rect = wrap.getBoundingClientRect();
+
+                // Position du curseur relative au centre du conteneur (par defaut : centre)
+                const cx = (clientX !== null) ? (clientX - rect.left - rect.width / 2) : 0;
+                const cy = (clientY !== null) ? (clientY - rect.top - rect.height / 2) : 0;
+
+                const oldScale = scale;
+                scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale + delta));
+
+                if (scale === MIN_SCALE) {
+                    // Retour a la taille normale : on recentre completement
+                    translateX = 0;
+                    translateY = 0;
+                } else {
+                    // Ajuste la translation pour que le zoom semble parti du point du curseur
+                    const ratio = scale / oldScale;
+                    translateX = (translateX - cx) * ratio + cx;
+                    translateY = (translateY - cy) * ratio + cy;
+                }
+
+                applyTransform();
+            }
+
+            const lightboxImgWrap = document.getElementById('mv-lightbox-imgwrap');
+
+            lightboxImgWrap.addEventListener('wheel', function (e) {
+                e.preventDefault();
+                const delta = e.deltaY < 0 ? 0.25 : -0.25;
+                zoomBy(delta, e.clientX, e.clientY);
+            }, { passive: false });
+
+            // Double-clic desktop : toggle zoom rapide x2.5 centre sur le clic
+            lightboxImg.addEventListener('dblclick', function (e) {
+                if (scale > 1) {
+                    resetZoom();
+                } else {
+                    zoomBy(1.5, e.clientX, e.clientY);
+                }
+            });
+
+            // --- DRAG DESKTOP : deplacer l'image quand elle est zoomee ---
+            let isDragging = false;
+            let dragStartX = 0;
+            let dragStartY = 0;
+            let dragOriginX = 0;
+            let dragOriginY = 0;
+
+            lightboxImg.addEventListener('mousedown', function (e) {
+                if (scale <= 1) return; // pas de drag si pas zoome (le clic gere alors swipe/fermeture ailleurs)
+                isDragging = true;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+                dragOriginX = translateX;
+                dragOriginY = translateY;
+                lightboxImg.style.transition = 'none';
+            });
+
+            document.addEventListener('mousemove', function (e) {
+                if (!isDragging) return;
+                translateX = dragOriginX + (e.clientX - dragStartX);
+                translateY = dragOriginY + (e.clientY - dragStartY);
+                applyTransform();
+            });
+
+            document.addEventListener('mouseup', function () {
+                isDragging = false;
+                lightboxImg.style.transition = 'transform .08s ease-out';
+            });
+
+            // --- TACTILE MOBILE : pinch-to-zoom + pan + swipe ---
             let touchStartX = 0;
             let touchStartY = 0;
+            let initialPinchDistance = null;
+            let initialScale = 1;
+            let panStartX = 0;
+            let panStartY = 0;
+            let panOriginX = 0;
+            let panOriginY = 0;
+            let isPanning = false;
+
+            function getPinchDistance(touches) {
+                const dx = touches[0].clientX - touches[1].clientX;
+                const dy = touches[0].clientY - touches[1].clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
 
             lightbox.addEventListener('touchstart', function (e) {
-                touchStartX = e.changedTouches[0].clientX;
-                touchStartY = e.changedTouches[0].clientY;
-            }, { passive: true });
-
-            lightbox.addEventListener('touchend', function (e) {
-                const deltaX = e.changedTouches[0].clientX - touchStartX;
-                const deltaY = e.changedTouches[0].clientY - touchStartY;
-
-                // Swipe horizontal uniquement (evite les faux positifs au scroll)
-                if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
-                    if (deltaX < 0) {
-                        goTo(currentIndex + 1); // swipe gauche = suivant
-                    } else {
-                        goTo(currentIndex - 1); // swipe droite = precedent
+                if (e.touches.length === 2) {
+                    // Debut d'un pinch a deux doigts
+                    initialPinchDistance = getPinchDistance(e.touches);
+                    initialScale = scale;
+                    lightboxImg.style.transition = 'none';
+                } else if (e.touches.length === 1) {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                    if (scale > 1) {
+                        // Si deja zoome, un doigt sert a deplacer l'image (pan)
+                        isPanning = true;
+                        panStartX = e.touches[0].clientX;
+                        panStartY = e.touches[0].clientY;
+                        panOriginX = translateX;
+                        panOriginY = translateY;
+                        lightboxImg.style.transition = 'none';
                     }
                 }
             }, { passive: true });
+
+            lightbox.addEventListener('touchmove', function (e) {
+                if (e.touches.length === 2 && initialPinchDistance !== null) {
+                    // Pinch en cours : on recalcule le zoom au prorata de l'ecartement des doigts
+                    e.preventDefault();
+                    const newDistance = getPinchDistance(e.touches);
+                    const pinchRatio = newDistance / initialPinchDistance;
+                    scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, initialScale * pinchRatio));
+                    if (scale === MIN_SCALE) {
+                        translateX = 0;
+                        translateY = 0;
+                    }
+                    applyTransform();
+                } else if (isPanning && e.touches.length === 1) {
+                    // Deplacement de l'image zoomee avec un seul doigt
+                    e.preventDefault();
+                    translateX = panOriginX + (e.touches[0].clientX - panStartX);
+                    translateY = panOriginY + (e.touches[0].clientY - panStartY);
+                    applyTransform();
+                }
+            }, { passive: false });
+
+            lightbox.addEventListener('touchend', function (e) {
+                lightboxImg.style.transition = 'transform .08s ease-out';
+
+                // Fin de pinch
+                if (initialPinchDistance !== null && e.touches.length < 2) {
+                    initialPinchDistance = null;
+                }
+
+                // Fin de pan : pas de swipe a declencher
+                if (isPanning) {
+                    isPanning = false;
+                    return;
+                }
+
+                // Swipe uniquement si l'image n'est pas zoomee (sinon le geste sert a naviguer dans l'image)
+                if (scale === 1 && e.changedTouches.length > 0) {
+                    const deltaX = e.changedTouches[0].clientX - touchStartX;
+                    const deltaY = e.changedTouches[0].clientY - touchStartY;
+
+                    if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
+                        if (deltaX < 0) {
+                            goTo(currentIndex + 1);
+                        } else {
+                            goTo(currentIndex - 1);
+                        }
+                    }
+                }
+            }, { passive: true });
+
+            // Double-tap mobile : toggle zoom rapide
+            let lastTapTime = 0;
+            lightboxImg.addEventListener('touchend', function (e) {
+                const now = Date.now();
+                if (now - lastTapTime < 300 && e.changedTouches.length === 1) {
+                    if (scale > 1) {
+                        resetZoom();
+                    } else {
+                        zoomBy(1.5, e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+                    }
+                }
+                lastTapTime = now;
+            });
         });
     </script>
 {% endblock %}
