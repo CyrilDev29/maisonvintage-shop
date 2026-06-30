@@ -46,7 +46,84 @@ final class ResizeUploadedImageSubscriber
             $mime = (string) $finfo->file($path);
         }
 
+        // Correction de l'orientation EXIF AVANT le redimensionnement.
+        // Les photos prises au telephone (portrait) stockent souvent les pixels en paysage
+        // avec une metadonnee EXIF "Orientation" indiquant la rotation a appliquer a l'affichage.
+        // GD ignore cette metadonnee, d'ou des photos qui ressortent pivotees apres traitement.
+        if ($mime === 'image/jpeg') {
+            $this->fixJpegOrientation($path);
+        }
+
         $this->resizeAndCompress($path, $mime, maxSize: 1600, quality: 80);
+    }
+
+    /**
+     * Lit le tag EXIF Orientation d'un JPEG et fait pivoter physiquement les pixels
+     * pour que l'image soit correctement orientee, independamment de tout viewer.
+     */
+    private function fixJpegOrientation(string $path): void
+    {
+        if (!\function_exists('exif_read_data')) {
+            // Extension exif non installee sur le serveur : on ne peut pas lire l'orientation, on ignore silencieusement
+            return;
+        }
+
+        try {
+            $exif = @exif_read_data($path);
+        } catch (\Throwable) {
+            return;
+        }
+
+        if (!$exif || !isset($exif['Orientation'])) {
+            return;
+        }
+
+        $orientation = (int) $exif['Orientation'];
+        if ($orientation === 1) {
+            // Orientation normale, rien a faire
+            return;
+        }
+
+        $img = @imagecreatefromjpeg($path);
+        if ($img === false) {
+            return;
+        }
+
+        // Table de correspondance EXIF Orientation -> rotation/flip a appliquer
+        // Reference : https://exiftool.org/TagNames/EXIF.html#Orientation
+        switch ($orientation) {
+            case 2:
+                imageflip($img, IMG_FLIP_HORIZONTAL);
+                break;
+            case 3:
+                $img = imagerotate($img, 180, 0);
+                break;
+            case 4:
+                imageflip($img, IMG_FLIP_VERTICAL);
+                break;
+            case 5:
+                imageflip($img, IMG_FLIP_VERTICAL);
+                $img = imagerotate($img, -90, 0);
+                break;
+            case 6:
+                $img = imagerotate($img, -90, 0);
+                break;
+            case 7:
+                imageflip($img, IMG_FLIP_HORIZONTAL);
+                $img = imagerotate($img, -90, 0);
+                break;
+            case 8:
+                $img = imagerotate($img, 90, 0);
+                break;
+            default:
+                // Valeur inattendue, on ne touche pas a l'image
+                imagedestroy($img);
+                return;
+        }
+
+        // Reecrit le fichier corrige, qualite elevee car resizeAndCompress() recompressera juste apres
+        imagejpeg($img, $path, 95);
+        imagedestroy($img);
     }
 
     /**
