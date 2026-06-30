@@ -42,6 +42,8 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::linkToCrud('Articles', 'fa fa-box', Article::class);
         yield MenuItem::linkToCrud('Catégories', 'fa fa-tags', Categorie::class);
         yield MenuItem::linkToCrud('Commandes', 'fas fa-shopping-cart', Order::class);
+        // Ecran dedie : creation manuelle d'une commande expediee via Cocolis (virement bancaire)
+        yield MenuItem::linkToRoute('Commande Cocolis', 'fa fa-truck', 'admin_order_cocolis_new');
         yield MenuItem::section('Paramètres');
         yield MenuItem::linkToCrud('Configuration du site', 'fa fa-cog', SiteConfig::class);
         yield MenuItem::section('');

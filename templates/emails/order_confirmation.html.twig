@@ -300,10 +300,10 @@
         {% if _norm is not null and _norm starts with 'EN_ATTENTE' %}
             <div class="info-box">
                 <h3>Informations pour le virement</h3>
-                <p><strong>Titulaire :</strong> MME CAVAREC FRANCOISE</p>
-                <p><strong>Banque :</strong> Crédit Agricole Finistère - Agence Lannilis</p>
-                <p><strong>IBAN :</strong> FR76 1290 6000 2757 6578 7677 978</p>
-                <p><strong>BIC :</strong> AGRIFRPP829</p>
+                <p><strong>Titulaire :</strong> {{ bank_holder }}</p>
+                <p><strong>Banque :</strong> {{ bank_bankname }}</p>
+                <p><strong>IBAN :</strong> {{ bank_iban }}</p>
+                <p><strong>BIC :</strong> {{ bank_bic }}</p>
                 <p style="margin-top: 10px; font-size: 12px; color: #C28A32;">
                     Merci d'indiquer la référence <strong>{{ order.reference }}</strong> dans le libellé du virement.
                 </p>

@@ -1,0 +1,190 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouvelle commande Cocolis — Admin{% endblock %}
+
+{% block body %}
+    <section class="container" style="max-width:700px;margin:2rem auto;padding:0 1rem;">
+        <h1 style="margin-bottom:.5rem;">Nouvelle commande Cocolis</h1>
+        <p style="color:#666;margin-bottom:1.5rem;">
+            Pour les expéditions nécessitant Cocolis (articles volumineux ou tout autre envoi spécifique), payées par virement bancaire.
+        </p>
+
+        {# Affichage des messages flash (succès / erreurs) #}
+        {% for type, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="alert alert-{{ type }}" style="padding:.75rem 1rem;border-radius:8px;margin-bottom:1rem;
+                {% if type == 'danger' %}background:#fdecea;color:#a00;border:1px solid #f5c6cb;{% endif %}
+                    {% if type == 'success' %}background:#eaf7ec;color:#1a7a32;border:1px solid #c3e6cb;{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        <form method="post" action="{{ path('admin_order_cocolis_create') }}" id="cocolis-form">
+            <input type="hidden" name="_token" value="{{ csrf_token('admin_order_cocolis_create') }}">
+
+            {# --- Client --- #}
+            <div style="margin-bottom:1.25rem;">
+                <label for="user_id" style="display:block;font-weight:600;margin-bottom:.4rem;">Client *</label>
+                <select id="user_id" name="user_id" required
+                        style="width:100%;padding:.6rem;border:1px solid #ccc;border-radius:8px;">
+                    <option value="">— Sélectionner un client —</option>
+                    {% for u in users %}
+                        <option value="{{ u.id }}">{{ u.prenom }} {{ u.nom }} ({{ u.email }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# --- Adresse de livraison (filtrée par client via JS) --- #}
+            <div style="margin-bottom:1.25rem;">
+                <label for="address_id" style="display:block;font-weight:600;margin-bottom:.4rem;">Adresse de livraison *</label>
+                <select id="address_id" name="address_id" required disabled
+                        style="width:100%;padding:.6rem;border:1px solid #ccc;border-radius:8px;">
+                    <option value="">— Sélectionnez d'abord un client —</option>
+                </select>
+                <p id="no-address-warning" style="display:none;color:#a00;font-size:.85rem;margin-top:.4rem;">
+                    Ce client n'a aucune adresse enregistrée. Demandez-lui d'en ajouter une dans son compte avant de continuer.
+                </p>
+            </div>
+
+            {# --- Article --- #}
+            <div style="margin-bottom:1.25rem;">
+                <label for="article_id" style="display:block;font-weight:600;margin-bottom:.4rem;">Article *</label>
+                <select id="article_id" name="article_id" required
+                        style="width:100%;padding:.6rem;border:1px solid #ccc;border-radius:8px;">
+                    <option value="">— Sélectionner un article —</option>
+                    {% for a in articles %}
+                        <option value="{{ a.id }}" data-stock="{{ a.quantity }}" data-prix="{{ a.prix }}">
+                            {{ a.titre }} — {{ a.prix|number_format(2, ',', ' ') }} € (stock : {{ a.quantity }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# --- Quantité --- #}
+            <div style="margin-bottom:1.25rem;">
+                <label for="quantity" style="display:block;font-weight:600;margin-bottom:.4rem;">Quantité *</label>
+                <input type="number" id="quantity" name="quantity" value="1" min="1" required
+                       style="width:120px;padding:.6rem;border:1px solid #ccc;border-radius:8px;">
+                <p id="stock-warning" style="display:none;color:#a00;font-size:.85rem;margin-top:.4rem;">
+                    Quantité supérieure au stock disponible.
+                </p>
+            </div>
+
+            {# --- Prix du transport Cocolis --- #}
+            <div style="margin-bottom:1.5rem;">
+                <label for="shipping_price" style="display:block;font-weight:600;margin-bottom:.4rem;">
+                    Prix du transport Cocolis (€) *
+                </label>
+                <input type="number" id="shipping_price" name="shipping_price" step="0.01" min="0" required
+                       placeholder="Ex: 85.00"
+                       style="width:160px;padding:.6rem;border:1px solid #ccc;border-radius:8px;">
+                <p style="font-size:.85rem;color:#888;margin-top:.4rem;">
+                    Montant négocié avec Cocolis, hors prix de l'article.
+                </p>
+            </div>
+
+            {# --- Récapitulatif dynamique --- #}
+            <div id="recap" style="display:none;padding:1rem;background:#f9f6f1;border:1px solid #e5ddd0;border-radius:8px;margin-bottom:1.5rem;">
+                <p style="margin:0 0 .4rem 0;">Article : <strong id="recap-article">—</strong></p>
+                <p style="margin:0 0 .4rem 0;">Transport Cocolis : <strong id="recap-shipping">—</strong></p>
+                <p style="margin:0;font-size:1.1rem;">Total commande : <strong id="recap-total">—</strong></p>
+            </div>
+
+            <button type="submit"
+                    style="-webkit-appearance:none;appearance:none;padding:.7rem 1.4rem;border:1px solid #222;border-radius:8px;background:#222;color:#fff;font-size:1rem;cursor:pointer;">
+                Créer la commande
+            </button>
+        </form>
+    </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Toutes les adresses chargees depuis le serveur, avec leur user associe
+            const allAddresses = [
+                {% for addr in addresses %}
+                {
+                    id: {{ addr.id }},
+                    userId: {{ addr.user.id }},
+                    label: {{ (addr.fullName ~ ' — ' ~ addr.line1 ~ ', ' ~ addr.postalCode ~ ' ' ~ addr.city)|json_encode|raw }}
+                }{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ];
+
+            const userSelect    = document.getElementById('user_id');
+            const addressSelect = document.getElementById('address_id');
+            const noAddressMsg  = document.getElementById('no-address-warning');
+            const articleSelect = document.getElementById('article_id');
+            const qtyInput      = document.getElementById('quantity');
+            const shippingInput = document.getElementById('shipping_price');
+            const stockWarning  = document.getElementById('stock-warning');
+
+            const recap        = document.getElementById('recap');
+            const recapArticle  = document.getElementById('recap-article');
+            const recapShipping = document.getElementById('recap-shipping');
+            const recapTotal    = document.getElementById('recap-total');
+
+            // Filtre les adresses affichees en fonction du client choisi
+            userSelect.addEventListener('change', function () {
+                const userId = parseInt(this.value, 10);
+                addressSelect.innerHTML = '';
+
+                if (!userId) {
+                    addressSelect.disabled = true;
+                    addressSelect.innerHTML = '<option value="">— Sélectionnez d\'abord un client —</option>';
+                    noAddressMsg.style.display = 'none';
+                    return;
+                }
+
+                const userAddresses = allAddresses.filter(function (a) { return a.userId === userId; });
+
+                if (userAddresses.length === 0) {
+                    addressSelect.disabled = true;
+                    addressSelect.innerHTML = '<option value="">— Aucune adresse —</option>';
+                    noAddressMsg.style.display = 'block';
+                    return;
+                }
+
+                noAddressMsg.style.display = 'none';
+                addressSelect.disabled = false;
+                addressSelect.innerHTML = '<option value="">— Sélectionner une adresse —</option>';
+                userAddresses.forEach(function (a) {
+                    const opt = document.createElement('option');
+                    opt.value = a.id;
+                    opt.textContent = a.label;
+                    addressSelect.appendChild(opt);
+                });
+            });
+
+            // Met a jour le recapitulatif et verifie le stock a chaque changement pertinent
+            function updateRecap() {
+                const articleOpt = articleSelect.options[articleSelect.selectedIndex];
+                const qty = parseInt(qtyInput.value, 10) || 0;
+                const shipping = parseFloat(shippingInput.value) || 0;
+
+                if (!articleOpt || !articleOpt.value || qty <= 0) {
+                    recap.style.display = 'none';
+                    return;
+                }
+
+                const stock = parseInt(articleOpt.getAttribute('data-stock'), 10) || 0;
+                const prix  = parseFloat(articleOpt.getAttribute('data-prix')) || 0;
+
+                // Avertissement stock insuffisant (le serveur revalidera de toute facon)
+                stockWarning.style.display = (qty > stock) ? 'block' : 'none';
+
+                const articleTotal = prix * qty;
+                const grandTotal = articleTotal + shipping;
+
+                recapArticle.textContent = articleOpt.textContent.split(' — ')[0] + ' x' + qty + ' = ' + articleTotal.toFixed(2).replace('.', ',') + ' €';
+                recapShipping.textContent = shipping.toFixed(2).replace('.', ',') + ' €';
+                recapTotal.textContent = grandTotal.toFixed(2).replace('.', ',') + ' €';
+                recap.style.display = 'block';
+            }
+
+            articleSelect.addEventListener('change', updateRecap);
+            qtyInput.addEventListener('input', updateRecap);
+            shippingInput.addEventListener('input', updateRecap);
+        });
+    </script>
+{% endblock %}
