@@ -161,8 +161,8 @@
                     </div>
                 {% endif %}
 
-                {# Affichage de la quantité disponible #}
-                {% if article.quantity is not null %}
+                {# Affichage de la quantité disponible (masqué pour les articles volumineux, non pertinent) #}
+                {% if not article.isVolumineux and article.quantity is not null %}
                     <div style="margin-bottom:.75rem;color:#444;">
                         Quantité disponible : {{ article.quantity }}
                     </div>
@@ -191,8 +191,20 @@
                     </div>
                 {% endif %}
 
-                {# Formulaire d'ajout au panier (uniquement si stock disponible) #}
-                {% if article.quantity is defined and article.quantity > 0 %}
+                {# Bloc d'achat : 3 cas possibles - article volumineux / en stock / rupture #}
+                {% if article.isVolumineux %}
+                    {# Article volumineux : pas d'ajout au panier, on renvoie vers le contact #}
+                    <div style="margin:1rem 0 1.5rem 0;padding:1rem;background:#f9f6f1;border:1px solid #e5ddd0;border-radius:8px;">
+                        <p style="margin:0 0 .75rem 0;color:#444;line-height:1.5;">
+                            Article volumineux, me contacter afin d'établir un devis personnalisé pour l'expédition avec mon prestataire Cocolis.
+                        </p>
+                        <a href="{{ path('contact') }}"
+                           style="display:inline-block;padding:.6rem 1rem;border:1px solid #222;border-radius:8px;background:#222;color:#fff;text-decoration:none;">
+                            Me contacter
+                        </a>
+                    </div>
+                {% elseif article.quantity is defined and article.quantity > 0 %}
+                    {# Formulaire d'ajout au panier (stock disponible, article standard) #}
                     <form action="{{ path('cart_add', {id: article.id}) }}" method="post" style="margin:1rem 0 1.5rem 0;">
                         {# Token CSRF pour sécuriser la soumission du formulaire #}
                         <input type="hidden" name="_token" value="{{ csrf_token('cart_add_' ~ article.id) }}">

@@ -9,6 +9,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\CollectionField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
@@ -99,6 +100,10 @@ class ArticleCrudController extends AbstractCrudController
             ->setFormTypeOption('attr', ['step' => '0.1', 'placeholder' => 'Ex: 60'])
             ->setHelp('Hauteur en centimètres')
             ->hideOnIndex();
+
+        yield BooleanField::new('isVolumineux', 'Article volumineux')
+            ->setHelp('À cocher si l\'article ne peut pas être expédié via Colissimo ou Mondial Relay (trop lourd, trop encombrant). Le bouton "Ajouter au panier" sera remplacé par un message invitant le client à contacter Maison Vintage pour un devis de transport personnalisé.')
+            ->renderAsSwitch(true);
 
         yield FormField::addPanel('Images');
 

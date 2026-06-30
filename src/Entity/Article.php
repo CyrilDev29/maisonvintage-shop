@@ -88,6 +88,13 @@ class Article
     private ?string $keywords = null;
 
     /**
+     * Article volumineux : expedition impossible via Colissimo/Mondial Relay.
+     * Si true, l'ajout au panier est desactive et un message renvoie vers le formulaire de contact.
+     */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $isVolumineux = false;
+
+    /**
      * Images secondaires (galerie, max 10)
      * @var Collection<int, ArticleImage>
      */
@@ -180,6 +187,9 @@ class Article
 
     public function getKeywords(): ?string { return $this->keywords; }
     public function setKeywords(?string $keywords): static { $this->keywords = $keywords; return $this; }
+
+    public function isVolumineux(): bool { return $this->isVolumineux; }
+    public function setIsVolumineux(bool $isVolumineux): static { $this->isVolumineux = $isVolumineux; return $this; }
 
     /** Helpers métier */
     public function isDisponible(): bool { return ($this->quantity ?? 0) > 0; }
